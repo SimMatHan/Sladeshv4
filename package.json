@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "convex dev --run-sh 'vite'",
+    "dev": "convex dev --start 'vite'",
     "dev:frontend": "vite",
     "dev:backend": "convex dev",
     "build": "tsc -b && vite build",

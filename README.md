@@ -10,9 +10,19 @@ ingen forretningslogik, ingen datamigrering endnu.
 ## Kom i gang
 
 ```bash
-npm install
+npm install        # SKAL køres først — se nedenfor
 npx convex dev     # opretter/forbinder Convex-projektet og skriver .env.local
 npm run dev
+```
+
+`npm install` skal køres **før** `npx convex dev`. Convex bundler funktionerne i
+`convex/` med esbuild, og bundleren slår `convex/server` op i projektets eget
+`node_modules`. Mangler det, provisionerer CLI'en godt nok deploymentet, men
+bundlingen fejler bagefter med:
+
+```
+✘ [ERROR] Could not resolve "convex/server"
+    convex-virtual-config:./convex/convex.config.js:1:26
 ```
 
 `npx convex dev` skal køres mindst én gang før `npm run dev`: den skriver
