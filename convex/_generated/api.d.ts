@@ -8,8 +8,15 @@
  * @module
  */
 
+import type * as checkIns from "../checkIns.js";
 import type * as constants from "../constants.js";
+import type * as drinkLogs from "../drinkLogs.js";
+import type * as kanaler from "../kanaler.js";
 import type * as scoreboard from "../scoreboard.js";
+import type * as sladesh from "../sladesh.js";
+import type * as streaks from "../streaks.js";
+import type * as testing from "../testing.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -18,8 +25,15 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  checkIns: typeof checkIns;
   constants: typeof constants;
+  drinkLogs: typeof drinkLogs;
+  kanaler: typeof kanaler;
   scoreboard: typeof scoreboard;
+  sladesh: typeof sladesh;
+  streaks: typeof streaks;
+  testing: typeof testing;
+  users: typeof users;
 }>;
 
 /**

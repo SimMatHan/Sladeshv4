@@ -113,9 +113,14 @@ export default defineSchema({
     lastDrinkDayStart: v.optional(v.number()), // grænsen for drikkedagen (kl. 10:00)
     totalRunResets: v.optional(v.number()),
 
-    // Fladgjort fra Firestores indlejrede `stats`-objekt
+    // Fladgjort fra Firestores indlejrede `stats`-objekt.
+    //
+    // `currentStreak` er bevidst udeladt: i det gamle repo blev den
+    // initialiseret til 0 (AuthContext.tsx:116) og aldrig skrevet, så profil
+    // og scoreboard viste permanent 0. `currentDayStreak` er den eneste
+    // rigtige stræk — at have begge er samme denormaliserings-anti-mønster
+    // som `activeSladesh`.
     totalPoints: v.optional(v.number()),
-    currentStreak: v.optional(v.number()),
     longestStreak: v.optional(v.number()),
     currentDayStreak: v.optional(v.number()),
 
@@ -129,24 +134,17 @@ export default defineSchema({
       }),
     ),
 
-    // Sladesh-tællere og aktiv lås
+    // Sladesh-tællere.
+    //
+    // `activeSladesh` er bevidst udeladt: det var en denormaliseret kopi af
+    // `sladeshChallenges.status`, og det at holde de to i sync var kilden til
+    // de brede fejl i den gamle app. Den aktive udfordring slås nu op direkte
+    // i `sladeshChallenges` — se convex/sladesh.ts.
     sladeshSent: v.optional(v.number()),
     sladeshReceived: v.optional(v.number()),
     sladeshCompletedCount: v.optional(v.number()),
     sladeshFailedCount: v.optional(v.number()),
     lastSladeshSentAt: v.optional(v.number()),
-    activeSladesh: v.optional(
-      v.union(
-        v.object({
-          challengeId: v.id("sladeshChallenges"),
-          status: v.literal("in_progress"),
-          setAt: v.number(),
-          senderId: v.id("users"),
-          recipientId: v.id("users"),
-        }),
-        v.null(),
-      ),
-    ),
 
     // Avatar / udseende
     emoji: v.optional(v.string()), // avatar-emoji
