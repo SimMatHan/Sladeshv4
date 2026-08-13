@@ -4,13 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "convex dev --run-sh 'vite'",
+    "dev": "convex dev --start 'vite'",
     "dev:frontend": "vite",
     "dev:backend": "convex dev",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p convex/tsconfig.json",
-    "lint": "oxlint"
+    "check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p convex/tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
+    "lint": "oxlint",
+    "test:logic": "esbuild scripts/logic-test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/logic-test.mjs --log-level=error && node node_modules/.tmp/logic-test.mjs",
+    "smoke-test": "node --experimental-strip-types --env-file=.env.local scripts/smoke-test.ts"
   },
   "dependencies": {
     "convex": "^1.43.0",
@@ -22,6 +24,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "esbuild": "^0.28.2",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"

@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import type { Doc, Id } from "./_generated/dataModel";
+import type { Id } from "./_generated/dataModel";
 import {
   PROMILLE_PER_DRINK,
   SCOREBOARD_LIMIT,
@@ -11,19 +11,21 @@ import {
 /**
  * Scoreboard.
  *
- * Bevidst IKKE en tabel: stillingen beregnes live ud fra `drinkLogs`, så der
- * ikke findes en denormaliseret tæller der kan komme ud af sync. Det gamle
- * repo læste `users.currentRunDrinkCount`; her er `drinkLogs` sandhedskilden.
+ * Bevidst IKKE en tabel, og bevidst ikke læst fra cachede tællere på `users`.
+ * Stillingen beregnes live ud fra `drinkLogs` via `by_kanal_and_timestamp`:
+ * ét indekseret range-scan over Kanalens logninger fra drikkedagens start.
+ * Det gamle repo læste `users.currentRunDrinkCount`, som kunne komme ud af
+ * trit med de faktiske logrækker.
  *
- * Regler overtaget fra src/hooks/useLeaderboard.ts:
- * - Kun brugere der er checket ind (`checkInStatus === true`) OG medlem af
- *   Kanalen tæller med.
- * - Primær sortering: antal genstande i den aktuelle drikkedag, faldende.
- * - Tie-breaker: tidligste `lastDrinkAt` vinder.
- * - Maks. 50 rækker.
+ * Deltagerkriterier, uændret fra src/hooks/useLeaderboard.ts:
+ * - medlem af Kanalen, OG
+ * - checket ind (`checkInStatus === true`).
  *
- * Nyt her: "dagens genstande" respekterer størrelses-multiplikatoren
- * (Lille 1.0 / Mellem 1.5 / Stor 2.0) i stedet for at tælle rå rækker.
+ * Medlemmer uden logninger i dag er med på listen med 0 — de forsvinder ikke,
+ * præcis som i den gamle query der hentede alle indcheckede medlemmer.
+ *
+ * Sortering: flest genstande først; ved lige antal vinder den der drak
+ * tidligst (samme tie-breaker som før).
  */
 
 export type ScoreboardRow = {
@@ -33,16 +35,16 @@ export type ScoreboardRow = {
   color: string;
   profileEmoji?: string;
   profileGradient?: string;
+  /** Genstande i den aktuelle drikkedag, vægtet med størrelse. */
   drinksToday: number;
-  drinksTotal: number;
   streak: number;
   promille: number;
+  /** Seneste logning i dag — bruges som tie-breaker. */
   lastDrinkAt?: number;
-  hasActiveSladesh: boolean;
   isOnline: boolean;
 };
 
-export const forKanal = query({
+export const getScoreboard = query({
   args: {
     channelId: v.id("kanaler"),
     /** Overstyrer "nu" — kun til test. Default er serverens tid. */
@@ -52,97 +54,97 @@ export const forKanal = query({
     const now = args.now ?? Date.now();
     const dayStart = getDrinkDayStart(now);
 
-    console.log("[Scoreboard] beregner stilling", {
-      channelId: args.channelId,
-      dayStart: new Date(dayStart).toISOString(),
-    });
-
-    // Deltagere: medlemmer af Kanalen der er checket ind.
     const kanal = await ctx.db.get(args.channelId);
     if (kanal === null) {
       console.log("[Scoreboard] ukendt kanal", { channelId: args.channelId });
       return [];
     }
 
+    console.log("[Scoreboard] beregner stilling", {
+      kanal: kanal.name,
+      fra: new Date(dayStart).toISOString(),
+    });
+
+    // Ét indekseret scan over Kanalens logninger i den aktuelle drikkedag.
+    const logs = await ctx.db
+      .query("drinkLogs")
+      .withIndex("by_kanal_and_timestamp", (q) =>
+        q.eq("channelId", args.channelId).gte("timestamp", dayStart),
+      )
+      .collect();
+
+    // Aggregér per bruger.
+    const totals = new Map<
+      Id<"users">,
+      { drinks: number; lastDrinkAt: number }
+    >();
+
+    for (const log of logs) {
+      // Nulstillings-rækker og ikke-drikkevarer tæller ikke med i stillingen.
+      if (log.isReset === true) continue;
+      if (!isDrinkCategory(log.categoryId)) continue;
+
+      const previous = totals.get(log.userId);
+      const drinks = (previous?.drinks ?? 0) + (log.sizeMultiplier ?? 1);
+      const lastDrinkAt = Math.max(previous?.lastDrinkAt ?? 0, log.timestamp);
+      totals.set(log.userId, { drinks, lastDrinkAt });
+    }
+
     const members = await Promise.all(
       kanal.members.map((userId) => ctx.db.get(userId)),
     );
-    const participants = members.filter(
-      (user): user is Doc<"users"> => user !== null && user.checkInStatus === true,
-    );
 
-    const rows = await Promise.all(
-      participants.map(async (user) => {
-        // Alle logs for brugeren i denne Kanal fra drikkedagens start.
-        const todaysLogs = await ctx.db
-          .query("drinkLogs")
-          .withIndex("by_user_and_timestamp", (q) =>
-            q.eq("userId", user._id).gte("timestamp", dayStart),
-          )
-          .collect();
+    const rows: ScoreboardRow[] = [];
+    for (const user of members) {
+      if (user === null) continue;
+      if (user.checkInStatus !== true) continue;
 
-        const inKanal = todaysLogs.filter(
-          (log) => log.channelId === args.channelId,
-        );
+      const total = totals.get(user._id);
+      const drinksToday = round2(total?.drinks ?? 0);
 
-        const drinksToday = sumDrinks(inKanal);
-
-        // Livstidstotal for brugeren, på tværs af Kanaler.
-        const allLogs = await ctx.db
-          .query("drinkLogs")
-          .withIndex("by_user", (q) => q.eq("userId", user._id))
-          .collect();
-
-        return {
-          userId: user._id,
-          name: user.displayName || "Anonym",
-          avatar: user.emoji ?? "🍺",
-          color: user.avatarColor ?? fallbackColor(user._id),
-          profileEmoji: user.profileEmoji,
-          profileGradient: user.profileGradient,
-          drinksToday,
-          drinksTotal: sumDrinks(allLogs),
-          streak: user.currentStreak ?? 0,
-          promille: Number((drinksToday * PROMILLE_PER_DRINK).toFixed(1)),
-          lastDrinkAt: user.lastDrinkAt,
-          hasActiveSladesh: Boolean(user.activeSladesh),
-          // Kun indcheckede brugere når hertil, så de regnes som online —
-          // samme antagelse som i det gamle repo.
-          isOnline: true,
-        };
-      }),
-    );
+      rows.push({
+        userId: user._id,
+        name: user.displayName || "Anonym",
+        avatar: user.emoji ?? "🍺",
+        color: user.avatarColor ?? fallbackColor(user._id),
+        profileEmoji: user.profileEmoji,
+        profileGradient: user.profileGradient,
+        drinksToday,
+        streak: user.currentDayStreak ?? 0,
+        promille: round1(drinksToday * PROMILLE_PER_DRINK),
+        lastDrinkAt: total?.lastDrinkAt,
+        // Kun indcheckede brugere når hertil — samme antagelse som før.
+        isOnline: true,
+      });
+    }
 
     rows.sort((a, b) => {
       if (b.drinksToday !== a.drinksToday) {
         return b.drinksToday - a.drinksToday;
       }
-      // Tie-breaker: den der drak tidligst, vinder.
+      // Tie-breaker: den der drak tidligst, vinder. Ingen logninger → bagerst.
       if (a.lastDrinkAt === undefined) return 1;
       if (b.lastDrinkAt === undefined) return -1;
       return a.lastDrinkAt - b.lastDrinkAt;
     });
 
     const result = rows.slice(0, SCOREBOARD_LIMIT);
-    console.log("[Scoreboard] stilling klar", { rækker: result.length });
+    console.log("[Scoreboard] stilling klar", {
+      kanal: kanal.name,
+      rækker: result.length,
+      logninger: logs.length,
+    });
     return result;
   },
 });
 
-/**
- * Summerer genstande. Nulstillings-rækker (`isReset`) og ikke-drikkevarer
- * (kategorien "Andet") tæller ikke med. Størrelse vægtes via
- * `sizeMultiplier`, der som default er 1.
- */
-function sumDrinks(logs: Doc<"drinkLogs">[]): number {
-  const total = logs.reduce((sum, log) => {
-    if (log.isReset === true) return sum;
-    if (!isDrinkCategory(log.categoryId)) return sum;
-    return sum + (log.sizeMultiplier ?? 1);
-  }, 0);
+/** Undgår flydende-komma-støj som 3.0000000000000004. */
+function round2(value: number): number {
+  return Number(value.toFixed(2));
+}
 
-  // Undgår flydende-komma-støj som 3.0000000000000004.
-  return Number(total.toFixed(2));
+function round1(value: number): number {
+  return Number(value.toFixed(1));
 }
 
 /** Stabil farve ud fra bruger-id, når brugeren ikke har valgt en. */

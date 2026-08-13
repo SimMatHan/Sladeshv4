@@ -38,6 +38,40 @@ export function isDrinkCategory(categoryId: string): boolean {
   return DRINK_CATEGORY_IDS.includes(categoryId);
 }
 
+/** Størrelser. Overtaget uændret fra src/lib/drinkSizes.ts. */
+export const DRINK_SIZES = [
+  { id: "small", label: "Lille", volumeLabel: "33cl", multiplier: 1.0 },
+  { id: "medium", label: "Mellem", volumeLabel: "50cl", multiplier: 1.5 },
+  { id: "large", label: "Stor", volumeLabel: "75cl", multiplier: 2.0 },
+] as const;
+
+export type DrinkSize = (typeof DRINK_SIZES)[number];
+
+/** Default når intet er valgt: Lille (33cl), jf. DEFAULT_SIZE i det gamle repo. */
+export const DEFAULT_SIZE: DrinkSize = DRINK_SIZES[0];
+
+/**
+ * Kun rigtige drikkevarer har en størrelse — "Andet" (fx Cigaret) har ingen.
+ * Svarer til SIZE_SUPPORTED_CATEGORIES i det gamle repo.
+ */
+export function categorySupportsSize(categoryId: string): boolean {
+  return isDrinkCategory(categoryId);
+}
+
+/**
+ * Slår størrelsen op for en logning. Returnerer `undefined` for kategorier
+ * uden størrelse, så felterne udelades helt frem for at få en misvisende
+ * "Lille" på en cigaret. Ukendt `sizeId` falder tilbage til Lille.
+ */
+export function getSize(
+  sizeId: string | undefined,
+  categoryId: string,
+): DrinkSize | undefined {
+  if (!categorySupportsSize(categoryId)) return undefined;
+  if (sizeId === undefined) return DEFAULT_SIZE;
+  return DRINK_SIZES.find((size) => size.id === sizeId) ?? DEFAULT_SIZE;
+}
+
 /**
  * Starten på den drikkedag som `now` (epoch ms) falder i.
  *
