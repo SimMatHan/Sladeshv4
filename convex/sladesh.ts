@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
+import { requireCanViewUser, requireCurrentUser } from "./identity";
 
 /**
  * Sladesh — opslag af den aktive udfordring.
@@ -36,19 +37,26 @@ const ACTIVE_STATUS = "in_progress" as const;
 const SENDER_SCAN_LIMIT = 25;
 
 export const getActiveSladeshForUser = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args): Promise<Doc<"sladeshChallenges"> | null> => {
+    // Uden userId spørges der om en selv. Ellers kræves en delt Kanal.
+    const viewer = await requireCurrentUser(ctx);
+    const userId = args.userId ?? viewer._id;
+    if (userId !== viewer._id) {
+      await requireCanViewUser(ctx, userId);
+    }
+
     // Som modtager — præcist indeks-opslag.
     const asRecipient = await ctx.db
       .query("sladeshChallenges")
       .withIndex("by_recipient_and_status", (q) =>
-        q.eq("recipientId", args.userId).eq("status", ACTIVE_STATUS),
+        q.eq("recipientId", userId).eq("status", ACTIVE_STATUS),
       )
       .first();
 
     if (asRecipient !== null) {
       console.log("[Sladesh] aktiv udfordring fundet (modtager)", {
-        userId: args.userId,
+        userId,
         challengeId: asRecipient._id,
       });
       return asRecipient;
@@ -57,7 +65,7 @@ export const getActiveSladeshForUser = query({
     // Som afsender — nyeste først, filtrér på status.
     const recentAsSender = await ctx.db
       .query("sladeshChallenges")
-      .withIndex("by_sender_and_created_at", (q) => q.eq("senderId", args.userId))
+      .withIndex("by_sender_and_created_at", (q) => q.eq("senderId", userId))
       .order("desc")
       .take(SENDER_SCAN_LIMIT);
 
@@ -67,25 +75,31 @@ export const getActiveSladeshForUser = query({
 
     if (asSender !== null) {
       console.log("[Sladesh] aktiv udfordring fundet (afsender)", {
-        userId: args.userId,
+        userId,
         challengeId: asSender._id,
       });
       return asSender;
     }
 
-    console.log("[Sladesh] ingen aktiv udfordring", { userId: args.userId });
+    console.log("[Sladesh] ingen aktiv udfordring", { userId });
     return null;
   },
 });
 
 /** Om brugeren er optaget af en aktiv Sladesh — erstatter `!!activeSladesh`. */
 export const hasActiveSladesh = query({
-  args: { userId: v.id("users") },
+  args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args): Promise<boolean> => {
+    const viewer = await requireCurrentUser(ctx);
+    const userId = args.userId ?? viewer._id;
+    if (userId !== viewer._id) {
+      await requireCanViewUser(ctx, userId);
+    }
+
     const asRecipient = await ctx.db
       .query("sladeshChallenges")
       .withIndex("by_recipient_and_status", (q) =>
-        q.eq("recipientId", args.userId).eq("status", ACTIVE_STATUS),
+        q.eq("recipientId", userId).eq("status", ACTIVE_STATUS),
       )
       .first();
 
@@ -93,7 +107,7 @@ export const hasActiveSladesh = query({
 
     const recentAsSender = await ctx.db
       .query("sladeshChallenges")
-      .withIndex("by_sender_and_created_at", (q) => q.eq("senderId", args.userId))
+      .withIndex("by_sender_and_created_at", (q) => q.eq("senderId", userId))
       .order("desc")
       .take(SENDER_SCAN_LIMIT);
 

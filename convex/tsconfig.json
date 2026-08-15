@@ -12,6 +12,9 @@
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
 
+    /* auth.config.ts læser process.env på Convex-serveren */
+    "types": ["node"],
+
     /* These compiler options are required by Convex */
     "target": "ESNext",
     "lib": ["ES2023", "dom"],
