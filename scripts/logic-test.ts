@@ -10,6 +10,8 @@
 
 import { getDrinkDayStart, getSize } from "../convex/constants";
 import { computeStreak, pointsForDrink } from "../convex/streaks";
+import schema from "../convex/schema.ts";
+import { kendteFelter, valider, type AnyValidator } from "./lib/validate.ts";
 
 let passed = 0;
 let failed = 0;
@@ -212,6 +214,94 @@ console.log("\n[Logic] point og størrelser");
     "størrelsesnavne er danske",
     ["small", "medium", "large"].map((id) => getSize(id, "beer")?.label),
     ["Lille", "Mellem", "Stor"],
+  );
+}
+
+console.log("\n[Logic] validator-walker mod det rigtige schema");
+{
+  // Walkeren bruges af datarevisionen til at måle produktionsdata mod
+  // convex/schema.ts. Den testes her mod de FAKTISKE validatorer, så en
+  // schemaændring der bryder den, fanges med det samme.
+  const users = (schema.tables.users as unknown as { validator: AnyValidator })
+    .validator;
+
+  const gyldig = {
+    authId: "firebase-uid",
+    email: "a@b.dk",
+    displayName: "Tester",
+    joinedChannelIds: [],
+    createdAt: 1_700_000_000_000,
+  };
+
+  check("gyldigt brugerdokument → ingen overtrædelser", valider(gyldig, users), []);
+
+  const { email: _udeladt, ...udenEmail } = gyldig;
+  check(
+    "manglende påkrævet felt fanges",
+    valider(udenEmail, users).map((f) => f.sti),
+    ["email"],
+  );
+
+  check(
+    "forkert type fanges",
+    valider({ ...gyldig, displayName: 42 }, users).map((f) => f.årsag),
+    ["forventede string, fik number"],
+  );
+
+  check(
+    "valgfrit felt må mangle",
+    valider({ ...gyldig, emoji: undefined }, users),
+    [],
+  );
+
+  // currentLocation er en union af objekt og null — begge grene skal passere.
+  check(
+    "union: null-grenen accepteres",
+    valider({ ...gyldig, currentLocation: null }, users),
+    [],
+  );
+  check(
+    "union: objekt-grenen accepteres",
+    valider(
+      {
+        ...gyldig,
+        currentLocation: { lat: 55.6, lng: 12.4, venue: "Bar", timestamp: 1 },
+      },
+      users,
+    ),
+    [],
+  );
+  check(
+    "union: en tredje form afvises",
+    valider({ ...gyldig, currentLocation: "hjemme" }, users).length,
+    1,
+  );
+
+  // Indlejret objekt: promille.enabled er påkrævet inde i objektet.
+  check(
+    "indlejret påkrævet felt fanges med fuld sti",
+    valider({ ...gyldig, promille: { weight: 80 } }, users).map((f) => f.sti),
+    ["promille.enabled"],
+  );
+
+  // Array-element med forkert type.
+  check(
+    "array-element med forkert type fanges",
+    valider({ ...gyldig, joinedChannelIds: [123] }, users).length,
+    1,
+  );
+
+  // Undtagelser: migreringen sætter selv authId.
+  check(
+    "ignorerManglende undertrykker feltet",
+    valider(udenEmail, users, { ignorerManglende: ["email"] }),
+    [],
+  );
+
+  check(
+    "kendteFelter finder schemaets felter",
+    kendteFelter(users).has("authId") && !kendteFelter(users).has("totalDrinks"),
+    true,
   );
 }
 
