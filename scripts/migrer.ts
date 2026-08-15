@@ -538,7 +538,7 @@ async function main(): Promise<void> {
   for (const portion of portioner(brugere, 50)) {
     Object.assign(
       brugerMap,
-      await convex.mutation(api.migrering.indsætBrugere, {
+      await convex.mutation(api.migrering.opretBrugere, {
         secret: secret!,
         brugere: portion,
       }),
@@ -547,7 +547,7 @@ async function main(): Promise<void> {
   console.log(`  ${Object.keys(brugerMap).length} brugere`);
 
   console.log("[Migrering] 2/5 indsætter kanaler …");
-  const kanalMap = await convex.mutation(api.migrering.indsætKanaler, {
+  const kanalMap = await convex.mutation(api.migrering.opretKanaler, {
     secret: secret!,
     kanaler: kanaler.map((k) => ({
       firestoreId: k.firestoreId,
@@ -614,7 +614,7 @@ async function main(): Promise<void> {
 
   console.log("[Migrering] 4/5 indsætter historik …");
   for (const portion of portioner(checkIns, 200)) {
-    await convex.mutation(api.migrering.indsætCheckIns, {
+    await convex.mutation(api.migrering.opretCheckIns, {
       secret: secret!,
       rækker: portion.flatMap((r) => {
         const userId = brugerMap[r.ejerFirestoreId];
@@ -637,7 +637,7 @@ async function main(): Promise<void> {
   console.log(`  ${checkIns.length} check ins`);
 
   for (const portion of portioner(drinkLogs, 200)) {
-    await convex.mutation(api.migrering.indsætDrinkLogs, {
+    await convex.mutation(api.migrering.opretDrinkLogs, {
       secret: secret!,
       rækker: portion.flatMap((r) => {
         const { ejerFirestoreId, kanalFirestoreId, ...felter } = r;
@@ -657,7 +657,7 @@ async function main(): Promise<void> {
   console.log(`  ${drinkLogs.length} drikkelogninger`);
 
   for (const portion of portioner(achievements, 200)) {
-    await convex.mutation(api.migrering.indsætAchievements, {
+    await convex.mutation(api.migrering.opretAchievements, {
       secret: secret!,
       rækker: portion.flatMap((r) => {
         const { ejerFirestoreId, ...felter } = r;
@@ -670,7 +670,7 @@ async function main(): Promise<void> {
   console.log(`  ${achievements.length} achievements`);
 
   if (beacons.length > 0) {
-    await convex.mutation(api.migrering.indsætBeacons, {
+    await convex.mutation(api.migrering.opretBeacons, {
       secret: secret!,
       rækker: beacons.flatMap((r) => {
         const { opretterFirestoreId, ...felter } = r;
@@ -697,7 +697,7 @@ async function main(): Promise<void> {
   const status = await convex.query(api.migrering.status, { secret: secret! });
   console.log(`  rækker i Convex: ${JSON.stringify(status)}`);
 
-  const døde = await convex.query(api.migrering.findDødeReferencer, {
+  const døde = await convex.query(api.migrering.findBrudteReferencer, {
     secret: secret!,
   });
   const dødeIAlt = Object.values(døde).reduce((a, b) => a + b, 0);
