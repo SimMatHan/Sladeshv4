@@ -235,7 +235,7 @@ async function main(): Promise<void> {
     check("createUser er idempotent", igen, userIdA);
 
     // 2. Uautentificeret adgang ------------------------------------------
-    console.log("\n[Smoke] 2/7 verificerer at uautentificerede kald afvises");
+    console.log("\n[Smoke] 2/7 verificerer at uautentificerede kald ikke slipper igennem");
     await checkRejected("anonym createUser", () =>
       anonym.mutation(api.users.createUser, {}),
     );
@@ -245,7 +245,22 @@ async function main(): Promise<void> {
         variationName: "Tuborg",
       }),
     );
-    await checkRejected("anonym getMe", () => anonym.query(api.users.getMe, {}));
+    // `getMe` kaster bevidst IKKE uden login — den svarer null.
+    // Frontenden kalder den på hver render for at afgøre om login-skærmen
+    // eller profilen skal vises, også mens man er logget ud og mens Convex
+    // stadig er ved at verificere tokenet. Kastede den, ville login-skærmen
+    // fejle i stedet for at blive vist. Sikkerhedsegenskaben er derfor ikke
+    // "afvis kaldet", men "udlever ingen data".
+    check(
+      "anonym getMe udleverer ingen data",
+      await anonym.query(api.users.getMe, {}),
+      null,
+    );
+    check(
+      "anonym hasProfile udleverer ingen data",
+      await anonym.query(api.users.hasProfile, {}),
+      false,
+    );
 
     // 3. Kanal -----------------------------------------------------------
     console.log("\n[Smoke] 3/7 opretter Kanal");
