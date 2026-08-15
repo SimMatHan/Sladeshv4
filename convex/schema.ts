@@ -167,11 +167,16 @@ export default defineSchema({
    */
   kanaler: defineTable({
     name: v.string(),
-    code: v.string(), // unik invitationskode, fx "FRI-9024"
+    // Invitationskode, fx "FRI-9024". VALGFRI: datarevisionen fandt én Kanal
+    // uden kode — efter alt at dømme "Den Åbne Kanal", som alle joiner
+    // automatisk og derfor aldrig har haft brug for en kode.
+    code: v.optional(v.string()),
     isDefault: v.boolean(), // hvis true joiner nye brugere automatisk
     description: v.optional(v.string()),
     members: v.array(v.id("users")),
-    createdBy: v.id("users"),
+    // VALGFRI: to Kanaler i produktion er ældre end feltet. At tildele dem en
+    // ejer ved migrering ville opfinde data der ikke findes.
+    createdBy: v.optional(v.id("users")),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
@@ -222,6 +227,11 @@ export default defineSchema({
 
     // Markerer en nulstillings-hændelse frem for en reel genstand
     isReset: v.optional(v.boolean()),
+
+    // "remove" markerer en FORTRYDELSE af en tidligere logning. Sådanne
+    // rækker bærer en NEGATIV sizeMultiplier, så aggregeringer trækker dem
+    // fra af sig selv — se convex/streaks.ts og convex/scoreboard.ts.
+    action: v.optional(v.string()),
   })
     .index("by_user", ["userId"])
     .index("by_kanal", ["channelId"])
@@ -276,17 +286,38 @@ export default defineSchema({
     createdBy: v.id("users"),
     channelId: v.optional(v.id("kanaler")),
 
+    // Flad lat/lng er den kanoniske form: begge skriveveje i det gamle repo
+    // bruger den (AntigravityMap.tsx:372 og adminService.ts:106), og kortet
+    // springer beacons uden dem over.
+    //
+    // Produktionen indeholder ét LEGACY-dokument med `location: {lat, lng}`
+    // i stedet. Cloud Functionen læser begge former eksplicit
+    // ("Support both flat (map placement) and nested (legacy) beacon
+    // structures"). Vi normaliserer legacy → flad ved migrering frem for at
+    // gøre den forældede form kanonisk i schemaet.
     lat: v.number(),
     lng: v.number(),
 
-    title: v.string(), // falder tilbage til "Stress Beacon"
+    // VALGFRIE: legacy-dokumentet har dem ikke, og Cloud Functionen falder
+    // tilbage til radius 50 ved læsning. At udfylde dem ved migrering ville
+    // opfinde data.
+    title: v.optional(v.string()),
+    type: v.optional(v.string()),
+    radius: v.optional(v.number()),
     venue: v.optional(v.string()),
-    message: v.optional(v.string()), // default "Stress signal aktiveret!"
-    type: v.string(), // p.t. altid "stress"
-    radius: v.number(), // meter, default 50
+    message: v.optional(v.string()),
 
     active: v.boolean(),
-    notificationsSent: v.number(),
+
+    // Notifikations-tilstand, skrevet af den planlagte Cloud Function.
+    notificationsSent: v.optional(v.number()),
+    lastNotificationSentAt: v.optional(v.number()),
+    // Per-bruger-deduplikering: hvilke brugere der allerede er notificeret.
+    notifiedUsers: v.optional(v.record(v.string(), v.boolean())),
+
+    expiresAt: v.optional(v.number()),
+    deactivatedAt: v.optional(v.number()),
+
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })

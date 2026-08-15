@@ -217,6 +217,67 @@ console.log("\n[Logic] point og størrelser");
   );
 }
 
+console.log("\n[Logic] fortrydelser (action: \"remove\", negativ sizeMultiplier)");
+{
+  // Det gamle repo logger en fortrydelse som en EKSTRA række med negativ
+  // sizeMultiplier (drinkService.ts:281), ikke ved at slette den oprindelige.
+  // 109 sådanne rækker findes i produktion. Fortegnet bærer semantikken, så
+  // aggregeringer trækker dem fra af sig selv — det er utestet og let at
+  // ødelægge ved et uheld, derfor disse tests.
+
+  // 1. Point: en fortrydelse giver negative point, så genberegnet totalPoints
+  //    ikke tæller fortrudte genstande med.
+  check("fortrudt lille øl → -1 point", pointsForDrink("beer", -1), -1);
+  check("fortrudt stor øl → -2 point", pointsForDrink("beer", -2), -2);
+  check("fortrudt cigaret → 0 point", pointsForDrink("other", -1), 0);
+
+  // En logning plus dens fortrydelse skal gå i nul.
+  const logninger: [string, number][] = [
+    ["beer", 1],
+    ["beer", 2],
+    ["beer", -2],
+  ];
+  check(
+    "logning + fortrydelse går i nul",
+    logninger.reduce((sum, [kat, mult]) => sum + pointsForDrink(kat, mult), 0),
+    1,
+  );
+
+  // 2. Scoreboardets sum: samme regnestykke som i convex/scoreboard.ts.
+  const sum = (rækker: number[]) =>
+    Number(rækker.reduce((a, b) => a + b, 0).toFixed(2));
+  check("sizeMultiplier -1 trækker 1 fra summen", sum([1, 2, -1]), 2);
+  check("alt fortrudt → 0", sum([1, -1]), 0);
+
+  // 3. Stræk: en fortrydelse må ALDRIG forlænge en stræk. Uden dette ville
+  //    man kunne holde en stræk i live ved at logge og fortryde.
+  const fortrydelse = computeStreak({
+    now: cest("2026-08-14T12:00:00"),
+    lastDrinkAt: cest("2026-08-13T12:00:00"),
+    currentDayStreak: 4,
+    longestStreak: 7,
+    categoryId: "beer",
+    sizeMultiplier: -1,
+  });
+  check("fortrydelse → stræk uændret", fortrydelse.currentDayStreak, 4);
+  check("fortrydelse → changed=false", fortrydelse.changed, false);
+  check("fortrydelse → longestStreak uændret", fortrydelse.longestStreak, 7);
+
+  // Kontrolprøve: samme række med positiv vægt SKAL forlænge stræk.
+  check(
+    "kontrol: positiv vægt forlænger stræk",
+    computeStreak({
+      now: cest("2026-08-14T12:00:00"),
+      lastDrinkAt: cest("2026-08-13T12:00:00"),
+      currentDayStreak: 4,
+      longestStreak: 7,
+      categoryId: "beer",
+      sizeMultiplier: 1,
+    }).currentDayStreak,
+    5,
+  );
+}
+
 console.log("\n[Logic] validator-walker mod det rigtige schema");
 {
   // Walkeren bruges af datarevisionen til at måle produktionsdata mod

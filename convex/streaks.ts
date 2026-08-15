@@ -20,7 +20,10 @@ import { getDrinkDayStart, isDrinkCategory } from "./constants";
  *
  * 1. Stræk opdateres KUN når der tilføjes en RIGTIG drikkevare. Kategorien
  *    "other" (Andet — fx Cigaret) rører ikke stræk. I det gamle repo var
- *    betingelsen `delta > 0 && !isNonDrink`.
+ *    betingelsen `delta > 0 && !isNonDrink` — bemærk `delta > 0`: en
+ *    FORTRYDELSE må heller ikke røre stræk. Fortrydelser genkendes på en
+ *    negativ `sizeMultiplier` (drinkService.ts:281 skriver `-sizeMultiplier`
+ *    sammen med `action: "remove"`).
  * 2. Et hul nulstiller til 1, ikke til 0 — den genstand der netop blev logget,
  *    starter selv en ny stræk.
  *
@@ -42,6 +45,12 @@ export type StreakInput = {
   longestStreak: number | undefined;
   /** Kategorien for den nye genstand — afgør om stræk overhovedet røres. */
   categoryId: string;
+  /**
+   * Størrelsesvægten. En NEGATIV værdi betyder, at rækken er en fortrydelse
+   * af en tidligere logning, og den må ikke forlænge en stræk. Udelades den,
+   * regnes rækken som en almindelig tilføjelse.
+   */
+  sizeMultiplier?: number;
 };
 
 export type StreakResult = {
@@ -61,8 +70,10 @@ export function computeStreak(input: StreakInput): StreakResult {
   const previousLongest = input.longestStreak ?? 0;
   const drinkDayStart = getDrinkDayStart(now);
 
-  // Ikke-drikkevarer ("Andet") rører aldrig stræk — jf. `!isNonDrink`.
-  if (!isDrinkCategory(categoryId)) {
+  // Hverken ikke-drikkevarer ("Andet") eller fortrydelser rører stræk.
+  // Det svarer til det gamle repos `delta > 0 && !isNonDrink`.
+  const erFortrydelse = (input.sizeMultiplier ?? 1) < 0;
+  if (!isDrinkCategory(categoryId) || erFortrydelse) {
     return {
       currentDayStreak: previousStreak,
       longestStreak: previousLongest,
@@ -108,6 +119,10 @@ export function computeStreak(input: StreakInput): StreakResult {
  * initialiseret til 0 og aldrig skrevet). Aftalt konvention: 1 point per
  * genstand vægtet med størrelsen — Lille 1.0, Mellem 1.5, Stor 2.0 — og 0
  * point for ikke-drikkevarer. Samme vægtning som den gamle `totalDrinks`.
+ *
+ * Fortrydelser bærer en negativ `sizeMultiplier` og giver derfor negative
+ * point. Det er med vilje: når `totalPoints` genberegnes ved at summere alle
+ * logrækker, trækkes fortrudte genstande fra af sig selv.
  */
 export function pointsForDrink(
   categoryId: string,

@@ -13,6 +13,7 @@ import type * as constants from "../constants.js";
 import type * as drinkLogs from "../drinkLogs.js";
 import type * as identity from "../identity.js";
 import type * as kanaler from "../kanaler.js";
+import type * as migrering from "../migrering.js";
 import type * as scoreboard from "../scoreboard.js";
 import type * as sladesh from "../sladesh.js";
 import type * as streaks from "../streaks.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   drinkLogs: typeof drinkLogs;
   identity: typeof identity;
   kanaler: typeof kanaler;
+  migrering: typeof migrering;
   scoreboard: typeof scoreboard;
   sladesh: typeof sladesh;
   streaks: typeof streaks;
