@@ -5,8 +5,15 @@
  *
  * Kør — tørkørsel er DEFAULT:
  *   export GOOGLE_APPLICATION_CREDENTIALS=~/.config/sladesh/datarevision-key.json
- *   npx convex env set MIGRATION_SECRET "$(openssl rand -hex 32)"
- *   export MIGRATION_SECRET=<samme værdi>
+ *
+ *   # Generér hemmeligheden ÉN gang og brug den begge steder — ellers kender
+ *   # du den ikke selv bagefter:
+ *   export MIGRATION_SECRET=$(openssl rand -hex 32)
+ *   npx convex env set MIGRATION_SECRET "$MIGRATION_SECRET"
+ *
+ *   # I en ny terminal hentes den tilbage fra deploymentet:
+ *   #   export MIGRATION_SECRET=$(npx convex env get MIGRATION_SECRET)
+ *
  *   npm run migrer                    # tørkørsel: læser, transformerer, rapporterer
  *   npm run migrer -- --skriv         # skriver rigtigt
  *   npm run migrer -- --skriv --ryd   # rydder først (kun til gentagne dev-kørsler)

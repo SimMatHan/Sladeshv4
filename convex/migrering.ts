@@ -18,7 +18,12 @@ import { computeStreak, pointsForDrink } from "./streaks";
  * I stedet er hver funktion spærret af en hemmelighed, der kun findes som
  * deployment-variabel:
  *
- *   npx convex env set MIGRATION_SECRET "$(openssl rand -hex 32)"
+ *   export MIGRATION_SECRET=$(openssl rand -hex 32)
+ *   npx convex env set MIGRATION_SECRET "$MIGRATION_SECRET"
+ *
+ * Generér den ÉN gang i en shell-variabel og brug den begge steder — sætter
+ * man den direkte med `$(openssl …)`, kender man den aldrig selv. Den kan
+ * hentes tilbage med `npx convex env get MIGRATION_SECRET`.
  *
  * Effekten er den samme — en klient uden hemmeligheden kan intet — og
  * spærren kan fjernes permanent efter cutover:
