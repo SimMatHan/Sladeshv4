@@ -23,7 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 
-# Convex
-# `convex/_generated/` SKAL committes — koden typechecker ikke uden.
-.env.local
-.env*.local
