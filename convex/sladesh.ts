@@ -1,7 +1,8 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import { requireCanViewUser, requireCurrentUser } from "./identity";
+import type { Ctx } from "./identity";
 
 /**
  * Sladesh — opslag af den aktive udfordring.
@@ -12,14 +13,16 @@ import { requireCanViewUser, requireCurrentUser } from "./identity";
  * dermed intet at holde i sync, og den klasse af fejl er væk.
  *
  * En bruger kan være involveret i en udfordring på to måder, så der skal to
- * opslag til:
+ * opslag til — begge er nu præcise indeks-opslag:
  *
- * - som MODTAGER: `by_recipient_and_status` rammer direkte på
- *   (recipientId, status) — det præcise opslag.
- * - som AFSENDER: der findes ikke et (senderId, status)-index, så
- *   `by_sender_and_created_at` bruges baglæns fra nyeste og filtreres på
- *   status. Fase 2 måtte kun ændre schemaet ét sted, så indexet er ikke
- *   tilføjet — se noten nederst.
+ *   som MODTAGER: by_recipient_and_status → (recipientId, status)
+ *   som AFSENDER: by_sender_and_status    → (senderId, status)
+ *
+ * Tidligere fandtes `by_sender_and_status` ikke, og afsender-siden måtte
+ * hente de seneste 25 afsendte udfordringer og filtrere i hukommelsen. Det
+ * var kun korrekt så længe en aktiv udfordring lå inden for de 25 nyeste —
+ * en bruger der sendte mange udfordringer i træk kunne få en ældre, stadig
+ * aktiv udfordring til at forsvinde ud af vinduet.
  *
  * Kun status "in_progress" regnes som aktiv. "pending" er en udfordring der
  * er sendt men ikke påbegyndt, og den blokerede heller ikke i det gamle repo,
@@ -29,60 +32,71 @@ import { requireCanViewUser, requireCurrentUser } from "./identity";
 const ACTIVE_STATUS = "in_progress" as const;
 
 /**
- * Hvor langt tilbage vi leder i afsenderens historik, når vi ikke har et
- * (senderId, status)-index. En bruger kan højst have én aktiv udfordring ad
- * gangen, og listen er sorteret nyeste-først, så den aktive ligger i toppen
- * hvis den findes.
+ * Den aktive udfordring hvor brugeren er modtager eller afsender.
+ *
+ * Modtager-siden slås op først: det er den retning der betyder noget for
+ * brugeren, fordi det er dér der er en frist at overholde.
  */
-const SENDER_SCAN_LIMIT = 25;
+async function findActive(
+  ctx: Ctx,
+  userId: Id<"users">,
+): Promise<Doc<"sladeshChallenges"> | null> {
+  const asRecipient = await ctx.db
+    .query("sladeshChallenges")
+    .withIndex("by_recipient_and_status", (q) =>
+      q.eq("recipientId", userId).eq("status", ACTIVE_STATUS),
+    )
+    .first();
+
+  if (asRecipient !== null) {
+    console.log("[Sladesh] aktiv udfordring fundet (modtager)", {
+      userId,
+      challengeId: asRecipient._id,
+    });
+    return asRecipient;
+  }
+
+  const asSender = await ctx.db
+    .query("sladeshChallenges")
+    .withIndex("by_sender_and_status", (q) =>
+      q.eq("senderId", userId).eq("status", ACTIVE_STATUS),
+    )
+    .first();
+
+  if (asSender !== null) {
+    console.log("[Sladesh] aktiv udfordring fundet (afsender)", {
+      userId,
+      challengeId: asSender._id,
+    });
+    return asSender;
+  }
+
+  return null;
+}
+
+/** Afgør hvem der spørges om, og at man må. */
+async function resolveTarget(
+  ctx: Ctx,
+  userId: Id<"users"> | undefined,
+): Promise<Id<"users">> {
+  const viewer = await requireCurrentUser(ctx);
+  const target = userId ?? viewer._id;
+  if (target !== viewer._id) {
+    await requireCanViewUser(ctx, target);
+  }
+  return target;
+}
 
 export const getActiveSladeshForUser = query({
   args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args): Promise<Doc<"sladeshChallenges"> | null> => {
-    // Uden userId spørges der om en selv. Ellers kræves en delt Kanal.
-    const viewer = await requireCurrentUser(ctx);
-    const userId = args.userId ?? viewer._id;
-    if (userId !== viewer._id) {
-      await requireCanViewUser(ctx, userId);
+    const userId = await resolveTarget(ctx, args.userId);
+    const active = await findActive(ctx, userId);
+
+    if (active === null) {
+      console.log("[Sladesh] ingen aktiv udfordring", { userId });
     }
-
-    // Som modtager — præcist indeks-opslag.
-    const asRecipient = await ctx.db
-      .query("sladeshChallenges")
-      .withIndex("by_recipient_and_status", (q) =>
-        q.eq("recipientId", userId).eq("status", ACTIVE_STATUS),
-      )
-      .first();
-
-    if (asRecipient !== null) {
-      console.log("[Sladesh] aktiv udfordring fundet (modtager)", {
-        userId,
-        challengeId: asRecipient._id,
-      });
-      return asRecipient;
-    }
-
-    // Som afsender — nyeste først, filtrér på status.
-    const recentAsSender = await ctx.db
-      .query("sladeshChallenges")
-      .withIndex("by_sender_and_created_at", (q) => q.eq("senderId", userId))
-      .order("desc")
-      .take(SENDER_SCAN_LIMIT);
-
-    const asSender =
-      recentAsSender.find((challenge) => challenge.status === ACTIVE_STATUS) ??
-      null;
-
-    if (asSender !== null) {
-      console.log("[Sladesh] aktiv udfordring fundet (afsender)", {
-        userId,
-        challengeId: asSender._id,
-      });
-      return asSender;
-    }
-
-    console.log("[Sladesh] ingen aktiv udfordring", { userId });
-    return null;
+    return active;
   },
 });
 
@@ -90,29 +104,7 @@ export const getActiveSladeshForUser = query({
 export const hasActiveSladesh = query({
   args: { userId: v.optional(v.id("users")) },
   handler: async (ctx, args): Promise<boolean> => {
-    const viewer = await requireCurrentUser(ctx);
-    const userId = args.userId ?? viewer._id;
-    if (userId !== viewer._id) {
-      await requireCanViewUser(ctx, userId);
-    }
-
-    const asRecipient = await ctx.db
-      .query("sladeshChallenges")
-      .withIndex("by_recipient_and_status", (q) =>
-        q.eq("recipientId", userId).eq("status", ACTIVE_STATUS),
-      )
-      .first();
-
-    if (asRecipient !== null) return true;
-
-    const recentAsSender = await ctx.db
-      .query("sladeshChallenges")
-      .withIndex("by_sender_and_created_at", (q) => q.eq("senderId", userId))
-      .order("desc")
-      .take(SENDER_SCAN_LIMIT);
-
-    return recentAsSender.some(
-      (challenge) => challenge.status === ACTIVE_STATUS,
-    );
+    const userId = await resolveTarget(ctx, args.userId);
+    return (await findActive(ctx, userId)) !== null;
   },
 });

@@ -338,5 +338,10 @@ export default defineSchema({
     .index("by_idempotency_key", ["idempotencyKey"])
     .index("by_sender_and_created_at", ["senderId", "createdAt"])
     .index("by_recipient_and_created_at", ["recipientId", "createdAt"])
+    // De to status-indexes gør opslaget af en brugers AKTIVE udfordring til et
+    // præcist indeks-opslag i begge retninger. Uden `by_sender_and_status`
+    // måtte afsender-siden scanne de seneste N afsendte og filtrere i
+    // hukommelsen — korrekt kun så længe N var stort nok.
+    .index("by_sender_and_status", ["senderId", "status"])
     .index("by_recipient_and_status", ["recipientId", "status"]),
 });
