@@ -44,7 +44,7 @@ bundlingen fejler bagefter med:
 | `npm run build` | Typecheck + produktionsbuild |
 | `npm run check` | `tsc --noEmit` for frontend, Convex-funktioner og scripts |
 | `npm run test:logic` | Rene forretningsregler (stræk, point, drikkedag) — kræver intet deployment |
-| `npm run smoke-test` | Fuld vej mod dev-deploymentet, autentificeret. Kræver to testkonti — se `.env.example` |
+| `npm run smoke-test` | Fuld vej mod dev-deploymentet, autentificeret. Opretter selv sine testkonti |
 | `npm run lint` | oxlint |
 
 ## Struktur
@@ -75,6 +75,11 @@ brugerkonti bevares 1:1. Convex verificerer selv de JWT'er Firebase udsteder —
 Convex Auth-biblioteket bruges ikke.
 
 **Firestore bruges ikke.** Kun `firebase/auth` importeres; databasen er Convex.
+
+Smoke-testen kræver ingen opsætning: den bruger to faste konti
+(`smoke-test+a@` og `smoke-test+b@`) og opretter dem i Firebase Auth første
+gang. Der skal to til, fordi adgangskontrollen mellem brugere ikke kan
+afprøves med én — B skal være logget ind og alligevel afvises på A's Kanal.
 
 Identiteten kommer altid fra det verificerede token, aldrig fra klientens
 argumenter. `users.authId` = tokenets `sub` = Firebase UID. Når data engang

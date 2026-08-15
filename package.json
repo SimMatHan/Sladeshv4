@@ -12,7 +12,7 @@
     "check": "tsc --noEmit -p tsconfig.app.json && tsc --noEmit -p convex/tsconfig.json && tsc --noEmit -p tsconfig.scripts.json",
     "lint": "oxlint",
     "test:logic": "esbuild scripts/logic-test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/logic-test.mjs --log-level=error && node node_modules/.tmp/logic-test.mjs",
-    "smoke-test": "node --experimental-strip-types --env-file=.env.local scripts/smoke-test.ts"
+    "smoke-test": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-test.ts"
   },
   "dependencies": {
     "convex": "^1.43.0",

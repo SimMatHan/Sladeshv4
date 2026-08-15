@@ -5,16 +5,25 @@
  *   npx convex dev --once          # sørg for at seneste kode er deployet
  *   npm run smoke-test
  *
- * Kræver i .env.local (ud over Convex- og Firebase-værdierne) TO dedikerede
- * testkonti i Firebase Auth:
+ * Der kræves INGEN manuel opsætning. Scriptet bruger to faste testkonti og
+ * OPRETTER dem i Firebase Auth første gang, hvis de ikke findes. Kontiene
+ * genbruges derefter.
  *
- *   SMOKE_TEST_EMAIL       SMOKE_TEST_PASSWORD
- *   SMOKE_TEST_EMAIL_2     SMOKE_TEST_PASSWORD_2
+ *   smoke-test+a@sladeshapp.dk
+ *   smoke-test+b@sladeshapp.dk
  *
  * Der skal to konti til, fordi adgangskontrollen mellem brugere ikke kan
  * afprøves med én: bruger B skal forsøge at læse bruger A's Kanal og blive
- * afvist. Begge emails SKAL starte med "smoke-test+", ellers nægter
- * oprydningsmutationen at slette noget. Brug aldrig rigtige brugerkonti.
+ * afvist.
+ *
+ * Vil man overstyre, kan SMOKE_TEST_EMAIL / SMOKE_TEST_PASSWORD og
+ * SMOKE_TEST_EMAIL_2 / SMOKE_TEST_PASSWORD_2 sættes i .env.local. Emailen
+ * SKAL starte med "smoke-test+", ellers nægter oprydningsmutationen at slette
+ * noget. Brug aldrig en rigtig brugerkonto.
+ *
+ * Firebase-kontiene bliver liggende efter testen — kun Convex-data ryddes op.
+ * Det er med vilje, så de kan genbruges. Slet dem i Firebase Console hvis du
+ * vil af med dem.
  *
  * Der logges ind via Firebase Auth REST-API'et frem for browser-SDK'et — det
  * giver det samme ID-token, uden at scriptet skal simulere et browsermiljø.
@@ -27,29 +36,42 @@ import type { Id } from "../convex/_generated/dataModel.js";
 const convexUrl = process.env.VITE_CONVEX_URL ?? process.env.CONVEX_URL;
 const apiKey = process.env.VITE_FIREBASE_API_KEY;
 
+/**
+ * Faste testkonti. Adgangskoden er ikke en hemmelighed — kontiene oprettes af
+ * dette script i dit eget Firebase-projekt, indeholder kun testdata, og er
+ * spærret til "smoke-test+"-præfikset af oprydningsmutationen.
+ */
+const STANDARD_PASSWORD = "smoke-test-kodeord-1234";
+
 const accounts = [
-  { email: process.env.SMOKE_TEST_EMAIL, password: process.env.SMOKE_TEST_PASSWORD },
-  { email: process.env.SMOKE_TEST_EMAIL_2, password: process.env.SMOKE_TEST_PASSWORD_2 },
+  {
+    email: process.env.SMOKE_TEST_EMAIL ?? "smoke-test+a@sladeshapp.dk",
+    password: process.env.SMOKE_TEST_PASSWORD ?? STANDARD_PASSWORD,
+  },
+  {
+    email: process.env.SMOKE_TEST_EMAIL_2 ?? "smoke-test+b@sladeshapp.dk",
+    password: process.env.SMOKE_TEST_PASSWORD_2 ?? STANDARD_PASSWORD,
+  },
 ];
 
 const missing = Object.entries({
   VITE_CONVEX_URL: convexUrl,
   VITE_FIREBASE_API_KEY: apiKey,
-  SMOKE_TEST_EMAIL: accounts[0].email,
-  SMOKE_TEST_PASSWORD: accounts[0].password,
-  SMOKE_TEST_EMAIL_2: accounts[1].email,
-  SMOKE_TEST_PASSWORD_2: accounts[1].password,
 })
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
 if (missing.length > 0) {
-  console.error(`[Smoke] mangler i .env.local: ${missing.join(", ")}`);
+  console.error(
+    `[Smoke] mangler: ${missing.join(", ")}\n` +
+      `  VITE_CONVEX_URL skrives af \`npx convex dev\` til .env.local.\n` +
+      `  VITE_FIREBASE_API_KEY skal stå i .env eller .env.local.`,
+  );
   process.exit(1);
 }
 
 for (const { email } of accounts) {
-  if (!email!.startsWith("smoke-test+")) {
+  if (!email.startsWith("smoke-test+")) {
     console.error(
       `[Smoke] testkonti skal have en email der starter med "smoke-test+" — ` +
         `ellers kan oprydningen ikke køre. Fik: ${email}`,
@@ -85,12 +107,15 @@ async function checkRejected(
   }
 }
 
-/** Logger ind via Firebase Auth REST og returnerer et ID-token. */
-async function firebaseSignIn(
+type FirebaseKonto = { idToken: string; localId: string };
+
+/** Rå kald til Firebase Auth REST. */
+async function identityToolkit(
+  metode: "signInWithPassword" | "signUp",
   mail: string,
   pass: string,
-): Promise<{ idToken: string; localId: string }> {
-  const endpoint = `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`;
+): Promise<{ ok: boolean; body: FirebaseSvar }> {
+  const endpoint = `https://identitytoolkit.googleapis.com/v1/accounts:${metode}?key=${apiKey}`;
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -98,29 +123,86 @@ async function firebaseSignIn(
     body: JSON.stringify({ email: mail, password: pass, returnSecureToken: true }),
   });
 
-  const body = (await response.json()) as {
-    idToken?: string;
-    localId?: string;
-    error?: { message?: string };
-  };
+  return { ok: response.ok, body: (await response.json()) as FirebaseSvar };
+}
 
-  if (!response.ok || !body.idToken) {
+type FirebaseSvar = {
+  idToken?: string;
+  localId?: string;
+  error?: { message?: string };
+};
+
+/**
+ * Logger ind — og opretter kontoen først, hvis den ikke findes.
+ *
+ * Det fjerner et manuelt opsætningstrin: testkontiene behøver ikke være
+ * oprettet i Firebase Console på forhånd. Første kørsel opretter dem,
+ * efterfølgende kørsler genbruger dem.
+ *
+ * Firebase svarer forskelligt på en ukendt konto afhængigt af om
+ * "email enumeration protection" er slået til: enten EMAIL_NOT_FOUND eller
+ * det generiske INVALID_LOGIN_CREDENTIALS. Begge behandles som "prøv at
+ * oprette", og hvis oprettelsen så siger EMAIL_EXISTS, var det i
+ * virkeligheden en forkert adgangskode.
+ */
+async function firebaseSignInOrCreate(
+  mail: string,
+  pass: string,
+): Promise<FirebaseKonto> {
+  const login = await identityToolkit("signInWithPassword", mail, pass);
+  if (login.ok && login.body.idToken) {
+    return { idToken: login.body.idToken, localId: login.body.localId! };
+  }
+
+  const loginFejl = login.body.error?.message ?? "UKENDT_FEJL";
+  const kontoFindesMåskeIkke =
+    loginFejl.startsWith("EMAIL_NOT_FOUND") ||
+    loginFejl.startsWith("INVALID_LOGIN_CREDENTIALS") ||
+    loginFejl.startsWith("INVALID_PASSWORD");
+
+  if (!kontoFindesMåskeIkke) {
+    throw new Error(`Firebase-login fejlede for ${mail}: ${loginFejl}`);
+  }
+
+  console.log(`  opretter testkonto ${mail} …`);
+  const oprettelse = await identityToolkit("signUp", mail, pass);
+
+  if (oprettelse.ok && oprettelse.body.idToken) {
+    return {
+      idToken: oprettelse.body.idToken,
+      localId: oprettelse.body.localId!,
+    };
+  }
+
+  const oprettelseFejl = oprettelse.body.error?.message ?? "UKENDT_FEJL";
+
+  if (oprettelseFejl.startsWith("EMAIL_EXISTS")) {
     throw new Error(
-      `Firebase-login fejlede for ${mail}: ${body.error?.message ?? response.statusText}. ` +
-        `Opret testkontoen i Firebase Console først.`,
+      `Testkontoen ${mail} findes allerede, men adgangskoden passer ikke. ` +
+        `Sæt SMOKE_TEST_PASSWORD i .env.local til den rigtige, eller slet ` +
+        `kontoen i Firebase Console og kør igen.`,
     );
   }
 
-  return { idToken: body.idToken, localId: body.localId! };
+  if (oprettelseFejl.startsWith("OPERATION_NOT_ALLOWED")) {
+    throw new Error(
+      `Email/adgangskode-login er ikke slået til i Firebase-projektet. ` +
+        `Slå det til under Authentication → Sign-in method.`,
+    );
+  }
+
+  throw new Error(
+    `Kunne ikke oprette testkontoen ${mail}: ${oprettelseFejl}`,
+  );
 }
 
 async function main(): Promise<void> {
   console.log(`[Smoke] kører mod ${convexUrl}`);
 
   // 0. Login -------------------------------------------------------------
-  console.log("\n[Smoke] 0/7 logger begge testkonti ind via Firebase");
-  const a = await firebaseSignIn(accounts[0].email!, accounts[0].password!);
-  const b = await firebaseSignIn(accounts[1].email!, accounts[1].password!);
+  console.log("\n[Smoke] 0/7 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
+  const a = await firebaseSignInOrCreate(accounts[0].email, accounts[0].password);
+  const b = await firebaseSignInOrCreate(accounts[1].email, accounts[1].password);
   console.log(`  A: ${a.localId}`);
   console.log(`  B: ${b.localId}`);
 
@@ -147,7 +229,7 @@ async function main(): Promise<void> {
 
     const me = await klientA.query(api.users.getMe, {});
     check("authId = Firebase UID", me?.authId, a.localId);
-    check("email fra token", me?.email, accounts[0].email!.toLowerCase());
+    check("email fra token", me?.email, accounts[0].email.toLowerCase());
 
     const igen = await klientA.mutation(api.users.createUser, {});
     check("createUser er idempotent", igen, userIdA);
