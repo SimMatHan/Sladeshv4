@@ -13,7 +13,8 @@
     "lint": "oxlint",
     "test:logic": "esbuild scripts/logic-test.ts --bundle --platform=node --format=esm --outfile=node_modules/.tmp/logic-test.mjs --log-level=error && node node_modules/.tmp/logic-test.mjs",
     "smoke-test": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-test.ts",
-    "datarevision": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/datarevision.ts"
+    "datarevision": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/datarevision.ts",
+    "migrer": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/migrer.ts"
   },
   "dependencies": {
     "convex": "^1.43.0",

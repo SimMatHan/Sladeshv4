@@ -73,6 +73,7 @@ export const logDrink = mutation({
       currentDayStreak: user.currentDayStreak,
       longestStreak: user.longestStreak,
       categoryId: args.categoryId,
+      sizeMultiplier: size?.multiplier,
     });
 
     const points = pointsForDrink(args.categoryId, size?.multiplier);

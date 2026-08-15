@@ -61,6 +61,9 @@ export const cleanupSmokeTest = mutation({
       const kanal = await ctx.db.get(channelId);
       if (kanal === null) continue;
       if (kanal.createdBy !== user._id) continue;
+      // `code` er valgfri i schemaet — en Kanal uden kode kan pr. definition
+      // ikke være smoke-test-data, så den røres ikke.
+      if (kanal.code === undefined) continue;
       if (!kanal.code.startsWith(SMOKE_KANAL_PREFIX)) continue;
       await ctx.db.delete(kanal._id);
       deleted.kanaler++;
