@@ -5,8 +5,15 @@
  *
  * Kør — tørkørsel er DEFAULT:
  *   export GOOGLE_APPLICATION_CREDENTIALS=~/.config/sladesh/datarevision-key.json
- *   npx convex env set MIGRATION_SECRET "$(openssl rand -hex 32)"
- *   export MIGRATION_SECRET=<samme værdi>
+ *
+ *   # Generér hemmeligheden ÉN gang og brug den begge steder — ellers kender
+ *   # du den ikke selv bagefter:
+ *   export MIGRATION_SECRET=$(openssl rand -hex 32)
+ *   npx convex env set MIGRATION_SECRET "$MIGRATION_SECRET"
+ *
+ *   # I en ny terminal hentes den tilbage fra deploymentet:
+ *   #   export MIGRATION_SECRET=$(npx convex env get MIGRATION_SECRET)
+ *
  *   npm run migrer                    # tørkørsel: læser, transformerer, rapporterer
  *   npm run migrer -- --skriv         # skriver rigtigt
  *   npm run migrer -- --skriv --ryd   # rydder først (kun til gentagne dev-kørsler)
@@ -24,6 +31,7 @@
 
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
@@ -63,6 +71,7 @@ if (ryd && !skriv) {
 
 initializeApp({ credential: applicationDefault(), projectId: projektId });
 const db = getFirestore();
+const auth = getAuth();
 const convex = new ConvexHttpClient(convexUrl!);
 
 // ---------------------------------------------------------------------------
@@ -148,6 +157,20 @@ async function main(): Promise<void> {
   // --- Læs alt fra Firestore -----------------------------------------------
   console.log("[Migrering] læser Firestore …");
 
+  // Auth-UID'erne skal med, så vi kan se HVILKE brugere der ikke kan logge
+  // ind efter migreringen. Det kan ikke afgøres ud fra dokument-id'ets form:
+  // det afvigende dokument har et helt normalt 28-tegns id, det findes bare
+  // ikke i Firebase Auth længere.
+  const authUids = new Set<string>();
+  {
+    let sideToken: string | undefined = undefined;
+    do {
+      const side = await auth.listUsers(1000, sideToken);
+      for (const bruger of side.users) authUids.add(bruger.uid);
+      sideToken = side.pageToken;
+    } while (sideToken);
+  }
+
   const brugerSnap = await db.collection("users").get();
   const kanalSnap = await db.collection("channels").get();
   const checkInSnap = await db.collectionGroup("checkIns").get();
@@ -155,7 +178,8 @@ async function main(): Promise<void> {
   const beaconSnap = await db.collection("stressBeacons").get();
 
   console.log(
-    `[Migrering]   ${brugerSnap.size} brugere, ${kanalSnap.size} kanaler, ` +
+    `[Migrering]   ${authUids.size} Auth-brugere, ` +
+      `${brugerSnap.size} brugere, ${kanalSnap.size} kanaler, ` +
       `${checkInSnap.size} check ins, ${drinkLogSnap.size} drikkelogninger, ` +
       `${beaconSnap.size} beacons`,
   );
@@ -245,13 +269,25 @@ async function main(): Promise<void> {
     };
   });
 
-  // Firebase UID er 28 tegn. Et dokument-id der ikke ligner et, kan ikke
-  // logge ind — datarevisionen fandt præcis ét.
-  const mistænkelige = brugere.filter((b) => b.authId.length !== 28);
-  if (mistænkelige.length > 0) {
+  // Kan brugeren logge ind bagefter? Det afgøres af, om dokument-id'et
+  // faktisk findes i Firebase Auth — ikke af hvordan id'et ser ud.
+  const udenAuthKonto = brugere.filter((b) => !authUids.has(b.authId));
+  if (udenAuthKonto.length > 0) {
     noter.push(
-      `${mistænkelige.length} bruger(e) har et dokument-id der ikke ligner et ` +
-        "Firebase UID. De migreres, men kan ikke logge ind før de kobles manuelt.",
+      `${udenAuthKonto.length} bruger(e) har intet tilsvarende Firebase ` +
+        "Auth-login. De migreres (så deres historik bevares), men kan ikke " +
+        "logge ind før kontoen genskabes eller authId kobles manuelt.",
+    );
+  }
+
+  // Den anden vej: Auth-konti uden profil migreres ikke — de får en profil
+  // første gang de logger ind i den nye app.
+  const brugerDokIds = new Set(brugere.map((b) => b.authId));
+  const authUdenProfil = [...authUids].filter((uid) => !brugerDokIds.has(uid));
+  if (authUdenProfil.length > 0) {
+    noter.push(
+      `${authUdenProfil.length} Firebase Auth-konto(er) har ingen profil og ` +
+        "migreres ikke. De får en profil første gang de logger ind.",
     );
   }
 
@@ -502,7 +538,7 @@ async function main(): Promise<void> {
   for (const portion of portioner(brugere, 50)) {
     Object.assign(
       brugerMap,
-      await convex.mutation(api.migrering.indsætBrugere, {
+      await convex.mutation(api.migrering.opretBrugere, {
         secret: secret!,
         brugere: portion,
       }),
@@ -511,7 +547,7 @@ async function main(): Promise<void> {
   console.log(`  ${Object.keys(brugerMap).length} brugere`);
 
   console.log("[Migrering] 2/5 indsætter kanaler …");
-  const kanalMap = await convex.mutation(api.migrering.indsætKanaler, {
+  const kanalMap = await convex.mutation(api.migrering.opretKanaler, {
     secret: secret!,
     kanaler: kanaler.map((k) => ({
       firestoreId: k.firestoreId,
@@ -578,7 +614,7 @@ async function main(): Promise<void> {
 
   console.log("[Migrering] 4/5 indsætter historik …");
   for (const portion of portioner(checkIns, 200)) {
-    await convex.mutation(api.migrering.indsætCheckIns, {
+    await convex.mutation(api.migrering.opretCheckIns, {
       secret: secret!,
       rækker: portion.flatMap((r) => {
         const userId = brugerMap[r.ejerFirestoreId];
@@ -601,7 +637,7 @@ async function main(): Promise<void> {
   console.log(`  ${checkIns.length} check ins`);
 
   for (const portion of portioner(drinkLogs, 200)) {
-    await convex.mutation(api.migrering.indsætDrinkLogs, {
+    await convex.mutation(api.migrering.opretDrinkLogs, {
       secret: secret!,
       rækker: portion.flatMap((r) => {
         const { ejerFirestoreId, kanalFirestoreId, ...felter } = r;
@@ -621,7 +657,7 @@ async function main(): Promise<void> {
   console.log(`  ${drinkLogs.length} drikkelogninger`);
 
   for (const portion of portioner(achievements, 200)) {
-    await convex.mutation(api.migrering.indsætAchievements, {
+    await convex.mutation(api.migrering.opretAchievements, {
       secret: secret!,
       rækker: portion.flatMap((r) => {
         const { ejerFirestoreId, ...felter } = r;
@@ -634,7 +670,7 @@ async function main(): Promise<void> {
   console.log(`  ${achievements.length} achievements`);
 
   if (beacons.length > 0) {
-    await convex.mutation(api.migrering.indsætBeacons, {
+    await convex.mutation(api.migrering.opretBeacons, {
       secret: secret!,
       rækker: beacons.flatMap((r) => {
         const { opretterFirestoreId, ...felter } = r;
@@ -661,7 +697,7 @@ async function main(): Promise<void> {
   const status = await convex.query(api.migrering.status, { secret: secret! });
   console.log(`  rækker i Convex: ${JSON.stringify(status)}`);
 
-  const døde = await convex.query(api.migrering.findDødeReferencer, {
+  const døde = await convex.query(api.migrering.findBrudteReferencer, {
     secret: secret!,
   });
   const dødeIAlt = Object.values(døde).reduce((a, b) => a + b, 0);

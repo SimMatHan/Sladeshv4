@@ -18,7 +18,12 @@ import { computeStreak, pointsForDrink } from "./streaks";
  * I stedet er hver funktion spærret af en hemmelighed, der kun findes som
  * deployment-variabel:
  *
- *   npx convex env set MIGRATION_SECRET "$(openssl rand -hex 32)"
+ *   export MIGRATION_SECRET=$(openssl rand -hex 32)
+ *   npx convex env set MIGRATION_SECRET "$MIGRATION_SECRET"
+ *
+ * Generér den ÉN gang i en shell-variabel og brug den begge steder — sætter
+ * man den direkte med `$(openssl …)`, kender man den aldrig selv. Den kan
+ * hentes tilbage med `npx convex env get MIGRATION_SECRET`.
  *
  * Effekten er den samme — en klient uden hemmeligheden kan intet — og
  * spærren kan fjernes permanent efter cutover:
@@ -27,6 +32,13 @@ import { computeStreak, pointsForDrink } from "./streaks";
  *
  * Uden variablen sat afviser hver eneste funktion herunder. Hele filen bør
  * slettes, når migreringen er endeligt gennemført.
+ *
+ * OM NAVNGIVNINGEN: Convex tillader kun alfanumeriske tegn og understreg i
+ * eksporterede funktionsnavne — æ, ø og å afvises ved push med
+ * `InvalidFunctionName`. Projektets danske navnekonvention gælder derfor
+ * kommentarer, variabler og dataværdier, men eksporterede funktioner skal
+ * bruge danske ord der er ren ASCII ("opret" frem for "indsæt", "brudte"
+ * frem for "døde").
  */
 
 /**
@@ -177,7 +189,7 @@ const brugerFelter = v.object({
   updatedAt: v.optional(v.number()),
 });
 
-export const indsætBrugere = mutation({
+export const opretBrugere = mutation({
   args: { ...hemmelighed, brugere: v.array(brugerFelter) },
   handler: async (ctx, args): Promise<Record<string, Id<"users">>> => {
     kræverHemmelighed(args.secret);
@@ -211,7 +223,7 @@ export const indsætBrugere = mutation({
 // Trin 2: kanaler
 // ---------------------------------------------------------------------------
 
-export const indsætKanaler = mutation({
+export const opretKanaler = mutation({
   args: {
     ...hemmelighed,
     kanaler: v.array(
@@ -288,7 +300,7 @@ export const koblBrugereTilKanaler = mutation({
 // Trin 4: historik
 // ---------------------------------------------------------------------------
 
-export const indsætCheckIns = mutation({
+export const opretCheckIns = mutation({
   args: {
     ...hemmelighed,
     rækker: v.array(
@@ -308,7 +320,7 @@ export const indsætCheckIns = mutation({
   },
 });
 
-export const indsætDrinkLogs = mutation({
+export const opretDrinkLogs = mutation({
   args: {
     ...hemmelighed,
     rækker: v.array(
@@ -339,7 +351,7 @@ export const indsætDrinkLogs = mutation({
   },
 });
 
-export const indsætAchievements = mutation({
+export const opretAchievements = mutation({
   args: {
     ...hemmelighed,
     rækker: v.array(
@@ -361,7 +373,7 @@ export const indsætAchievements = mutation({
   },
 });
 
-export const indsætBeacons = mutation({
+export const opretBeacons = mutation({
   args: {
     ...hemmelighed,
     rækker: v.array(
@@ -477,7 +489,7 @@ export const findBrugerViaAuthId = query({
 });
 
 /** Leder efter referencer der peger på rækker som ikke findes. */
-export const findDødeReferencer = query({
+export const findBrudteReferencer = query({
   args: hemmelighed,
   handler: async (ctx, args): Promise<Record<string, number>> => {
     kræverHemmelighed(args.secret);
