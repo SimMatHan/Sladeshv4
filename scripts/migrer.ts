@@ -31,6 +31,7 @@
 
 import { initializeApp, applicationDefault } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth } from "firebase-admin/auth";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
 import type { Id } from "../convex/_generated/dataModel.js";
@@ -70,6 +71,7 @@ if (ryd && !skriv) {
 
 initializeApp({ credential: applicationDefault(), projectId: projektId });
 const db = getFirestore();
+const auth = getAuth();
 const convex = new ConvexHttpClient(convexUrl!);
 
 // ---------------------------------------------------------------------------
@@ -155,6 +157,20 @@ async function main(): Promise<void> {
   // --- Læs alt fra Firestore -----------------------------------------------
   console.log("[Migrering] læser Firestore …");
 
+  // Auth-UID'erne skal med, så vi kan se HVILKE brugere der ikke kan logge
+  // ind efter migreringen. Det kan ikke afgøres ud fra dokument-id'ets form:
+  // det afvigende dokument har et helt normalt 28-tegns id, det findes bare
+  // ikke i Firebase Auth længere.
+  const authUids = new Set<string>();
+  {
+    let sideToken: string | undefined = undefined;
+    do {
+      const side = await auth.listUsers(1000, sideToken);
+      for (const bruger of side.users) authUids.add(bruger.uid);
+      sideToken = side.pageToken;
+    } while (sideToken);
+  }
+
   const brugerSnap = await db.collection("users").get();
   const kanalSnap = await db.collection("channels").get();
   const checkInSnap = await db.collectionGroup("checkIns").get();
@@ -162,7 +178,8 @@ async function main(): Promise<void> {
   const beaconSnap = await db.collection("stressBeacons").get();
 
   console.log(
-    `[Migrering]   ${brugerSnap.size} brugere, ${kanalSnap.size} kanaler, ` +
+    `[Migrering]   ${authUids.size} Auth-brugere, ` +
+      `${brugerSnap.size} brugere, ${kanalSnap.size} kanaler, ` +
       `${checkInSnap.size} check ins, ${drinkLogSnap.size} drikkelogninger, ` +
       `${beaconSnap.size} beacons`,
   );
@@ -252,13 +269,25 @@ async function main(): Promise<void> {
     };
   });
 
-  // Firebase UID er 28 tegn. Et dokument-id der ikke ligner et, kan ikke
-  // logge ind — datarevisionen fandt præcis ét.
-  const mistænkelige = brugere.filter((b) => b.authId.length !== 28);
-  if (mistænkelige.length > 0) {
+  // Kan brugeren logge ind bagefter? Det afgøres af, om dokument-id'et
+  // faktisk findes i Firebase Auth — ikke af hvordan id'et ser ud.
+  const udenAuthKonto = brugere.filter((b) => !authUids.has(b.authId));
+  if (udenAuthKonto.length > 0) {
     noter.push(
-      `${mistænkelige.length} bruger(e) har et dokument-id der ikke ligner et ` +
-        "Firebase UID. De migreres, men kan ikke logge ind før de kobles manuelt.",
+      `${udenAuthKonto.length} bruger(e) har intet tilsvarende Firebase ` +
+        "Auth-login. De migreres (så deres historik bevares), men kan ikke " +
+        "logge ind før kontoen genskabes eller authId kobles manuelt.",
+    );
+  }
+
+  // Den anden vej: Auth-konti uden profil migreres ikke — de får en profil
+  // første gang de logger ind i den nye app.
+  const brugerDokIds = new Set(brugere.map((b) => b.authId));
+  const authUdenProfil = [...authUids].filter((uid) => !brugerDokIds.has(uid));
+  if (authUdenProfil.length > 0) {
+    noter.push(
+      `${authUdenProfil.length} Firebase Auth-konto(er) har ingen profil og ` +
+        "migreres ikke. De får en profil første gang de logger ind.",
     );
   }
 
