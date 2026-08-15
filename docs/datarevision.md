@@ -291,5 +291,139 @@ Bekræftet: begge felter er 0 for alle brugere, præcis som kodelæsningen sagde
 
 ## 5. Hvad revisionen kalder på
 
-Udfyldes ud fra tallene ovenfor. Tommelfingerregler: en afvigelse der rammer få dokumenter renses i migreringen; en der rammer de fleste, peger på at schemaet er forkert.
+*Skrevet i hånden ud fra tallene ovenfor. Genereres ikke af scriptet.*
 
+### Grønt lys på det vigtigste
+
+**Auth-antagelsen holder.** 31 af 32 brugerdokumenter har et id der er et
+Firebase UID. Det ene der ikke gør, er ét dokument — det håndteres individuelt,
+ikke ved at lave koblingen om. Fase 3's arkitektur står.
+
+**Alle 36 Auth-brugere bruger `password`.** Der er nul Google-brugere i
+produktion, selvom koden understøtter det. Google-login er altså aldrig blevet
+brugt og er utestet i praksis — det kan nedprioriteres uden at ramme nogen.
+
+**Referentiel integritet er næsten perfekt.** `channels.members` og
+`users.joinedChannelIds` er enige i 100% af tilfældene, og der er nul
+forældreløse dokumenter. Kun to døde kanalreferencer i alt.
+
+**Datasættet er lille:** 32 brugere, 1.725 drikkelogninger, 306 check ins,
+5 kanaler, 1 beacon, 0 beskeder, 0 Sladesh-udfordringer. Migreringen bliver
+hurtig, og en fejlet kørsel er billig at gentage.
+
+### Den dominerende afvigelse er ikke en schemafejl
+
+343 af de i alt ~350 afvigelser er den samme ting: **Firestore gemmer
+eksplicit `null`, hvor Convex' `v.optional()` betyder "feltet er der ikke".**
+
+| Felt | Antal `null` |
+|---|---|
+| `drinkLogs.location` | 310 |
+| `users.lastSladeshSentAt` | 11 |
+| `users.photoURL` | 10 |
+| `users.promille.gender` | 6 (sandsynligvis, se nedenfor) |
+| `users.lastDrinkAt` | 2 |
+
+Det kræver ingen schemaændring — migreringen skal droppe felter med værdien
+`null` frem for at skrive dem. Én linje i transformationen fjerner dem alle.
+
+`promille.gender` er den eneste af dem vi ikke har bevis for. UI'et tilbyder
+kun `male`/`female` (`Settings.tsx:390`), så en tredje gyldig værdi findes
+ikke. Mønstret peger entydigt på `null`, men **migreringsscriptet skal logge
+de faktiske afvigende værdier**, så vi ved det frem for at antage det.
+
+### Fire rigtige schemaændringer
+
+1. **`kanaler.code` → `v.optional(v.string())`**
+   Én kanal mangler koden. Det er efter al sandsynlighed "Den Åbne Kanal", som
+   alle joiner automatisk og derfor aldrig har haft brug for en invitationskode.
+   Schemaet gjorde den påkrævet; virkeligheden siger andet.
+
+2. **`kanaler.createdBy` → `v.optional(v.id("users"))`**
+   To kanaler mangler feltet. De er oprettet før feltet fandtes. Alternativet
+   — at tildele dem en admin ved migrering — opfinder data der ikke er.
+
+3. **`beacons` har helt forkert form.** Jeg designede tabellen ud fra
+   `adminService.createStressSignal()`, som skriver flade `lat`/`lng`. Det
+   eneste faktiske dokument har i stedet:
+
+   ```
+   location: { lat, lng }        ← objekt, ikke flade felter
+   expiresAt                     ← ikke i schemaet
+   lastNotificationSentAt        ← ikke i schemaet
+   ```
+   og mangler `lat`, `lng`, `radius`, `title` og `type`, som schemaet kræver.
+   Der findes altså en anden skrivevej end den jeg læste. Tabellen skal
+   omskrives efter dataene: `location` som objekt, `expiresAt` og
+   `lastNotificationSentAt` med, og `title`/`type`/`radius` valgfrie.
+
+4. **`drinkLogs.action` → `v.optional(v.string())`**
+   109 rækker har feltet. Se næste afsnit — det er ikke dødt.
+
+### Fundet der betyder mest teknisk: negative logrækker
+
+De 109 rækker med `action: "remove"` er *fortrydelser* af en logning, og de
+bærer en **negativ** `sizeMultiplier` (`drinkService.ts:281`):
+
+```js
+addDoc(drinkLogsRef, { action: 'remove', sizeMultiplier: -sizeMultiplier, … })
+```
+
+Scoreboardets aggregering summerer `sizeMultiplier` direkte:
+
+```ts
+const drinks = (previous?.drinks ?? 0) + (log.sizeMultiplier ?? 1);
+```
+
+Det betyder, at fortrydelser **allerede trækkes korrekt fra** — fortegnet bærer
+semantikken, og aggregeringen behøver ikke kende til `action`. Det var ikke et
+bevidst design fra min side; det er heldigt, og det er værd at have en test på,
+så det ikke går i stykker ved et uheld.
+
+To konsekvenser:
+- `pointsForDrink()` skal have samme behandling ved genberegning af
+  `totalPoints`, ellers tælles fortrudte genstande med som point.
+- **Der findes ingen `removeDrink`-mutation i det nye system endnu.** `logDrink`
+  har ingen modpart. Det er et funktionelt hul, ikke et migreringsproblem.
+
+### Fjernede tællere: beslutningen var rigtig, men brugerne vil se det
+
+20 af 32 brugere har en `totalDrinks`, der **ikke** stemmer med deres egne
+logrækker. Største afvigelse er 76 genstande, gennemsnittet blandt de uenige
+er 12,33.
+
+Det bekræfter, at de denormaliserede tællere var upålidelige, og at det var
+rigtigt at fjerne dem. Men det betyder også, at godt to tredjedele af brugerne
+vil se et **andet tal på deres profil** efter migreringen. Det er ikke en fejl
+— det nye tal er det rigtige — men det bør nævnes for brugerne frem for at
+komme bag på dem.
+
+### Bekræftet uden ændringer
+
+- `stats.currentStreak` og `stats.totalPoints` er 0 for **alle** 32 brugere,
+  præcis som kodelæsningen sagde. At fjerne `currentStreak` og indføre et nyt
+  pointbegreb kaster ingen data væk.
+- `checkIns`: 306 dokumenter, **nul** afvigelser. Tabellen er korrekt som den er.
+- `messages` og `sladeshChallenges` er tomme. Ingen billeder skal flyttes til
+  Convex storage, og Sladesh-livscyklussen kan bygges uden hensyn til
+  eksisterende data.
+
+### Døde felter der kan droppes ved migrering
+
+`users` har 21 felter uden for schemaet. De fleste er erstattet af noget bedre
+eller aldrig taget i brug: `uid` (= dokument-id'et), `initials`, `username`,
+`avatarGradient`, `stats`, `drinkTypes`, `drinkVariations`,
+`allTimeDrinkVariations`, `currentRunDrinkCount`, `currentRunDrinkTypes`,
+`totalDrinks`, `achievements` (bliver til rækker), `activeSladesh` (fjernet
+bevidst i fase 3), `lastMessageViewedAt`, `messageCount`,
+`lastMessagePeriodReset`, `lastUsageReminderAt`, `lastUsageReminderSlot`,
+`lastNotificationSeenAt`, `locationPermissionGranted`, `lastActiveAt`.
+
+Bemærk at `drinkTypes` har **to forskellige typer** i produktionen — `array` i
+20 dokumenter, `object` i 12. Endnu et argument for at feltet skal væk frem
+for at migreres.
+
+De sidste fem er ikke dødt gods, men features vi ikke har modelleret endnu:
+beskedbegrænsning (`messageCount`, `lastMessagePeriodReset`), brugspåmindelser
+(`lastUsageReminderAt`, `lastUsageReminderSlot`) og notifikationer
+(`lastNotificationSeenAt`). De hører til en senere fase, ikke migreringen.
