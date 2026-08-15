@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Miljøvariabler. `*.local` ovenfor dækker allerede .env.local; denne linje
+# dækker .env, som ellers ville blive committet.
+.env
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
