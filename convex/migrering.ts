@@ -30,7 +30,6 @@ import { computeStreak, pointsForDrink } from "./streaks";
  *
  *   npx convex env remove MIGRATION_SECRET
  *
-<<<<<<< HEAD
  * Uden variablen sat afviser hver eneste funktion herunder. Hele filen bør
  * slettes, når migreringen er endeligt gennemført.
  *
@@ -40,10 +39,6 @@ import { computeStreak, pointsForDrink } from "./streaks";
  * kommentarer, variabler og dataværdier, men eksporterede funktioner skal
  * bruge danske ord der er ren ASCII ("opret" frem for "indsæt", "brudte"
  * frem for "døde").
-=======
- * Uden variablen sat afviser hver eneste funktion herunder. Hele filen boer
- * slettes, naar migreringen er endeligt gennemfoert.
->>>>>>> ff1ab88 (rettelser)
  */
 
 /**
@@ -194,11 +189,7 @@ const brugerFelter = v.object({
   updatedAt: v.optional(v.number()),
 });
 
-<<<<<<< HEAD
 export const opretBrugere = mutation({
-=======
-export const indsaetBrugere = mutation({
->>>>>>> ff1ab88 (rettelser)
   args: { ...hemmelighed, brugere: v.array(brugerFelter) },
   handler: async (ctx, args): Promise<Record<string, Id<"users">>> => {
     kraeverHemmelighed(args.secret);
@@ -232,11 +223,7 @@ export const indsaetBrugere = mutation({
 // Trin 2: kanaler
 // ---------------------------------------------------------------------------
 
-<<<<<<< HEAD
 export const opretKanaler = mutation({
-=======
-export const indsaetKanaler = mutation({
->>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
     kanaler: v.array(
@@ -313,11 +300,7 @@ export const koblBrugereTilKanaler = mutation({
 // Trin 4: historik
 // ---------------------------------------------------------------------------
 
-<<<<<<< HEAD
 export const opretCheckIns = mutation({
-=======
-export const indsaetCheckIns = mutation({
->>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
     raekker: v.array(
@@ -337,11 +320,7 @@ export const indsaetCheckIns = mutation({
   },
 });
 
-<<<<<<< HEAD
 export const opretDrinkLogs = mutation({
-=======
-export const indsaetDrinkLogs = mutation({
->>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
     raekker: v.array(
@@ -372,11 +351,7 @@ export const indsaetDrinkLogs = mutation({
   },
 });
 
-<<<<<<< HEAD
 export const opretAchievements = mutation({
-=======
-export const indsaetAchievements = mutation({
->>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
     raekker: v.array(
@@ -398,11 +373,7 @@ export const indsaetAchievements = mutation({
   },
 });
 
-<<<<<<< HEAD
 export const opretBeacons = mutation({
-=======
-export const indsaetBeacons = mutation({
->>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
     raekker: v.array(
@@ -517,13 +488,8 @@ export const findBrugerViaAuthId = query({
   },
 });
 
-<<<<<<< HEAD
 /** Leder efter referencer der peger på rækker som ikke findes. */
 export const findBrudteReferencer = query({
-=======
-/** Leder efter referencer der peger paa raekker som ikke findes. */
-export const findDoedeReferencer = query({
->>>>>>> ff1ab88 (rettelser)
   args: hemmelighed,
   handler: async (ctx, args): Promise<Record<string, number>> => {
     kraeverHemmelighed(args.secret);
