@@ -7,6 +7,7 @@ import {
   getDrinkDayStart,
   isDrinkCategory,
 } from "./constants";
+import { requireKanalMedlem } from "./identity";
 
 /**
  * Scoreboard.
@@ -54,11 +55,9 @@ export const getScoreboard = query({
     const now = args.now ?? Date.now();
     const dayStart = getDrinkDayStart(now);
 
-    const kanal = await ctx.db.get(args.channelId);
-    if (kanal === null) {
-      console.log("[Scoreboard] ukendt kanal", { channelId: args.channelId });
-      return [];
-    }
+    // Kun medlemmer må se en Kanals stilling. Kaster hvis Kanalen ikke findes
+    // eller den indloggede bruger ikke er medlem.
+    const { kanal } = await requireKanalMedlem(ctx, args.channelId);
 
     console.log("[Scoreboard] beregner stilling", {
       kanal: kanal.name,
