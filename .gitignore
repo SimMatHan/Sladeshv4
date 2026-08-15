@@ -16,6 +16,14 @@ dist-ssr
 # dækker .env, som ellers ville blive committet.
 .env
 
+# Service-account-nøgler. Sikkerhedsnet — nøglen bør ligge helt uden for
+# repoet, se docs/datarevision-setup.md. Til forskel fra Firebase-web-nøglerne
+# er disse RIGTIGE hemmeligheder.
+*service-account*.json
+*serviceaccount*.json
+*-adminsdk-*.json
+serviceAccountKey.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
