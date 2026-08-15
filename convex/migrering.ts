@@ -6,16 +6,16 @@ import { computeStreak, pointsForDrink } from "./streaks";
 /**
  * Migrering fra Firestore til Convex.
  *
- * Kaldes af scripts/migrer.ts, som læser produktions-Firestore lokalt og
- * sender transformerede rækker herind.
+ * Kaldes af scripts/migrer.ts, som laeser produktions-Firestore lokalt og
+ * sender transformerede raekker herind.
  *
- * OM ADGANGSKONTROLLEN: fase 5's oplæg bad om `internalMutation`, så
+ * OM ADGANGSKONTROLLEN: fase 5's oplaeg bad om `internalMutation`, saa
  * funktionerne ikke er kaldbare fra klienten. Det er ikke praktisk muligt her:
  * `ConvexHttpClient` eksponerer ikke admin-auth (`adminAuth` er privat), og
- * `npx convex run` tager sine argumenter som JSON på kommandolinjen — 1.725
- * drikkelogninger går ikke gennem et argv.
+ * `npx convex run` tager sine argumenter som JSON paa kommandolinjen — 1.725
+ * drikkelogninger gaar ikke gennem et argv.
  *
- * I stedet er hver funktion spærret af en hemmelighed, der kun findes som
+ * I stedet er hver funktion spaerret af en hemmelighed, der kun findes som
  * deployment-variabel:
  *
  *   export MIGRATION_SECRET=$(openssl rand -hex 32)
@@ -26,10 +26,11 @@ import { computeStreak, pointsForDrink } from "./streaks";
  * hentes tilbage med `npx convex env get MIGRATION_SECRET`.
  *
  * Effekten er den samme — en klient uden hemmeligheden kan intet — og
- * spærren kan fjernes permanent efter cutover:
+ * spaerren kan fjernes permanent efter cutover:
  *
  *   npx convex env remove MIGRATION_SECRET
  *
+<<<<<<< HEAD
  * Uden variablen sat afviser hver eneste funktion herunder. Hele filen bør
  * slettes, når migreringen er endeligt gennemført.
  *
@@ -39,13 +40,17 @@ import { computeStreak, pointsForDrink } from "./streaks";
  * kommentarer, variabler og dataværdier, men eksporterede funktioner skal
  * bruge danske ord der er ren ASCII ("opret" frem for "indsæt", "brudte"
  * frem for "døde").
+=======
+ * Uden variablen sat afviser hver eneste funktion herunder. Hele filen boer
+ * slettes, naar migreringen er endeligt gennemfoert.
+>>>>>>> ff1ab88 (rettelser)
  */
 
 /**
- * Læser en deployment-variabel uden at kræve node-typer.
+ * Laeser en deployment-variabel uden at kraeve node-typer.
  *
- * Denne fil indgår i `api`-modulgrafen, som frontenden importerer, så den
- * typechecker OGSÅ i frontend-programmet — og dér findes `process` ikke.
+ * Denne fil indgaar i `api`-modulgrafen, som frontenden importerer, saa den
+ * typechecker OGSaa i frontend-programmet — og dér findes `process` ikke.
  * `convex/auth.config.ts` slipper for det, fordi codegen udelader filer med
  * mere end ét punktum i navnet.
  */
@@ -56,15 +61,15 @@ function deploymentVariabel(navn: string): string | undefined {
   return g.process?.env?.[navn];
 }
 
-function kræverHemmelighed(secret: string): void {
+function kraeverHemmelighed(secret: string): void {
   const forventet = deploymentVariabel("MIGRATION_SECRET");
 
   if (!forventet) {
     throw new ConvexError({
       code: "MIGRATION_DISABLED",
       message:
-        "MIGRATION_SECRET er ikke sat på deploymentet. Migreringsfunktionerne " +
-        "er slået fra. Kør: npx convex env set MIGRATION_SECRET <hemmelighed>",
+        "MIGRATION_SECRET er ikke sat paa deploymentet. Migreringsfunktionerne " +
+        "er slaaet fra. Koer: npx convex env set MIGRATION_SECRET <hemmelighed>",
     });
   }
 
@@ -78,11 +83,11 @@ function kræverHemmelighed(secret: string): void {
 
 const hemmelighed = { secret: v.string() };
 
-/** Tæller rækker per tabel, så scriptet kan se om der allerede er data. */
+/** Taeller raekker per tabel, saa scriptet kan se om der allerede er data. */
 export const status = query({
   args: hemmelighed,
   handler: async (ctx, args): Promise<Record<string, number>> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
     const tabeller = [
       "users",
       "kanaler",
@@ -103,15 +108,15 @@ export const status = query({
 });
 
 /**
- * Rydder ALT migreret data. Kun til gentagne tørkørsler mod dev.
+ * Rydder ALT migreret data. Kun til gentagne toerkoersler mod dev.
  *
  * Bevidst destruktiv og bevidst eksplicit: scriptet kalder den kun med et
- * udtrykkeligt flag, og den kræver samme hemmelighed som resten.
+ * udtrykkeligt flag, og den kraever samme hemmelighed som resten.
  */
 export const ryd = mutation({
   args: hemmelighed,
   handler: async (ctx, args): Promise<Record<string, number>> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
     const tabeller = [
       "achievements",
       "drinkLogs",
@@ -125,9 +130,9 @@ export const ryd = mutation({
 
     const slettet: Record<string, number> = {};
     for (const tabel of tabeller) {
-      const rækker = await ctx.db.query(tabel).collect();
-      for (const række of rækker) await ctx.db.delete(række._id);
-      slettet[tabel] = rækker.length;
+      const raekker = await ctx.db.query(tabel).collect();
+      for (const raekke of raekker) await ctx.db.delete(raekke._id);
+      slettet[tabel] = raekker.length;
     }
 
     console.log("[Migrering] alt data ryddet", slettet);
@@ -136,11 +141,11 @@ export const ryd = mutation({
 });
 
 // ---------------------------------------------------------------------------
-// Trin 1: brugere (uden kanalreferencer — de sættes i trin 3)
+// Trin 1: brugere (uden kanalreferencer — de saettes i trin 3)
 // ---------------------------------------------------------------------------
 
 const brugerFelter = v.object({
-  /** Firestore-dokument-id, så scriptet kan bygge id-mappingen. */
+  /** Firestore-dokument-id, saa scriptet kan bygge id-mappingen. */
   firestoreId: v.string(),
   authId: v.string(),
   email: v.string(),
@@ -189,10 +194,14 @@ const brugerFelter = v.object({
   updatedAt: v.optional(v.number()),
 });
 
+<<<<<<< HEAD
 export const opretBrugere = mutation({
+=======
+export const indsaetBrugere = mutation({
+>>>>>>> ff1ab88 (rettelser)
   args: { ...hemmelighed, brugere: v.array(brugerFelter) },
   handler: async (ctx, args): Promise<Record<string, Id<"users">>> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
     const map: Record<string, Id<"users">> = {};
 
     for (const { firestoreId, ...felter } of args.brugere) {
@@ -207,7 +216,7 @@ export const opretBrugere = mutation({
         continue;
       }
 
-      // joinedChannelIds sættes i trin 3, når kanalerne findes.
+      // joinedChannelIds saettes i trin 3, naar kanalerne findes.
       map[firestoreId] = await ctx.db.insert("users", {
         ...felter,
         joinedChannelIds: [],
@@ -223,7 +232,11 @@ export const opretBrugere = mutation({
 // Trin 2: kanaler
 // ---------------------------------------------------------------------------
 
+<<<<<<< HEAD
 export const opretKanaler = mutation({
+=======
+export const indsaetKanaler = mutation({
+>>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
     kanaler: v.array(
@@ -242,12 +255,12 @@ export const opretKanaler = mutation({
     ),
   },
   handler: async (ctx, args): Promise<Record<string, Id<"kanaler">>> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
     const map: Record<string, Id<"kanaler">> = {};
 
     for (const { firestoreId, ...felter } of args.kanaler) {
-      // Idempotens: navnet er den eneste nøgle der findes på alle kanaler —
-      // `code` mangler på mindst én.
+      // Idempotens: navnet er den eneste noegle der findes paa alle kanaler —
+      // `code` mangler paa mindst én.
       const findes = await ctx.db
         .query("kanaler")
         .withIndex("by_name", (q) => q.eq("name", felter.name))
@@ -283,7 +296,7 @@ export const koblBrugereTilKanaler = mutation({
     ),
   },
   handler: async (ctx, args): Promise<number> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
 
     for (const { userId, ...felter } of args.koblinger) {
       await ctx.db.patch(userId, felter);
@@ -300,10 +313,14 @@ export const koblBrugereTilKanaler = mutation({
 // Trin 4: historik
 // ---------------------------------------------------------------------------
 
+<<<<<<< HEAD
 export const opretCheckIns = mutation({
+=======
+export const indsaetCheckIns = mutation({
+>>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
-    rækker: v.array(
+    raekker: v.array(
       v.object({
         userId: v.id("users"),
         channelId: v.optional(v.id("kanaler")),
@@ -314,16 +331,20 @@ export const opretCheckIns = mutation({
     ),
   },
   handler: async (ctx, args): Promise<number> => {
-    kræverHemmelighed(args.secret);
-    for (const række of args.rækker) await ctx.db.insert("checkIns", række);
-    return args.rækker.length;
+    kraeverHemmelighed(args.secret);
+    for (const raekke of args.raekker) await ctx.db.insert("checkIns", raekke);
+    return args.raekker.length;
   },
 });
 
+<<<<<<< HEAD
 export const opretDrinkLogs = mutation({
+=======
+export const indsaetDrinkLogs = mutation({
+>>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
-    rækker: v.array(
+    raekker: v.array(
       v.object({
         userId: v.id("users"),
         channelId: v.optional(v.id("kanaler")),
@@ -345,16 +366,20 @@ export const opretDrinkLogs = mutation({
     ),
   },
   handler: async (ctx, args): Promise<number> => {
-    kræverHemmelighed(args.secret);
-    for (const række of args.rækker) await ctx.db.insert("drinkLogs", række);
-    return args.rækker.length;
+    kraeverHemmelighed(args.secret);
+    for (const raekke of args.raekker) await ctx.db.insert("drinkLogs", raekke);
+    return args.raekker.length;
   },
 });
 
+<<<<<<< HEAD
 export const opretAchievements = mutation({
+=======
+export const indsaetAchievements = mutation({
+>>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
-    rækker: v.array(
+    raekker: v.array(
       v.object({
         userId: v.id("users"),
         achievementId: v.string(),
@@ -367,16 +392,20 @@ export const opretAchievements = mutation({
     ),
   },
   handler: async (ctx, args): Promise<number> => {
-    kræverHemmelighed(args.secret);
-    for (const række of args.rækker) await ctx.db.insert("achievements", række);
-    return args.rækker.length;
+    kraeverHemmelighed(args.secret);
+    for (const raekke of args.raekker) await ctx.db.insert("achievements", raekke);
+    return args.raekker.length;
   },
 });
 
+<<<<<<< HEAD
 export const opretBeacons = mutation({
+=======
+export const indsaetBeacons = mutation({
+>>>>>>> ff1ab88 (rettelser)
   args: {
     ...hemmelighed,
-    rækker: v.array(
+    raekker: v.array(
       v.object({
         createdBy: v.id("users"),
         channelId: v.optional(v.id("kanaler")),
@@ -399,33 +428,33 @@ export const opretBeacons = mutation({
     ),
   },
   handler: async (ctx, args): Promise<number> => {
-    kræverHemmelighed(args.secret);
-    for (const række of args.rækker) await ctx.db.insert("beacons", række);
-    return args.rækker.length;
+    kraeverHemmelighed(args.secret);
+    for (const raekke of args.raekker) await ctx.db.insert("beacons", raekke);
+    return args.raekker.length;
   },
 });
 
 // ---------------------------------------------------------------------------
-// Trin 5: genberegn afledte tal fra logrækkerne
+// Trin 5: genberegn afledte tal fra lograekkerne
 // ---------------------------------------------------------------------------
 
 /**
  * Genberegner `totalPoints`, `currentDayStreak` og `longestStreak` ud fra
  * brugerens faktiske `drinkLogs`.
  *
- * De gamle tællere kopieres bevidst IKKE: datarevisionen viste at 20 af 32
- * brugeres `totalDrinks` var drevet fra deres egne logrækker, med op til 76
+ * De gamle taellere kopieres bevidst IKKE: datarevisionen viste at 20 af 32
+ * brugeres `totalDrinks` var drevet fra deres egne lograekker, med op til 76
  * genstandes afvigelse. At kopiere dem ville flytte fejlen med over.
  *
- * Strækket udledes ved at afspille logrækkerne kronologisk gennem den samme
- * `computeStreak()`, som den nye app bruger — så historikken og fremtiden
- * regnes efter samme regler. Fortrydelser (negativ `sizeMultiplier`) tæller
- * hverken point eller stræk.
+ * Straekket udledes ved at afspille lograekkerne kronologisk gennem den samme
+ * `computeStreak()`, som den nye app bruger — saa historikken og fremtiden
+ * regnes efter samme regler. Fortrydelser (negativ `sizeMultiplier`) taeller
+ * hverken point eller straek.
  */
 export const genberegnStats = mutation({
   args: { ...hemmelighed, userIds: v.array(v.id("users")) },
   handler: async (ctx, args): Promise<number> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
 
     for (const userId of args.userIds) {
       const logs = await ctx.db
@@ -480,7 +509,7 @@ export const genberegnStats = mutation({
 export const findBrugerViaAuthId = query({
   args: { ...hemmelighed, authId: v.string() },
   handler: async (ctx, args): Promise<Doc<"users"> | null> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
     return await ctx.db
       .query("users")
       .withIndex("by_auth_id", (q) => q.eq("authId", args.authId))
@@ -488,11 +517,16 @@ export const findBrugerViaAuthId = query({
   },
 });
 
+<<<<<<< HEAD
 /** Leder efter referencer der peger på rækker som ikke findes. */
 export const findBrudteReferencer = query({
+=======
+/** Leder efter referencer der peger paa raekker som ikke findes. */
+export const findDoedeReferencer = query({
+>>>>>>> ff1ab88 (rettelser)
   args: hemmelighed,
   handler: async (ctx, args): Promise<Record<string, number>> => {
-    kræverHemmelighed(args.secret);
+    kraeverHemmelighed(args.secret);
 
     const kanalIds = new Set(
       (await ctx.db.query("kanaler").collect()).map((k) => k._id as string),
@@ -530,16 +564,16 @@ export const findBrudteReferencer = query({
       }
     }
 
-    for (const række of await ctx.db.query("checkIns").collect()) {
-      if (!brugerIds.has(række.userId)) fund["checkIns.userId"]++;
-      if (række.channelId && !kanalIds.has(række.channelId)) {
+    for (const raekke of await ctx.db.query("checkIns").collect()) {
+      if (!brugerIds.has(raekke.userId)) fund["checkIns.userId"]++;
+      if (raekke.channelId && !kanalIds.has(raekke.channelId)) {
         fund["checkIns.channelId"]++;
       }
     }
 
-    for (const række of await ctx.db.query("drinkLogs").collect()) {
-      if (!brugerIds.has(række.userId)) fund["drinkLogs.userId"]++;
-      if (række.channelId && !kanalIds.has(række.channelId)) {
+    for (const raekke of await ctx.db.query("drinkLogs").collect()) {
+      if (!brugerIds.has(raekke.userId)) fund["drinkLogs.userId"]++;
+      if (raekke.channelId && !kanalIds.has(raekke.channelId)) {
         fund["drinkLogs.channelId"]++;
       }
     }
