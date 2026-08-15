@@ -616,7 +616,7 @@ async function main(): Promise<void> {
   for (const portion of portioner(checkIns, 200)) {
     await convex.mutation(api.migrering.opretCheckIns, {
       secret: secret!,
-      rækker: portion.flatMap((r) => {
+      raekker: portion.flatMap((r) => {
         const userId = brugerMap[r.ejerFirestoreId];
         if (userId === undefined) return [];
         return [
@@ -639,7 +639,7 @@ async function main(): Promise<void> {
   for (const portion of portioner(drinkLogs, 200)) {
     await convex.mutation(api.migrering.opretDrinkLogs, {
       secret: secret!,
-      rækker: portion.flatMap((r) => {
+      raekker: portion.flatMap((r) => {
         const { ejerFirestoreId, kanalFirestoreId, ...felter } = r;
         const userId = brugerMap[ejerFirestoreId];
         if (userId === undefined) return [];
@@ -659,7 +659,7 @@ async function main(): Promise<void> {
   for (const portion of portioner(achievements, 200)) {
     await convex.mutation(api.migrering.opretAchievements, {
       secret: secret!,
-      rækker: portion.flatMap((r) => {
+      raekker: portion.flatMap((r) => {
         const { ejerFirestoreId, ...felter } = r;
         const userId = brugerMap[ejerFirestoreId];
         if (userId === undefined) return [];
@@ -672,7 +672,7 @@ async function main(): Promise<void> {
   if (beacons.length > 0) {
     await convex.mutation(api.migrering.opretBeacons, {
       secret: secret!,
-      rækker: beacons.flatMap((r) => {
+      raekker: beacons.flatMap((r) => {
         const { opretterFirestoreId, ...felter } = r;
         const createdBy = brugerMap[opretterFirestoreId];
         if (createdBy === undefined) return [];
