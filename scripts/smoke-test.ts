@@ -196,6 +196,34 @@ async function firebaseSignInOrCreate(
   );
 }
 
+/**
+ * Uploader et lille testbillede til Convex storage og returnerer id'et.
+ *
+ * Convex-flowet er: mutation giver en engangs-URL, klienten POSTer bytes
+ * direkte dertil, og svaret indeholder storage-id'et.
+ */
+async function uploadTestbillede(
+  klient: ConvexHttpClient,
+): Promise<Id<"_storage">> {
+  const uploadUrl = await klient.mutation(api.sladesh.genererUploadUrl, {});
+
+  // Mindst mulige gyldige JPEG-header — indholdet er uden betydning her.
+  const bytes = new Uint8Array([0xff, 0xd8, 0xff, 0xd9]);
+
+  const svar = await fetch(uploadUrl, {
+    method: "POST",
+    headers: { "Content-Type": "image/jpeg" },
+    body: bytes,
+  });
+
+  if (!svar.ok) {
+    throw new Error(`Upload til Convex storage fejlede: ${svar.status}`);
+  }
+
+  const { storageId } = (await svar.json()) as { storageId: Id<"_storage"> };
+  return storageId;
+}
+
 async function main(): Promise<void> {
   console.log(`[Smoke] kører mod ${convexUrl}`);
 
@@ -360,6 +388,126 @@ async function main(): Promise<void> {
     await klientB.mutation(api.kanaler.joinKanal, { code });
     const boardB = await klientB.query(api.scoreboard.getScoreboard, { channelId });
     check("B ser stillingen efter indmeldelse", boardB.length, 1);
+
+    // 8. Sladesh-livscyklus ----------------------------------------------
+    // B er nu medlem af A's Kanal, så A må sende til B.
+    console.log("\n[Smoke] 8/8 Sladesh-livscyklussen");
+
+    await checkRejected("A sender Sladesh til sig selv", () =>
+      klientA.mutation(api.sladesh.sendSladesh, {
+        recipientId: userIdA,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    );
+
+    const cooldownFoer = await klientA.query(api.sladesh.getCooldown, {});
+    check("A må sende inden første Sladesh", cooldownFoer.canSend, true);
+
+    const noegle = crypto.randomUUID();
+    const userIdB = (await klientB.query(api.users.getMe, {}))!._id;
+    const challengeId = await klientA.mutation(api.sladesh.sendSladesh, {
+      recipientId: userIdB,
+      channelId,
+      idempotencyKey: noegle,
+      venue: "Brøndby Stadion",
+    });
+    console.log(`  udfordring: ${challengeId}`);
+
+    // Samme nøgle igen må ikke lave en dublet — det var fejlen i det gamle repo.
+    const igenSamme = await klientA.mutation(api.sladesh.sendSladesh, {
+      recipientId: userIdB,
+      channelId,
+      idempotencyKey: noegle,
+    });
+    check("samme idempotencyKey → samme udfordring", igenSamme, challengeId);
+
+    const cooldownEfter = await klientA.query(api.sladesh.getCooldown, {});
+    check("A er i cooldown efter afsendelse", cooldownEfter.canSend, false);
+    check("cooldown har en sluttid", cooldownEfter.msTilNaesteBlok > 0, true);
+
+    await checkRejected("A sender igen i samme blok", () =>
+      klientA.mutation(api.sladesh.sendSladesh, {
+        recipientId: userIdB,
+        channelId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    );
+
+    const aktivB = await klientB.query(api.sladesh.getActiveSladeshForUser, {});
+    check("B ser sin aktive udfordring", aktivB?._id, challengeId);
+    check("status starter som pending", aktivB?.status, "pending");
+    check("navne er snapshottet", aktivB?.recipientName, "Smoke Tester B");
+
+    // Kun modtageren må rykke faserne frem.
+    await checkRejected("A (afsender) rykker fase frem", () =>
+      klientA.mutation(api.sladesh.registrerBevis, {
+        challengeId,
+        phase: "awaiting_filled",
+      }),
+    );
+
+    await klientB.mutation(api.sladesh.registrerBevis, {
+      challengeId,
+      phase: "awaiting_filled",
+    });
+
+    // Baglæns er ikke tilladt.
+    await checkRejected("B går baglæns i faserne", () =>
+      klientB.mutation(api.sladesh.registrerBevis, {
+        challengeId,
+        phase: "awaiting_filled",
+      }),
+    );
+
+    // Bevisbillede op i Convex storage.
+    const storageIdFyldt = await uploadTestbillede(klientB);
+    await klientB.mutation(api.sladesh.registrerBevis, {
+      challengeId,
+      phase: "filled_captured",
+      storageId: storageIdFyldt,
+    });
+
+    let udfordring = await klientB.query(api.sladesh.getActiveSladeshForUser, {});
+    check("status blev in_progress", udfordring?.status, "in_progress");
+    check("bevisbillede gemt", udfordring?.proofBeforeImage, storageIdFyldt);
+    check("filledCapturedAt sat", typeof udfordring?.filledCapturedAt, "number");
+
+    // Man kan ikke gennemføre før begge beviser er der.
+    await checkRejected("gennemfør for tidligt", () =>
+      klientB.mutation(api.sladesh.afslutSladesh, { challengeId }),
+    );
+
+    await klientB.mutation(api.sladesh.registrerBevis, {
+      challengeId,
+      phase: "awaiting_empty",
+    });
+    const storageIdTom = await uploadTestbillede(klientB);
+    await klientB.mutation(api.sladesh.registrerBevis, {
+      challengeId,
+      phase: "empty_captured",
+      storageId: storageIdTom,
+    });
+
+    await klientB.mutation(api.sladesh.afslutSladesh, { challengeId });
+
+    const efter = await klientB.query(api.users.getMe, {});
+    check("B har gennemført 1", efter?.sladeshCompletedCount, 1);
+    check("B har modtaget 1", efter?.sladeshReceived, 1);
+    const afsenderEfter = await klientA.query(api.users.getMe, {});
+    check("A har sendt 1", afsenderEfter?.sladeshSent, 1);
+
+    check(
+      "ingen aktiv udfordring efter gennemførsel",
+      await klientB.query(api.sladesh.getActiveSladeshForUser, {}),
+      null,
+    );
+
+    await checkRejected("gennemfør en afsluttet udfordring igen", () =>
+      klientB.mutation(api.sladesh.afslutSladesh, { challengeId }),
+    );
+    await checkRejected("opgiv en afsluttet udfordring", () =>
+      klientB.mutation(api.sladesh.opgivSladesh, { challengeId }),
+    );
   } finally {
     // Oprydning ----------------------------------------------------------
     console.log("\n[Smoke] rydder op");

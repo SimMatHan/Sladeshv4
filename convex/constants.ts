@@ -73,12 +73,22 @@ export function getSize(
 }
 
 /**
- * Starten på den drikkedag som `now` (epoch ms) falder i.
+ * Vægurets tid i dansk lokaltid for et givet epoch-ms-tidspunkt.
  *
- * Drikkedagen løber fra kl. 10:00 dansk tid til kl. 10:00 næste dag. Er
- * klokken før 10:00, hører tidspunktet til gårsdagens drikkedag.
+ * Convex kører i UTC, så enhver døgngrænse skal regnes eksplicit i
+ * Europe/Copenhagen — ellers rammer den forkert halvdelen af året.
+ * Delt mellem drikkedagens 10:00-grænse og Sladesh-cooldownens
+ * 12-timers blokke, som er to FORSKELLIGE grænser.
  */
-export function getDrinkDayStart(now: number): number {
+export function localWallClock(now: number): {
+  hour: number;
+  minute: number;
+  second: number;
+  /** Millisekunder siden lokal midnat. */
+  msSinceLocalMidnight: number;
+  /** Epoch ms for lokal midnat. */
+  localMidnight: number;
+} {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: APP_TIME_ZONE,
     hour12: false,
@@ -97,7 +107,24 @@ export function getDrinkDayStart(now: number): number {
 
   const msSinceLocalMidnight =
     ((hour * 60 + minute) * 60 + second) * 1000 + (now % 1000);
-  const localMidnight = now - msSinceLocalMidnight;
+
+  return {
+    hour,
+    minute,
+    second,
+    msSinceLocalMidnight,
+    localMidnight: now - msSinceLocalMidnight,
+  };
+}
+
+/**
+ * Starten på den drikkedag som `now` (epoch ms) falder i.
+ *
+ * Drikkedagen løber fra kl. 10:00 dansk tid til kl. 10:00 næste dag. Er
+ * klokken før 10:00, hører tidspunktet til gårsdagens drikkedag.
+ */
+export function getDrinkDayStart(now: number): number {
+  const { localMidnight } = localWallClock(now);
   const boundary = localMidnight + DRINK_DAY_START_HOUR * 60 * 60 * 1000;
 
   // Før kl. 10:00 hører vi stadig til gårsdagens drikkedag.

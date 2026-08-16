@@ -36,9 +36,27 @@ export const cleanupSmokeTest = mutation({
     const deleted: Record<string, number> = {
       drinkLogs: 0,
       checkIns: 0,
+      sladeshChallenges: 0,
       kanaler: 0,
       users: 0,
     };
+
+    // Sladesh-udfordringer i begge retninger. Uden dette ville hver kørsel
+    // efterlade rækker med referencer til en slettet bruger.
+    for (const raekke of await ctx.db
+      .query("sladeshChallenges")
+      .withIndex("by_sender", (q) => q.eq("senderId", user._id))
+      .collect()) {
+      await ctx.db.delete(raekke._id);
+      deleted.sladeshChallenges++;
+    }
+    for (const raekke of await ctx.db
+      .query("sladeshChallenges")
+      .withIndex("by_recipient", (q) => q.eq("recipientId", user._id))
+      .collect()) {
+      await ctx.db.delete(raekke._id);
+      deleted.sladeshChallenges++;
+    }
 
     for (const log of await ctx.db
       .query("drinkLogs")

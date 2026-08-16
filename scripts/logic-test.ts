@@ -11,6 +11,18 @@
 import { getDrinkDayStart, getSize } from "../convex/constants";
 import { computeStreak, pointsForDrink } from "../convex/streaks";
 import schema from "../convex/schema.ts";
+import {
+  PHASE_ORDER,
+  beregnCooldown,
+  erAfsluttetStatus,
+  erAktivStatus,
+  erCooldownAktiv,
+  erFremadrettet,
+  erUdloebet,
+  getBlockEnd,
+  getBlockStart,
+  SLADESH_TIME_LIMIT_MS,
+} from "../convex/sladeshRules.ts";
 import { kendteFelter, valider, type AnyValidator } from "./lib/validate.ts";
 
 let passed = 0;
@@ -276,6 +288,131 @@ console.log("\n[Logic] fortrydelser (action: \"remove\", negativ sizeMultiplier)
     }).currentDayStreak,
     5,
   );
+}
+
+console.log("\n[Logic] Sladesh — 12-timers cooldown-blokke");
+{
+  // Blokkene er 00:00-12:00 og 12:00-24:00 i DANSK tid. Bemærk at dette er
+  // en ANDEN grænse end drikkedagens kl. 10:00 — appen har bevidst to
+  // forskellige døgninddelinger, og de må ikke forveksles.
+  check(
+    "08:00 → blokken startede kl. 00:00",
+    getBlockStart(cest("2026-08-13T08:00:00")),
+    cest("2026-08-13T00:00:00"),
+  );
+  check(
+    "13:00 → blokken startede kl. 12:00",
+    getBlockStart(cest("2026-08-13T13:00:00")),
+    cest("2026-08-13T12:00:00"),
+  );
+  check(
+    "11:59 → stadig formiddagsblokken",
+    getBlockStart(cest("2026-08-13T11:59:59")),
+    cest("2026-08-13T00:00:00"),
+  );
+  check(
+    "12:00 præcis → eftermiddagsblokken",
+    getBlockStart(cest("2026-08-13T12:00:00")),
+    cest("2026-08-13T12:00:00"),
+  );
+  check(
+    "blokken slutter 12 timer senere",
+    getBlockEnd(cest("2026-08-13T13:00:00")),
+    cest("2026-08-14T00:00:00"),
+  );
+  // Vintertid skal ramme samme lokale klokkeslæt.
+  check(
+    "vintertid 13:00 → kl. 12:00 lokal tid",
+    getBlockStart(cet("2026-01-15T13:00:00")),
+    cet("2026-01-15T12:00:00"),
+  );
+
+  // Cooldown-grænsen er IKKE den samme som drikkedagens.
+  check(
+    "kl. 09:00: blokgrænse og drikkedagsgrænse er forskellige",
+    getBlockStart(cest("2026-08-13T09:00:00")) ===
+      getDrinkDayStart(cest("2026-08-13T09:00:00")),
+    false,
+  );
+
+  // Selve cooldown-reglen.
+  check("aldrig sendt → ingen cooldown", erCooldownAktiv(undefined, cest("2026-08-13T13:00:00")), false);
+  check(
+    "sendt tidligere i samme blok → cooldown",
+    erCooldownAktiv(cest("2026-08-13T12:30:00"), cest("2026-08-13T13:00:00")),
+    true,
+  );
+  check(
+    "sendt i forrige blok → må sende igen",
+    erCooldownAktiv(cest("2026-08-13T11:00:00"), cest("2026-08-13T13:00:00")),
+    false,
+  );
+  check(
+    "sendt i går → må sende igen",
+    erCooldownAktiv(cest("2026-08-12T13:00:00"), cest("2026-08-13T13:00:00")),
+    false,
+  );
+
+  const blokeret = beregnCooldown(
+    cest("2026-08-13T12:30:00"),
+    cest("2026-08-13T13:00:00"),
+  );
+  check("blokeret → canSend false", blokeret.canSend, false);
+  check(
+    "blokeret → tid til næste blok",
+    blokeret.msTilNaesteBlok,
+    cest("2026-08-14T00:00:00") - cest("2026-08-13T13:00:00"),
+  );
+  check(
+    "fri → msTilNaesteBlok er 0",
+    beregnCooldown(undefined, cest("2026-08-13T13:00:00")).msTilNaesteBlok,
+    0,
+  );
+}
+
+console.log("\n[Logic] Sladesh — faser, status og frist");
+{
+  // Fremdrift er kun fremad.
+  check("intro → awaiting_filled", erFremadrettet("intro", "awaiting_filled"), true);
+  check(
+    "filled_captured → awaiting_empty",
+    erFremadrettet("filled_captured", "awaiting_empty"),
+    true,
+  );
+  check(
+    "awaiting_empty → filled_captured er baglæns",
+    erFremadrettet("awaiting_empty", "filled_captured"),
+    false,
+  );
+  check(
+    "samme fase igen er ikke fremad",
+    erFremadrettet("filled_captured", "filled_captured"),
+    false,
+  );
+  check(
+    "man må gerne springe en fase over",
+    erFremadrettet("intro", "empty_captured"),
+    true,
+  );
+  check("faserækkefølgen har 7 trin", PHASE_ORDER.length, 7);
+
+  // Status-klassifikation.
+  check("pending er aktiv", erAktivStatus("pending"), true);
+  check("in_progress er aktiv", erAktivStatus("in_progress"), true);
+  check("completed er ikke aktiv", erAktivStatus("completed"), false);
+  check("expired er ikke aktiv", erAktivStatus("expired"), false);
+  check("completed er afsluttet", erAfsluttetStatus("completed"), true);
+  check("failed er afsluttet", erAfsluttetStatus("failed"), true);
+  check("expired er afsluttet", erAfsluttetStatus("expired"), true);
+  check("pending er ikke afsluttet", erAfsluttetStatus("pending"), false);
+
+  // Fristen er 10 minutter.
+  check("fristen er 10 minutter", SLADESH_TIME_LIMIT_MS, 10 * 60 * 1000);
+  const start = cest("2026-08-13T20:00:00");
+  const frist = start + SLADESH_TIME_LIMIT_MS;
+  check("ikke udløbet et sekund før", erUdloebet(frist, frist - 1000), false);
+  check("ikke udløbet præcis på fristen", erUdloebet(frist, frist), false);
+  check("udløbet et sekund efter", erUdloebet(frist, frist + 1000), true);
 }
 
 console.log("\n[Logic] validator-walker mod det rigtige schema");
