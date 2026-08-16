@@ -20,6 +20,56 @@
 
 set -e
 
+# ---------------------------------------------------------------------------
+# Forhåndstjek: er Firebase-konfigurationen der overhovedet?
+#
+# Vite indlejrer `import.meta.env.VITE_*` i bundlet på BYGGETIDSPUNKTET. En
+# variabel der ikke er sat, bliver til `undefined` — og `initializeApp`
+# accepterer glad seks undefined-værdier. Resultatet er et build der udrulles
+# uden en eneste fejl, og som først går i stykker i brugerens browser med
+# `auth/invalid-api-key`.
+#
+# Det skete i praksis ved første produktionsudrulning. Buildet skal fejle her
+# i stedet, hvor beskeden kan sige hvad der mangler.
+#
+# Kun NAVNE skrives ud, aldrig værdier. De ender ganske vist i bundlet og er
+# dermed offentlige, men en byggelog er stadig ikke stedet at gengive dem.
+# ---------------------------------------------------------------------------
+manglende=""
+for navn in \
+  VITE_FIREBASE_API_KEY \
+  VITE_FIREBASE_AUTH_DOMAIN \
+  VITE_FIREBASE_PROJECT_ID \
+  VITE_FIREBASE_STORAGE_BUCKET \
+  VITE_FIREBASE_MESSAGING_SENDER_ID \
+  VITE_FIREBASE_APP_ID
+do
+  # Indirekte opslag, POSIX-kompatibelt: `eval` er den eneste vej til at slå
+  # en variabel op ud fra dens navn i /bin/sh.
+  eval "vaerdi=\${$navn:-}"
+  if [ -z "$vaerdi" ]; then
+    manglende="$manglende $navn"
+  fi
+done
+
+if [ -n "$manglende" ]; then
+  echo "[Build] AFBRUDT — Firebase-konfigurationen mangler i byggemiljøet."
+  echo "[Build] Uden dem bygger Vite en app hvor login er dødt fra start."
+  echo ""
+  echo "[Build] Ikke sat:"
+  for navn in $manglende; do
+    echo "[Build]   $navn"
+  done
+  echo ""
+  echo "[Build] I Vercel: Settings -> Environment Variables. De skal gælde for"
+  echo "[Build] det miljø denne build kører i, og de må IKKE være markeret"
+  echo "[Build] Sensitive — de indlejres alligevel i klient-bundlet og er"
+  echo "[Build] dermed offentlige, så flaget beskytter ingenting."
+  exit 1
+fi
+
+echo "[Build] Firebase-konfiguration fundet (6 variabler)"
+
 if [ -n "$CONVEX_DEPLOY_KEY" ]; then
   echo "[Build] CONVEX_DEPLOY_KEY fundet — deployer Convex-backenden og bygger"
   # --cmd-url-env-var-name sættes udtrykkeligt. Convex kan selv gætte den ud
