@@ -4,12 +4,13 @@ Re-arkitektur af [SladeshApp.dk](https://sladeshapp.dk) fra Firebase/Firestore
 til Convex. Nyt projekt — det gamle repo (`SimMatHan/Sladesh2.0`) bruges kun som
 læse-reference og ændres ikke.
 
-**Status: fase 9 — produktions-deployment.** Backenden er komplet: hver
-datafunktion fra det gamle repo har en modpart i Convex, og produktionsdata er
-migreret. Det der mangler, er ikke længere forretningslogik, men frontenden —
-`src/` er stadig en login-skal.
+**Status: fase 10 — frontenden.** Backenden er komplet, produktionsdata er
+migreret, og appen kører på Vercel mod produktions-Convex. Domænet
+`sladeshapp.dk` peger stadig på det gamle site, indtil der er et UI at skifte
+til — `src/` er endnu en login-skal.
 
-Udrulning til produktion: **[`docs/produktion.md`](docs/produktion.md)**.
+- Udrulning og cutover: **[`docs/produktion.md`](docs/produktion.md)**
+- Hvad UI'et skal dække: **[`docs/skaermkortlaegning.md`](docs/skaermkortlaegning.md)**
 
 ## Kom i gang
 
@@ -82,6 +83,7 @@ docs/
   beskeder-og-beacons.md       Fase 7
   achievements-og-promille.md  Fase 8
   produktion.md                Udrulning og cutover
+  skaermkortlaegning.md        Alle 20 skaerme i den gamle app, og hvad backenden mangler
 scripts/
   logic-test.ts    Forretningsregler, kører lokalt
   smoke-test.ts    Ende-til-ende mod dev-deploymentet
