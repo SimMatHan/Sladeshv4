@@ -237,10 +237,37 @@ async function main(): Promise<void> {
   // Spærren mod at ramme produktion. Deploymentet spørges FØR der oprettes
   // noget som helst, så en forkert VITE_CONVEX_URL koster en fejlbesked og
   // ikke to testbrugere i produktionsdatabasen.
-  const status = await new ConvexHttpClient(convexUrl!).query(
-    api.testing.testmiljoStatus,
-    {},
-  );
+  //
+  // Findes funktionen slet ikke, kan det betyde to vidt forskellige ting —
+  // enten er deploymentet bagud, eller også peger vi et helt andet sted hen
+  // end vi tror. Derfor fanges det her frem for at vælte med en stack trace
+  // om et manglende funktionsnavn, som ikke fortæller nogen af delene.
+  let status: { tilladt: boolean };
+  try {
+    status = await new ConvexHttpClient(convexUrl!).query(
+      api.testing.testmiljoStatus,
+      {},
+    );
+  } catch (error) {
+    const besked = error instanceof Error ? error.message : String(error);
+
+    if (besked.includes("Could not find public function")) {
+      console.error(
+        `[Smoke] AFBRUDT — deploymentet kender ikke testing:testmiljoStatus.\n` +
+          `  ${convexUrl}\n\n` +
+          `  Koden på deploymentet er ældre end dette script. Bemærk at\n` +
+          `  \`npx convex deploy\` pusher til PRODUKTION — dev opdateres kun\n` +
+          `  af \`npx convex dev\`:\n\n` +
+          `    npx convex dev --once\n\n` +
+          `  Får du den samme fejl bagefter, peger VITE_CONVEX_URL et andet\n` +
+          `  sted hen end du tror. Kontrollér den før du prøver igen.`,
+      );
+      process.exit(1);
+    }
+
+    throw error;
+  }
+
   if (!status.tilladt) {
     console.error(
       `[Smoke] AFBRUDT — deploymentet tillader ikke testfunktioner.\n` +

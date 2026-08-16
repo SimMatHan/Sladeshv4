@@ -93,9 +93,15 @@ npx convex env list --prod
 Sæt den til gengæld på dev, ellers kan smoke-testen ikke længere køre:
 
 ```bash
-npx convex env set TILLAD_TESTFUNKTIONER ja
-npm run smoke-test        # skal stadig være grøn
+npx convex env set TILLAD_TESTFUNKTIONER ja   # BEMÆRK: uden --prod
+npx convex dev --once                          # dev skal have fase 9-koden
+npm run smoke-test                             # skal stadig være grøn
 ```
+
+> `npx convex dev --once` er ikke til at springe over. **`convex deploy`
+> pusher til produktion; dev opdateres kun af `convex dev`.** Efter et
+> produktions-deploy er dev altså stadig på den forrige kode, og smoke-testen
+> afbryder med at den ikke kan finde `testing:testmiljoStatus`.
 
 ---
 
@@ -305,6 +311,7 @@ Der skal stå **én** variabel: `VITE_FIREBASE_PROJECT_ID`.
 | Alt fejler som "unauthenticated" efter login | Projekt-id'et på deploymentet matcher ikke tokenets `aud`. Sammenlign med `VITE_FIREBASE_PROJECT_ID` i frontenden |
 | `auth/unauthorized-domain` ved login | Domænet mangler i Firebases authorized domains (afsnit 5) |
 | Smoke-testen afbryder med "tillader ikke testfunktioner" | Den peger på produktion — eller `TILLAD_TESTFUNKTIONER` mangler på dev |
+| Smoke-testen kender ikke `testing:testmiljoStatus` | Dev er bagud. `convex deploy` rammer produktion; kør `npx convex dev --once` |
 | `migrering:status` findes ikke | Koden er ikke deployet til det deployment du spørger. `npx convex deploy` |
 | `MIGRATION_SECRET er ikke sat` | Fjernet efter migreringen, som den skal være. Sæt den igen hvis du skal køre om |
 | Vercel-buildet deployer ikke Convex | `CONVEX_DEPLOY_KEY` mangler på miljøet Production |
