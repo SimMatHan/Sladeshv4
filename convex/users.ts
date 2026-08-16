@@ -165,6 +165,42 @@ export const setActiveChannel = mutation({
 });
 
 /**
+ * Opdaterer den indloggede brugers live-position.
+ *
+ * Modparten til det gamle repos kort, som skrev `users.location` direkte fra
+ * klienten. Feltet er det beacon-evalueringen læser, og dets `lastUpdated`
+ * afgør om positionen er frisk nok til at tælle — derfor sættes tidsstemplet
+ * her på serveren og ikke af klienten.
+ */
+export const opdaterPosition = mutation({
+  args: { lat: v.number(), lng: v.number() },
+  handler: async (ctx, args): Promise<void> => {
+    const user = await requireCurrentUser(ctx);
+
+    const gyldig =
+      Number.isFinite(args.lat) &&
+      Number.isFinite(args.lng) &&
+      args.lat >= -90 &&
+      args.lat <= 90 &&
+      args.lng >= -180 &&
+      args.lng <= 180;
+
+    if (!gyldig) {
+      throw new ConvexError({
+        code: "INVALID_LOCATION",
+        message: "Koordinaterne er uden for jorden.",
+      });
+    }
+
+    const now = Date.now();
+    await ctx.db.patch(user._id, {
+      location: { lat: args.lat, lng: args.lng, lastUpdated: now },
+      updatedAt: now,
+    });
+  },
+});
+
+/**
  * Den indloggede brugers egen profil.
  *
  * Returnerer null både når man ikke er logget ind, og når man er logget ind

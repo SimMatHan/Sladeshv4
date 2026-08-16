@@ -8,12 +8,16 @@
  * @module
  */
 
+import type * as beaconRules from "../beaconRules.js";
+import type * as beacons from "../beacons.js";
 import type * as checkIns from "../checkIns.js";
 import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
 import type * as drinkLogs from "../drinkLogs.js";
 import type * as identity from "../identity.js";
 import type * as kanaler from "../kanaler.js";
+import type * as messageRules from "../messageRules.js";
+import type * as messages from "../messages.js";
 import type * as migrering from "../migrering.js";
 import type * as scoreboard from "../scoreboard.js";
 import type * as sladesh from "../sladesh.js";
@@ -29,12 +33,16 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  beaconRules: typeof beaconRules;
+  beacons: typeof beacons;
   checkIns: typeof checkIns;
   constants: typeof constants;
   crons: typeof crons;
   drinkLogs: typeof drinkLogs;
   identity: typeof identity;
   kanaler: typeof kanaler;
+  messageRules: typeof messageRules;
+  messages: typeof messages;
   migrering: typeof migrering;
   scoreboard: typeof scoreboard;
   sladesh: typeof sladesh;
