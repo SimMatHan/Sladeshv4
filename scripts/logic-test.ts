@@ -23,6 +23,24 @@ import {
   getBlockStart,
   SLADESH_TIME_LIMIT_MS,
 } from "../convex/sladeshRules.ts";
+import {
+  BESKED_MAX_LAENGDE,
+  beskedFejl,
+  graenseForGamleBeskeder,
+  harUlaeste,
+  trimBesked,
+} from "../convex/messageRules.ts";
+import {
+  BEACON_MAX_RUNDER,
+  BEACON_STANDARD_TITEL,
+  afstandIMeter,
+  beaconTitel,
+  beslutVarsling,
+  erBeaconUdloebet,
+  erPositionForaeldet,
+  erRunderOpbrugt,
+  laesPosition,
+} from "../convex/beaconRules.ts";
 import { kendteFelter, valider, type AnyValidator } from "./lib/validate.ts";
 
 let passed = 0;
@@ -500,6 +518,203 @@ console.log("\n[Logic] validator-walker mod det rigtige schema");
     "kendteFelter finder schemaets felter",
     kendteFelter(users).has("authId") && !kendteFelter(users).has("totalDrinks"),
     true,
+  );
+}
+
+console.log("\n[Logic] chat-regler");
+{
+  check("tekst trimmes", trimBesked("  hej  "), "hej");
+  check("tom tekst afvises", beskedFejl(trimBesked("   ")), "EMPTY_MESSAGE");
+  check("almindelig tekst er i orden", beskedFejl("Skål!"), null);
+  check(
+    "præcis grænsen er tilladt",
+    beskedFejl("x".repeat(BESKED_MAX_LAENGDE)),
+    null,
+  );
+  check(
+    "ét tegn over grænsen afvises",
+    beskedFejl("x".repeat(BESKED_MAX_LAENGDE + 1)),
+    "MESSAGE_TOO_LONG",
+  );
+
+  // Emoji fylder mere end ét tegn i JavaScript. Det er bevidst at grænsen
+  // måles i UTF-16-enheder som alt andet i JS — men det skal være et VALG,
+  // ikke en overraskelse, så det står fast her.
+  check("emoji tælles som to enheder", trimBesked("🍺").length, 2);
+
+  // Ulæst-detektion, ordret fra messageService.hasUnreadMessages.
+  check("tom Kanal har intet ulæst", harUlaeste(undefined, undefined), false);
+  check("tom Kanal, selvom man har set den", harUlaeste(1000, undefined), false);
+  check("aldrig åbnet Kanal med beskeder er ulæst", harUlaeste(undefined, 1000), true);
+  check("besked nyere end sidste visning", harUlaeste(1000, 1001), true);
+  check("besked ældre end sidste visning", harUlaeste(1000, 999), false);
+  // Grænsetilfældet: set i præcis samme millisekund tæller som læst. Det er
+  // vigtigt, fordi sendMessage sætter begge tidsstempler til det samme `now`
+  // — ellers ville ens egen besked altid stå som ulæst for én selv.
+  check("samme millisekund tæller som læst", harUlaeste(1000, 1000), false);
+
+  const nu = cest("2026-08-16T12:00:00");
+  check(
+    "oprydningsgrænsen ligger 24 timer tilbage",
+    graenseForGamleBeskeder(nu),
+    cest("2026-08-15T12:00:00"),
+  );
+}
+
+console.log("\n[Logic] beacon-regler");
+{
+  // Haversine. 1 breddegrad = π/180 × 6371 km ≈ 111.195 m.
+  check(
+    "1 breddegrad ≈ 111195 m",
+    Math.round(afstandIMeter(55, 12, 56, 12)),
+    111195,
+  );
+  check("samme punkt giver 0 m", afstandIMeter(55.6, 12.4, 55.6, 12.4), 0);
+  // 0,0001 grad ≈ 11 m — altså inden for standardradius på 50 m.
+  check(
+    "0,0001 breddegrad ≈ 11 m",
+    Math.round(afstandIMeter(55.6, 12.4, 55.6001, 12.4)),
+    11,
+  );
+  // Længdegrader er kortere jo længere mod nord man kommer. Ved 55,6° nord
+  // er de ca. 56 % af en breddegrad — beviser at cos-leddet regnes med.
+  check(
+    "1 længdegrad er kortere end 1 breddegrad ved 55,6° nord",
+    Math.round(afstandIMeter(55.6, 12, 55.6, 13)) <
+      Math.round(afstandIMeter(55.6, 12, 56.6, 12)),
+    true,
+  );
+
+  // Positionsopslag: `location` foretrækkes, og hvert koordinatsæt følges af
+  // SIT eget tidsstempel — afvigelsen fra det gamle repo, som kunne parre
+  // gamle koordinater med et friskt tidsstempel.
+  check(
+    "location foretrækkes frem for currentLocation",
+    laesPosition({
+      location: { lat: 1, lng: 2, lastUpdated: 500 },
+      currentLocation: { lat: 9, lng: 9, venue: "Andetsteds", timestamp: 900 },
+    }),
+    { lat: 1, lng: 2, opdateretAt: 500 },
+  );
+  check(
+    "currentLocation bruges når location mangler",
+    laesPosition({
+      currentLocation: { lat: 9, lng: 8, venue: "Baren", timestamp: 900 },
+    }),
+    { lat: 9, lng: 8, opdateretAt: 900 },
+  );
+  check(
+    "currentLocation: null tæller som ingen position",
+    laesPosition({ currentLocation: null }),
+    undefined,
+  );
+  check("ingen felter giver ingen position", laesPosition({}), undefined);
+
+  const nu = cest("2026-08-16T20:00:00");
+  const MINUT = 60 * 1000;
+  check("frisk position", erPositionForaeldet(nu - 5 * MINUT, nu), false);
+  check("præcis 15 minutter er stadig frisk", erPositionForaeldet(nu - 15 * MINUT, nu), false);
+  check("16 minutter er forældet", erPositionForaeldet(nu - 16 * MINUT, nu), true);
+
+  const TIME = 60 * MINUT;
+  check(
+    "beacon på 1 time lever",
+    erBeaconUdloebet({ createdAt: nu - TIME }, nu),
+    false,
+  );
+  check(
+    "beacon på 3 timer er udløbet",
+    erBeaconUdloebet({ createdAt: nu - 3 * TIME }, nu),
+    true,
+  );
+  check(
+    "expiresAt vinder over 2-timers reglen",
+    erBeaconUdloebet({ createdAt: nu - 3 * TIME, expiresAt: nu + TIME }, nu),
+    false,
+  );
+
+  check("ingen runder brugt", erRunderOpbrugt(undefined), false);
+  check("5 runder er ikke opbrugt", erRunderOpbrugt(BEACON_MAX_RUNDER - 1), false);
+  check("6 runder er opbrugt", erRunderOpbrugt(BEACON_MAX_RUNDER), true);
+
+  check("titel falder tilbage til stedet", beaconTitel(undefined, "Baren"), "Baren");
+  check(
+    "titel falder tilbage til standarden",
+    beaconTitel(undefined, undefined),
+    BEACON_STANDARD_TITEL,
+  );
+  check(
+    "kun mellemrum tæller ikke som titel",
+    beaconTitel("   ", "  "),
+    BEACON_STANDARD_TITEL,
+  );
+  check("angivet titel vinder", beaconTitel("Stress!", "Baren"), "Stress!");
+
+  // Varslingsbeslutningen. Beaconen står på Brøndby Stadion.
+  const beacon = { beaconLat: 55.6533, beaconLng: 12.4194, radius: 50, now: nu };
+  const taetPaa = { lat: 55.6533, lng: 12.4195, opdateretAt: nu - MINUT };
+  const langtVaek = { lat: 55.6761, lng: 12.5683, opdateretAt: nu - MINUT };
+
+  check(
+    "bruger inden for radius varsles",
+    beslutVarsling({
+      ...beacon,
+      erOpretter: false,
+      alleredeVarslet: false,
+      position: taetPaa,
+    }).varsl,
+    true,
+  );
+  check(
+    "bruger uden for radius varsles ikke",
+    beslutVarsling({
+      ...beacon,
+      erOpretter: false,
+      alleredeVarslet: false,
+      position: langtVaek,
+    }),
+    { varsl: false, aarsag: "uden_for_radius", afstand: afstandIMeter(55.6533, 12.4194, 55.6761, 12.5683) },
+  );
+  // Spærrernes RÆKKEFØLGE: opretteren afvises, selv når alt andet passer.
+  check(
+    "opretteren varsles aldrig om sin egen beacon",
+    beslutVarsling({
+      ...beacon,
+      erOpretter: true,
+      alleredeVarslet: false,
+      position: taetPaa,
+    }),
+    { varsl: false, aarsag: "er_opretter" },
+  );
+  check(
+    "allerede varslet gentages ikke",
+    beslutVarsling({
+      ...beacon,
+      erOpretter: false,
+      alleredeVarslet: true,
+      position: taetPaa,
+    }),
+    { varsl: false, aarsag: "allerede_varslet" },
+  );
+  check(
+    "uden position varsles der ikke",
+    beslutVarsling({
+      ...beacon,
+      erOpretter: false,
+      alleredeVarslet: false,
+      position: undefined,
+    }),
+    { varsl: false, aarsag: "ingen_position" },
+  );
+  check(
+    "forældet position varsles der ikke på",
+    beslutVarsling({
+      ...beacon,
+      erOpretter: false,
+      alleredeVarslet: false,
+      position: { ...taetPaa, opdateretAt: nu - 30 * MINUT },
+    }),
+    { varsl: false, aarsag: "position_foraeldet" },
   );
 }
 

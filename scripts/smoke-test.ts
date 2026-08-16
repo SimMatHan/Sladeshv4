@@ -27,6 +27,13 @@
  *
  * Der logges ind via Firebase Auth REST-API'et frem for browser-SDK'et — det
  * giver det samme ID-token, uden at scriptet skal simulere et browsermiljø.
+ *
+ * ADVARSEL, ny fra fase 7: beacon-afsnittet kalder evalueringen, og den ser
+ * på ALLE aktive beacons i deploymentet — ikke kun testens egne. Beacons
+ * ældre end 2 timer bliver slukket, og sidste kørsel bruger endda et `now`
+ * tre timer frem. Det er den samme oprydning som cron-jobbet foretager af
+ * sig selv hvert 5. minut, så virkningen er kun at den sker med det samme.
+ * Kør alligevel aldrig scriptet mod produktion.
  */
 
 import { ConvexHttpClient } from "convex/browser";
@@ -228,7 +235,7 @@ async function main(): Promise<void> {
   console.log(`[Smoke] kører mod ${convexUrl}`);
 
   // 0. Login -------------------------------------------------------------
-  console.log("\n[Smoke] 0/7 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
+  console.log("\n[Smoke] 0/10 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
   const a = await firebaseSignInOrCreate(accounts[0].email, accounts[0].password);
   const b = await firebaseSignInOrCreate(accounts[1].email, accounts[1].password);
   console.log(`  A: ${a.localId}`);
@@ -246,7 +253,7 @@ async function main(): Promise<void> {
 
   try {
     // 1. Profiler --------------------------------------------------------
-    console.log("\n[Smoke] 1/7 opretter profiler");
+    console.log("\n[Smoke] 1/10 opretter profiler");
     const userIdA = await klientA.mutation(api.users.createUser, {
       displayName: "Smoke Tester",
       emoji: "🍺",
@@ -263,7 +270,7 @@ async function main(): Promise<void> {
     check("createUser er idempotent", igen, userIdA);
 
     // 2. Uautentificeret adgang ------------------------------------------
-    console.log("\n[Smoke] 2/7 verificerer at uautentificerede kald ikke slipper igennem");
+    console.log("\n[Smoke] 2/10 verificerer at uautentificerede kald ikke slipper igennem");
     await checkRejected("anonym createUser", () =>
       anonym.mutation(api.users.createUser, {}),
     );
@@ -291,7 +298,7 @@ async function main(): Promise<void> {
     );
 
     // 3. Kanal -----------------------------------------------------------
-    console.log("\n[Smoke] 3/7 opretter Kanal");
+    console.log("\n[Smoke] 3/10 opretter Kanal");
     const code = `SMOKE-${Date.now()}`;
     channelId = await klientA.mutation(api.kanaler.createKanal, {
       name: "Ballade",
@@ -311,7 +318,7 @@ async function main(): Promise<void> {
 
     // 4. Adgangskontrol mellem brugere -----------------------------------
     // Kernen i fase 3: B er logget ind, men er IKKE medlem af A's Kanal.
-    console.log("\n[Smoke] 4/7 verificerer adgangskontrol mellem brugere");
+    console.log("\n[Smoke] 4/10 verificerer adgangskontrol mellem brugere");
     await checkRejected("B læser A's scoreboard", () =>
       klientB.query(api.scoreboard.getScoreboard, { channelId: channelId! }),
     );
@@ -333,7 +340,7 @@ async function main(): Promise<void> {
     );
 
     // 5. Check In --------------------------------------------------------
-    console.log("\n[Smoke] 5/7 logger Check In");
+    console.log("\n[Smoke] 5/10 logger Check In");
     await klientA.mutation(api.checkIns.checkIn, {
       venue: "Brøndby Stadion",
       channelId,
@@ -346,7 +353,7 @@ async function main(): Promise<void> {
     check("checkInCount", profil?.checkInCount, 1);
 
     // 6. Drinks ----------------------------------------------------------
-    console.log("\n[Smoke] 6/7 logger to drinks");
+    console.log("\n[Smoke] 6/10 logger to drinks");
     await klientA.mutation(api.drinkLogs.logDrink, {
       channelId,
       categoryId: "beer",
@@ -375,7 +382,7 @@ async function main(): Promise<void> {
     check("stræk uændret af cigaret", profil?.currentDayStreak, 1);
 
     // 7. Scoreboard ------------------------------------------------------
-    console.log("\n[Smoke] 7/7 henter scoreboard");
+    console.log("\n[Smoke] 7/10 henter scoreboard");
     const board = await klientA.query(api.scoreboard.getScoreboard, { channelId });
     check("antal rækker", board.length, 1);
     check("navn", board[0]?.name, "Smoke Tester");
@@ -391,7 +398,7 @@ async function main(): Promise<void> {
 
     // 8. Sladesh-livscyklus ----------------------------------------------
     // B er nu medlem af A's Kanal, så A må sende til B.
-    console.log("\n[Smoke] 8/8 Sladesh-livscyklussen");
+    console.log("\n[Smoke] 8/10 Sladesh-livscyklussen");
 
     await checkRejected("A sender Sladesh til sig selv", () =>
       klientA.mutation(api.sladesh.sendSladesh, {
@@ -568,6 +575,244 @@ async function main(): Promise<void> {
       "B er heller ikke længere bundet",
       await klientB.query(api.sladesh.getActiveSladeshForUser, {}),
       null,
+    );
+
+    // 9. Chat -------------------------------------------------------------
+    console.log("\n[Smoke] 9/10 kanal-chat");
+
+    await checkRejected("tom besked afvist", () =>
+      klientA.mutation(api.messages.sendMessage, { channelId: channelId!, text: "   " }),
+    );
+    await checkRejected("for lang besked afvist", () =>
+      klientA.mutation(api.messages.sendMessage, {
+        channelId: channelId!,
+        text: "x".repeat(2001),
+      }),
+    );
+
+    // En Kanal kun B er medlem af — så A's manglende adgang kan afprøves.
+    const kodeB = `SMOKE-${Date.now()}-b`;
+    const kanalKunB = await klientB.mutation(api.kanaler.createKanal, {
+      name: "Kun B",
+      code: kodeB,
+    });
+    await checkRejected("A skriver i en Kanal han ikke er medlem af", () =>
+      klientA.mutation(api.messages.sendMessage, {
+        channelId: kanalKunB,
+        text: "Hej?",
+      }),
+    );
+    await checkRejected("A læser beskederne i B's Kanal", () =>
+      klientA.query(api.messages.getMessages, { channelId: kanalKunB }),
+    );
+
+    await klientA.mutation(api.messages.sendMessage, {
+      channelId,
+      text: "  Skål, Brøndby!  ",
+    });
+    const beskedId = await klientA.mutation(api.messages.sendMessage, {
+      channelId,
+      text: "Første omgang er min 🍺",
+    });
+
+    const beskeder = await klientA.query(api.messages.getMessages, { channelId });
+    check("to beskeder i Kanalen", beskeder.length, 2);
+    check("teksten er trimmet", beskeder[0]?.text, "Skål, Brøndby!");
+    check("ældste besked står først", beskeder[1]?._id, beskedId);
+    check("afsendernavn snapshottet", beskeder[0]?.senderName, "Smoke Tester");
+    check("afsender-emoji snapshottet", beskeder[0]?.senderEmoji, "🚀");
+
+    // Ulæst-status. B har ikke åbnet chatten endnu.
+    const ulaesteB = await klientB.query(api.messages.getUlaeste, {});
+    const kanalHosB = ulaesteB.find((r) => r.channelId === channelId);
+    check("B har ulæste beskeder", kanalHosB?.ulaest, true);
+    check("Kanalnavnet følger med", kanalHosB?.navn, "Ballade");
+
+    const ulaesteA = await klientA.query(api.messages.getUlaeste, {});
+    check(
+      "A's egne beskeder står ikke som ulæste for A selv",
+      ulaesteA.find((r) => r.channelId === channelId)?.ulaest,
+      false,
+    );
+
+    await klientB.mutation(api.messages.markerLaest, { channelId });
+    check(
+      "B har intet ulæst efter markering",
+      (await klientB.query(api.messages.getUlaeste, {})).find(
+        (r) => r.channelId === channelId,
+      )?.ulaest,
+      false,
+    );
+
+    // Varslingsmodtagere: afsenderen selv skal aldrig med, og den der sidder
+    // med chatten åben heller ikke.
+    check(
+      "B skal varsles om A's besked",
+      await klientA.query(api.messages.getVarslingsmodtagere, {
+        messageId: beskedId,
+      }),
+      [userIdB],
+    );
+
+    await klientB.mutation(api.messages.setAktivChat, { channelId });
+    check(
+      "B varsles ikke mens chatten er åben",
+      await klientA.query(api.messages.getVarslingsmodtagere, {
+        messageId: beskedId,
+      }),
+      [],
+    );
+
+    await klientB.mutation(api.messages.setAktivChat, {});
+    check(
+      "B varsles igen når chatten lukkes",
+      await klientA.query(api.messages.getVarslingsmodtagere, {
+        messageId: beskedId,
+      }),
+      [userIdB],
+    );
+
+    // 10. Beacons ---------------------------------------------------------
+    console.log("\n[Smoke] 10/10 beacons");
+
+    const braendbyLat = 55.6533;
+    const braendbyLng = 12.4194;
+
+    await checkRejected("almindelig bruger opretter beacon", () =>
+      klientA.mutation(api.beacons.opretBeacon, {
+        lat: braendbyLat,
+        lng: braendbyLng,
+      }),
+    );
+
+    // Testkontoen gøres til admin. Spærren i convex/testing.ts sikrer at det
+    // kun kan lade sig gøre for "smoke-test+"-konti.
+    await klientA.mutation(api.testing.setSmokeTestAdmin, {});
+
+    await checkRejected("beacon uden for jorden afvist", () =>
+      klientA.mutation(api.beacons.opretBeacon, { lat: 91, lng: 0 }),
+    );
+
+    // B skal være checket ind med en frisk position for at kunne varsles.
+    await klientB.mutation(api.checkIns.checkIn, {
+      venue: "Brøndby Stadion",
+      channelId,
+      location: { lat: braendbyLat, lng: braendbyLng + 0.0001 },
+    });
+    await klientB.mutation(api.users.opdaterPosition, {
+      lat: braendbyLat,
+      lng: braendbyLng + 0.0001,
+    });
+
+    // Beaconen bindes til test-Kanalen, så evalueringen kun kan ramme A og B
+    // — ikke andre data der måtte ligge i dev-deploymentet.
+    const beaconId = await klientA.mutation(api.beacons.opretBeacon, {
+      lat: braendbyLat,
+      lng: braendbyLng,
+      venue: "Brøndby Stadion",
+      channelId,
+    });
+
+    const findBeacon = async (id: Id<"beacons">) =>
+      (await klientA.query(api.beacons.getBeacons, {})).find((b) => b._id === id);
+
+    const nyBeacon = await findBeacon(beaconId);
+    check("titel falder tilbage til stedet", nyBeacon?.title, "Brøndby Stadion");
+    check("standardbesked sat", nyBeacon?.message, "Stress signal aktiveret!");
+    check("standardradius 50 m", nyBeacon?.radius, 50);
+    check("type er stress", nyBeacon?.type, "stress");
+    check("beacon er aktiv", nyBeacon?.active, true);
+
+    check(
+      "B (ikke-admin) kan se den aktive beacon",
+      (await klientB.query(api.beacons.getBeacons, {})).some(
+        (b) => b._id === beaconId,
+      ),
+      true,
+    );
+
+    /** Varslingen for netop denne beacon — dev-deploymentet kan rumme andre. */
+    const varslingFor = (
+      resultat: { varslinger: Array<{ beaconId: Id<"beacons">; modtagere: Id<"users">[] }> },
+      id: Id<"beacons">,
+    ) => resultat.varslinger.find((v) => v.beaconId === id);
+
+    const runde1 = await klientA.mutation(api.testing.koerBeaconEvaluering, {});
+    check(
+      "B varsles om beaconen",
+      varslingFor(runde1, beaconId)?.modtagere,
+      [userIdB],
+    );
+    check(
+      "A varsles ikke om sin egen beacon",
+      varslingFor(runde1, beaconId)?.modtagere.includes(userIdA),
+      false,
+    );
+    check("én runde talt", (await findBeacon(beaconId))?.notificationsSent, 1);
+
+    // Anden kørsel: B er allerede varslet, så der sker ingenting.
+    const runde2 = await klientA.mutation(api.testing.koerBeaconEvaluering, {});
+    check("ingen gentagen varsling", varslingFor(runde2, beaconId), undefined);
+    check("runde-tælleren står stille", (await findBeacon(beaconId))?.notificationsSent, 1);
+
+    // En beacon langt væk (Rådhuspladsen, ca. 10 km) rammer ingen.
+    const fjernId = await klientA.mutation(api.beacons.opretBeacon, {
+      lat: 55.6761,
+      lng: 12.5683,
+      venue: "Rådhuspladsen",
+      channelId,
+    });
+    const runde3 = await klientA.mutation(api.testing.koerBeaconEvaluering, {});
+    check("ingen varsles uden for radius", varslingFor(runde3, fjernId), undefined);
+
+    // Udløb: 3 timer frem deaktiverer begge, uden at varsle nogen.
+    const treTimerFrem = Date.now() + 3 * 60 * 60 * 1000;
+    const runde4 = await klientA.mutation(api.testing.koerBeaconEvaluering, {
+      now: treTimerFrem,
+    });
+    check("udløbne beacons varsler ikke", varslingFor(runde4, beaconId), undefined);
+    check("beaconen er slukket efter 2 timer", (await findBeacon(beaconId))?.active, false);
+    check("den fjerne beacon er også slukket", (await findBeacon(fjernId))?.active, false);
+    check(
+      "deactivatedAt er sat",
+      typeof (await findBeacon(beaconId))?.deactivatedAt,
+      "number",
+    );
+
+    check(
+      "B (ikke-admin) ser ikke slukkede beacons",
+      (await klientB.query(api.beacons.getBeacons, {})).some(
+        (b) => b._id === beaconId,
+      ),
+      false,
+    );
+
+    await checkRejected("B (ikke-admin) deaktiverer en beacon", () =>
+      klientB.mutation(api.beacons.deaktiverBeacon, { beaconId }),
+    );
+
+    // Til sidst: en beacon i en Kanal A ikke er medlem af må A ikke kunne se
+    // — heller ikke som admin. Derfor står den efter de to ikke-admin-tjek
+    // ovenfor, som B's nye rettighed ellers ville ugyldiggøre.
+    await klientB.mutation(api.testing.setSmokeTestAdmin, {});
+    const beaconKunB = await klientB.mutation(api.beacons.opretBeacon, {
+      lat: braendbyLat,
+      lng: braendbyLng,
+      channelId: kanalKunB,
+    });
+    check(
+      "A (admin) ser ikke beacons i en Kanal han ikke er medlem af",
+      (await klientA.query(api.beacons.getBeacons, {})).some(
+        (b) => b._id === beaconKunB,
+      ),
+      false,
+    );
+    check(
+      "B ser selv sin kanalbundne beacon",
+      (await klientB.query(api.beacons.getBeacons, {})).some(
+        (b) => b._id === beaconKunB,
+      ),
+      true,
     );
   } finally {
     // Oprydning ----------------------------------------------------------

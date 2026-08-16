@@ -81,6 +81,13 @@ export default defineSchema({
     favoriteChannelId: v.optional(v.id("kanaler")),
     joinedChannelIds: v.array(v.id("kanaler")),
 
+    // Chat. `lastMessageViewedAt` er nøglet på Kanal-id og driver
+    // ulæst-markeringen; `activeChatChannelId` er tilstedeværelses-signalet,
+    // der fortæller at brugeren har netop denne chat åben lige nu, så hun
+    // ikke skal varsles om beskeder hun sidder og læser.
+    lastMessageViewedAt: v.optional(v.record(v.id("kanaler"), v.number())),
+    activeChatChannelId: v.optional(v.id("kanaler")),
+
     // Check In-status (seneste tilstand; historikken ligger i `checkIns`)
     checkInStatus: v.optional(v.boolean()),
     lastCheckIn: v.optional(v.number()),
@@ -158,7 +165,11 @@ export default defineSchema({
     .index("by_auth_id", ["authId"])
     .index("by_email", ["email"])
     .index("by_kanal", ["activeChannelId"])
-    .index("by_kanal_and_check_in", ["activeChannelId", "checkInStatus"]),
+    .index("by_kanal_and_check_in", ["activeChannelId", "checkInStatus"])
+    // Beacon-evalueringen skal finde ALLE indcheckede brugere på tværs af
+    // Kanaler. Uden dette index måtte den scanne hele users-tabellen hvert
+    // 5. minut.
+    .index("by_check_in", ["checkInStatus"]),
 
   /**
    * Kanal. Afløser /channels/{channelId}.
@@ -313,6 +324,16 @@ export default defineSchema({
     notificationsSent: v.optional(v.number()),
     lastNotificationSentAt: v.optional(v.number()),
     // Per-bruger-deduplikering: hvilke brugere der allerede er notificeret.
+    //
+    // Nøglen er et Convex `users`-id som streng for alt hvad denne app selv
+    // skriver. De MIGREREDE rækker bærer derimod Firebase-UID'er, fordi
+    // migreringen kopierede map'et ordret. De to kan ikke forveksles i
+    // praksis: hver migreret beacon er ældre end 2 timer, og evalueringen
+    // deaktiverer en udløbet beacon FØR den ser på `notifiedUsers`. Ingen
+    // migreret række kan altså nå varslingsstien.
+    //
+    // `v.string()` frem for `v.id("users")` netop for at rumme begge dele
+    // uden at skulle omskrive migreret data.
     notifiedUsers: v.optional(v.record(v.string(), v.boolean())),
 
     expiresAt: v.optional(v.number()),
