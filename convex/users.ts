@@ -80,7 +80,11 @@ export const createUser = mutation({
       .unique();
 
     if (existingByEmail !== null) {
-      console.log("[User] createUser afvist — email findes allerede", { email });
+      // Emailen logges IKKE. Convex-loggen er ikke et sted for
+      // personoplysninger, og id'et er nok til at finde rækken.
+      console.log("[User] createUser afvist — email findes allerede", {
+        eksisterende: existingByEmail._id,
+      });
       throw new ConvexError({
         code: "EMAIL_ALREADY_EXISTS",
         message: `Der findes allerede en profil med emailen "${email}".`,
@@ -122,7 +126,7 @@ export const createUser = mutation({
       updatedAt: now,
     });
 
-    console.log("[User] profil oprettet", { userId, email });
+    console.log("[User] profil oprettet", { userId });
     return userId;
   },
 });

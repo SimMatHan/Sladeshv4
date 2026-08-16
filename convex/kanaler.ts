@@ -31,7 +31,9 @@ export const createKanal = mutation({
       .unique();
 
     if (existing !== null) {
-      console.log("[Kanal] createKanal afvist — kode i brug", { code });
+      console.log("[Kanal] createKanal afvist — kode i brug", {
+        eksisterende: existing._id,
+      });
       throw new ConvexError({
         code: "KANAL_CODE_ALREADY_EXISTS",
         message: `Koden "${code}" er allerede i brug af Kanalen "${existing.name}".`,
@@ -59,7 +61,8 @@ export const createKanal = mutation({
       updatedAt: now,
     });
 
-    console.log("[Kanal] oprettet", { channelId, navn: args.name, code });
+    // Invitationskoden logges IKKE — den ER adgangsbeviset til Kanalen.
+    console.log("[Kanal] oprettet", { channelId, navn: args.name });
     return channelId;
   },
 });
@@ -85,7 +88,7 @@ export const joinKanal = mutation({
       .unique();
 
     if (kanal === null) {
-      console.log("[Kanal] joinKanal afvist — ukendt kode", { code });
+      console.log("[Kanal] joinKanal afvist — ukendt kode");
       throw new ConvexError({
         code: "KANAL_NOT_FOUND",
         message: `Der findes ingen Kanal med koden "${code}".`,

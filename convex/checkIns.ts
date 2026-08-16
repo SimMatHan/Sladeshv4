@@ -75,10 +75,13 @@ export const checkIn = mutation({
       updatedAt: now,
     });
 
+    // Stedet logges IKKE. Et sted plus et bruger-id er oplysninger om hvor et
+    // bestemt menneske befandt sig — det hører hjemme i `checkIns`-rækken, som
+    // brugeren selv kan se og slette, ikke i deployment-loggen.
     console.log("[CheckIn] registreret", {
       checkInId,
       userId: user._id,
-      venue: args.venue,
+      medPosition: args.location !== undefined,
       antal: (user.checkInCount ?? 0) + 1,
     });
 
