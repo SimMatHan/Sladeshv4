@@ -193,8 +193,21 @@ vilkårlig gren.
 
 `VITE_*` indlejres i klient-bundlet ved build og er derfor per definition
 offentlige. Firebase-web-nøgler ER offentlige identifikatorer — adgang styres
-af reglerne, ikke af nøglen. `CONVEX_DEPLOY_KEY` er det stik modsatte og må
-aldrig få `VITE_`-præfiks.
+af reglerne og af authorized domains, ikke af nøglen. `CONVEX_DEPLOY_KEY` er
+det stik modsatte og må aldrig få `VITE_`-præfiks.
+
+> **Markér ikke `VITE_*` som Sensitive i Vercel.** Flaget beskytter ingenting
+> her — værdierne ender alligevel i bundlet, hvor enhver besøgende kan læse
+> dem — og det forhindrer dig i at læse dem tilbage, når du skal fejlsøge.
+> Ved den første produktionsudrulning nåede de seks Firebase-variabler ikke
+> frem til Vite, og resultatet var et build uden en eneste fejl, som først gik
+> i stykker i browseren med `auth/invalid-api-key`. `CONVEX_DEPLOY_KEY` skal
+> til gengæld blive Sensitive: den er en rigtig hemmelighed og indlejres ikke
+> nogen steder.
+
+`scripts/vercel-build.sh` tjekker nu de seks navne, før den bygger, og
+afbryder med en liste over hvad der mangler. Et build kan altså ikke længere
+lykkes og alligevel udrulle en app, hvor login er dødt fra start.
 
 ### Hvordan buildet forgrener sig
 
@@ -310,6 +323,8 @@ Der skal stå **én** variabel: `VITE_FIREBASE_PROJECT_ID`.
 | `convex deploy` fejler med `VITE_FIREBASE_PROJECT_ID mangler` | Variablen er ikke sat på deploymentet. `npx convex env set --prod …` |
 | Alt fejler som "unauthenticated" efter login | Projekt-id'et på deploymentet matcher ikke tokenets `aud`. Sammenlign med `VITE_FIREBASE_PROJECT_ID` i frontenden |
 | `auth/unauthorized-domain` ved login | Domænet mangler i Firebases authorized domains (afsnit 5) |
+| `auth/invalid-api-key` i browseren, og `[Auth] Firebase-config er ufuldstændig` i konsollen | `VITE_FIREBASE_*` nåede ikke frem til buildet. Fjern Sensitive-flaget og byg igen — buildet fanger det nu selv |
+| Buildet afbryder med "Firebase-konfigurationen mangler" | Netop det. Variablerne gælder ikke for det miljø, buildet kører i |
 | Smoke-testen afbryder med "tillader ikke testfunktioner" | Den peger på produktion — eller `TILLAD_TESTFUNKTIONER` mangler på dev |
 | Smoke-testen kender ikke `testing:testmiljoStatus` | Dev er bagud. `convex deploy` rammer produktion; kør `npx convex dev --once` |
 | `migrering:status` findes ikke | Koden er ikke deployet til det deployment du spørger. `npx convex deploy` |
