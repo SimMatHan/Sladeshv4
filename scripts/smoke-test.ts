@@ -523,6 +523,19 @@ async function main(): Promise<void> {
     const eluft = 11 * 60 * 1000; // ældre end fristen på 10 minutter
     const forGammel = Date.now() - eluft;
 
+    // Baseline SKAL tages før afsendelsen.
+    //
+    // `ctx.scheduler.runAt()` med et fortidigt tidspunkt kører straks, så
+    // `udloebSladesh` kan nå at lukke udfordringen, allerede inden dette
+    // script får svar på næste kald. En assertion om at tælleren "endnu er
+    // nul" efter afsendelsen er derfor ikke veldefineret — den afhænger af,
+    // hvem der vinder kapløbet.
+    //
+    // Det er præcis den situation begge oprydningsveje er bygget til at
+    // klare, og +1-kontrollen nedenfor beviser, at kun én af dem talte.
+    const foerSend = await klientA.query(api.users.getMe, {});
+    const fejledeFoer = foerSend?.sladeshFailedCount ?? 0;
+
     const udloebetId = await klientB.mutation(api.sladesh.sendSladesh, {
       recipientId: userIdA,
       channelId,
@@ -530,15 +543,9 @@ async function main(): Promise<void> {
       now: forGammel,
     });
 
-    const foerUdloeb = await klientA.query(api.users.getMe, {});
-    check(
-      "A har endnu ingen fejlede",
-      foerUdloeb?.sladeshFailedCount ?? 0,
-      0,
-    );
-
-    // A er modtager her. Ethvert forsøg på at rykke frem skal afvises OG
-    // lukke udfordringen som udløbet.
+    // A er modtager her. Ethvert forsøg på at rykke frem skal afvises —
+    // enten fordi scheduleren allerede lukkede udfordringen, eller fordi
+    // dette kald selv opdager at fristen er overskredet.
     await checkRejected("A rykker frem på en udløbet udfordring", () =>
       klientA.mutation(api.sladesh.registrerBevis, {
         challengeId: udloebetId,
@@ -548,9 +555,9 @@ async function main(): Promise<void> {
 
     const efterUdloeb = await klientA.query(api.users.getMe, {});
     check(
-      "udløb tæller som fejlet hos modtageren",
+      "udløb tæller PRÆCIS én gang som fejlet",
       efterUdloeb?.sladeshFailedCount,
-      1,
+      fejledeFoer + 1,
     );
     check(
       "en udløbet udfordring er ikke længere aktiv",
