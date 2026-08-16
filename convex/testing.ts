@@ -33,9 +33,18 @@ export const cleanupSmokeTest = mutation({
       sladeshChallenges: 0,
       messages: 0,
       beacons: 0,
+      achievements: 0,
       kanaler: 0,
       users: 0,
     };
+
+    for (const raekke of await ctx.db
+      .query("achievements")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
+      .collect()) {
+      await ctx.db.delete(raekke._id);
+      deleted.achievements++;
+    }
 
     // Sladesh-udfordringer i begge retninger. Uden dette ville hver kørsel
     // efterlade rækker med referencer til en slettet bruger.

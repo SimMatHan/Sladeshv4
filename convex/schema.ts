@@ -243,6 +243,11 @@ export default defineSchema({
     // rækker bærer en NEGATIV sizeMultiplier, så aggregeringer trækker dem
     // fra af sig selv — se convex/streaks.ts og convex/scoreboard.ts.
     action: v.optional(v.string()),
+
+    // Hvilken logning fortrydelsen ophæver. Kun sat på "remove"-rækker.
+    // Det gamle repo skrev en løs negativ række uden reference, så intet
+    // forhindrede at samme genstand blev fortrudt to gange.
+    removesLogId: v.optional(v.id("drinkLogs")),
   })
     .index("by_user", ["userId"])
     .index("by_kanal", ["channelId"])
@@ -266,6 +271,14 @@ export default defineSchema({
     firstUnlockedAt: v.optional(v.number()),
     lastUnlockedAt: v.optional(v.number()),
     maxStreak: v.optional(v.number()),
+
+    // Starttidspunktet for det run der udløste den seneste oplåsning.
+    // Gælder kun run-baserede achievements og afgør, om de kan opnås igen.
+    // Det gamle repo gemte i stedet antallet af nulstillinger — se
+    // convex/achievementRules.ts for hvorfor det var utilstrækkeligt.
+    // VALGFRI: migrerede rækker har den ikke, og en manglende værdi
+    // behandles som "et nyt run".
+    lastRunStart: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
     .index("by_achievement", ["achievementId"])

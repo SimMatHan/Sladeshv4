@@ -235,7 +235,7 @@ async function main(): Promise<void> {
   console.log(`[Smoke] kører mod ${convexUrl}`);
 
   // 0. Login -------------------------------------------------------------
-  console.log("\n[Smoke] 0/10 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
+  console.log("\n[Smoke] 0/11 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
   const a = await firebaseSignInOrCreate(accounts[0].email, accounts[0].password);
   const b = await firebaseSignInOrCreate(accounts[1].email, accounts[1].password);
   console.log(`  A: ${a.localId}`);
@@ -253,7 +253,7 @@ async function main(): Promise<void> {
 
   try {
     // 1. Profiler --------------------------------------------------------
-    console.log("\n[Smoke] 1/10 opretter profiler");
+    console.log("\n[Smoke] 1/11 opretter profiler");
     const userIdA = await klientA.mutation(api.users.createUser, {
       displayName: "Smoke Tester",
       emoji: "🍺",
@@ -270,7 +270,7 @@ async function main(): Promise<void> {
     check("createUser er idempotent", igen, userIdA);
 
     // 2. Uautentificeret adgang ------------------------------------------
-    console.log("\n[Smoke] 2/10 verificerer at uautentificerede kald ikke slipper igennem");
+    console.log("\n[Smoke] 2/11 verificerer at uautentificerede kald ikke slipper igennem");
     await checkRejected("anonym createUser", () =>
       anonym.mutation(api.users.createUser, {}),
     );
@@ -298,7 +298,7 @@ async function main(): Promise<void> {
     );
 
     // 3. Kanal -----------------------------------------------------------
-    console.log("\n[Smoke] 3/10 opretter Kanal");
+    console.log("\n[Smoke] 3/11 opretter Kanal");
     const code = `SMOKE-${Date.now()}`;
     channelId = await klientA.mutation(api.kanaler.createKanal, {
       name: "Ballade",
@@ -318,7 +318,7 @@ async function main(): Promise<void> {
 
     // 4. Adgangskontrol mellem brugere -----------------------------------
     // Kernen i fase 3: B er logget ind, men er IKKE medlem af A's Kanal.
-    console.log("\n[Smoke] 4/10 verificerer adgangskontrol mellem brugere");
+    console.log("\n[Smoke] 4/11 verificerer adgangskontrol mellem brugere");
     await checkRejected("B læser A's scoreboard", () =>
       klientB.query(api.scoreboard.getScoreboard, { channelId: channelId! }),
     );
@@ -340,7 +340,7 @@ async function main(): Promise<void> {
     );
 
     // 5. Check In --------------------------------------------------------
-    console.log("\n[Smoke] 5/10 logger Check In");
+    console.log("\n[Smoke] 5/11 logger Check In");
     await klientA.mutation(api.checkIns.checkIn, {
       venue: "Brøndby Stadion",
       channelId,
@@ -353,7 +353,7 @@ async function main(): Promise<void> {
     check("checkInCount", profil?.checkInCount, 1);
 
     // 6. Drinks ----------------------------------------------------------
-    console.log("\n[Smoke] 6/10 logger to drinks");
+    console.log("\n[Smoke] 6/11 logger to drinks");
     await klientA.mutation(api.drinkLogs.logDrink, {
       channelId,
       categoryId: "beer",
@@ -382,7 +382,7 @@ async function main(): Promise<void> {
     check("stræk uændret af cigaret", profil?.currentDayStreak, 1);
 
     // 7. Scoreboard ------------------------------------------------------
-    console.log("\n[Smoke] 7/10 henter scoreboard");
+    console.log("\n[Smoke] 7/11 henter scoreboard");
     const board = await klientA.query(api.scoreboard.getScoreboard, { channelId });
     check("antal rækker", board.length, 1);
     check("navn", board[0]?.name, "Smoke Tester");
@@ -398,7 +398,7 @@ async function main(): Promise<void> {
 
     // 8. Sladesh-livscyklus ----------------------------------------------
     // B er nu medlem af A's Kanal, så A må sende til B.
-    console.log("\n[Smoke] 8/10 Sladesh-livscyklussen");
+    console.log("\n[Smoke] 8/11 Sladesh-livscyklussen");
 
     await checkRejected("A sender Sladesh til sig selv", () =>
       klientA.mutation(api.sladesh.sendSladesh, {
@@ -578,7 +578,7 @@ async function main(): Promise<void> {
     );
 
     // 9. Chat -------------------------------------------------------------
-    console.log("\n[Smoke] 9/10 kanal-chat");
+    console.log("\n[Smoke] 9/11 kanal-chat");
 
     await checkRejected("tom besked afvist", () =>
       klientA.mutation(api.messages.sendMessage, { channelId: channelId!, text: "   " }),
@@ -672,8 +672,176 @@ async function main(): Promise<void> {
       [userIdB],
     );
 
-    // 10. Beacons ---------------------------------------------------------
-    console.log("\n[Smoke] 10/10 beacons");
+    // 10. Achievements, promille og fortrydelser --------------------------
+    console.log("\n[Smoke] 10/11 achievements, promille og fortrydelser");
+
+    // A er endnu IKKE admin — beacon-afsnittet nedenfor er det der gør ham
+    // det. Derfor ligger admin-spærren for manuelle achievements her.
+    await checkRejected("almindelig bruger tildeler achievement manuelt", () =>
+      klientA.mutation(api.achievements.tildelManuelt, {
+        userId: userIdA,
+        achievementId: "top_donor",
+      }),
+    );
+
+    // Feinschmecker har tærskel 1: én Vermouth Tonic er nok.
+    const vermouth = {
+      channelId,
+      categoryId: "cocktail",
+      variationName: "Vermouth Tonic",
+      sizeId: "small",
+    };
+    const foerste = await klientA.mutation(api.drinkLogs.logDrink, vermouth);
+    check("logningen låser Feinschmecker op", foerste.nyeAchievements, [
+      "feinschmecker",
+    ]);
+
+    // Kumulativ og gentagelig: nummer to er milepæl nummer to.
+    const anden = await klientA.mutation(api.drinkLogs.logDrink, vermouth);
+    check("kumulativ achievement låses op igen", anden.nyeAchievements, [
+      "feinschmecker",
+    ]);
+
+    let liste = await klientA.query(api.achievements.getAchievementsForUser, {});
+    const fein = liste.find((a) => a.achievementId === "feinschmecker");
+    check("tælleren står på 2", fein?.count, 2);
+    check("teksten er bevaret ordret", fein?.title, "Feinschmecker");
+    check("firstUnlockedAt er sat", typeof fein?.firstUnlockedAt, "number");
+
+    const puffFoer = liste.find((a) => a.achievementId === "puff_minister");
+    // Cigaretten fra afsnit 6 tæller allerede med.
+    check("Puffminister står på 1 af 5", puffFoer?.current, 1);
+    check("og er ikke låst op endnu", puffFoer?.unlocked, false);
+    check("manuelle har ingen fremdrift", liste.find((a) => a.achievementId === "top_donor")?.current, undefined);
+
+    const naeste = await klientA.query(api.achievements.getNaesteMilepael, {});
+    check("der findes en næste milepæl", naeste !== null, true);
+
+    const cigaret = {
+      channelId,
+      categoryId: "other",
+      variationName: "Cigaret",
+    };
+    let sidsteCigaret = foerste;
+    for (let i = 0; i < 4; i++) {
+      sidsteCigaret = await klientA.mutation(api.drinkLogs.logDrink, cigaret);
+    }
+    check("den femte cigaret låser Puffminister op", sidsteCigaret.nyeAchievements, [
+      "puff_minister",
+    ]);
+
+    // --- Promille ---------------------------------------------------------
+    await checkRejected("urimelig vægt afvises", () =>
+      klientA.mutation(api.promille.setPromilleIndstilling, {
+        enabled: true,
+        weight: 900,
+      }),
+    );
+
+    const uden = await klientA.query(api.promille.getMinPromille, {});
+    check("uden indstilling kan der ikke regnes", uden.konfigureret, false);
+    check("og der udleveres intet tal", uden.promille, null);
+
+    await klientA.mutation(api.promille.setPromilleIndstilling, {
+      enabled: true,
+      gender: "male",
+      weight: 80,
+    });
+
+    const bac = await klientA.query(api.promille.getMinPromille, {});
+    check("promillen kan nu beregnes", bac.konfigureret, true);
+    // 1 lille + 1 stor øl + 2 cocktails = 12 + 24 + 16 + 16 = 68 g.
+    // 68 / (80 × 0,68) ≈ 1,25 ‰ minus et par sekunders forbrænding.
+    const bacVaerdi = bac.promille ?? 0;
+    check("promillen ligger i det forventede leje", bacVaerdi > 1.2 && bacVaerdi < 1.3, true);
+    check("niveauet er beregnet", bac.niveau?.label, "Beruset");
+    check("der er timer tilbage til ædru", (bac.timerTilAedru ?? 0) > 0, true);
+
+    const boardMedPromille = await klientA.query(api.scoreboard.getScoreboard, {
+      channelId,
+    });
+    const raekkeA = boardMedPromille.find((r) => r.userId === userIdA);
+    check("scoreboardet viser en rigtig promille", (raekkeA?.promille ?? 0) > 1, true);
+
+    // --- Fortrydelse ------------------------------------------------------
+    const midlertidig = await klientA.mutation(api.drinkLogs.logDrink, {
+      channelId,
+      categoryId: "beer",
+      variationName: "Tuborg",
+      sizeId: "large",
+    });
+
+    const foerFortryd = await klientA.query(api.users.getMe, {});
+    const fortrydelseId = await klientA.mutation(api.drinkLogs.removeDrink, {
+      logId: midlertidig.logId,
+    });
+
+    const efterFortryd = await klientA.query(api.users.getMe, {});
+    check(
+      "en stor øl trækker 2 point fra igen",
+      efterFortryd?.totalPoints,
+      (foerFortryd?.totalPoints ?? 0) - 2,
+    );
+
+    await checkRejected("samme logning kan ikke fortrydes to gange", () =>
+      klientA.mutation(api.drinkLogs.removeDrink, { logId: midlertidig.logId }),
+    );
+    await checkRejected("B fortryder A's logning", () =>
+      klientB.mutation(api.drinkLogs.removeDrink, { logId: midlertidig.logId }),
+    );
+    await checkRejected("en fortrydelse kan ikke selv fortrydes", () =>
+      klientA.mutation(api.drinkLogs.removeDrink, { logId: fortrydelseId }),
+    );
+
+    // --- Nulstilling ------------------------------------------------------
+    const foerReset = await klientA.query(api.scoreboard.getScoreboard, { channelId });
+    check(
+      "stillingen har genstande før nulstillingen",
+      (foerReset.find((r) => r.userId === userIdA)?.drinksToday ?? 0) > 0,
+      true,
+    );
+
+    await klientA.mutation(api.drinkLogs.resetRun, { channelId });
+
+    const efterReset = await klientA.query(api.scoreboard.getScoreboard, { channelId });
+    check(
+      "nulstillingen nulstiller også stillingen",
+      efterReset.find((r) => r.userId === userIdA)?.drinksToday,
+      0,
+    );
+    check(
+      "og promillen starter forfra",
+      (await klientA.query(api.promille.getMinPromille, {})).promille,
+      0,
+    );
+
+    // Run-baserede achievements kan opnås igen i et NYT run.
+    let cigaretIgen = sidsteCigaret;
+    for (let i = 0; i < 5; i++) {
+      cigaretIgen = await klientA.mutation(api.drinkLogs.logDrink, cigaret);
+    }
+    check("Puffminister kan opnås igen efter en nulstilling", cigaretIgen.nyeAchievements, [
+      "puff_minister",
+    ]);
+
+    liste = await klientA.query(api.achievements.getAchievementsForUser, {});
+    check(
+      "Puffminister står nu på 2",
+      liste.find((a) => a.achievementId === "puff_minister")?.count,
+      2,
+    );
+
+    // Tre nulstillinger i alt låser "Are you sure about that?" op.
+    await klientA.mutation(api.drinkLogs.resetRun, {});
+    const tredjeReset = await klientA.mutation(api.drinkLogs.resetRun, {});
+    check(
+      "tre nulstillinger låser reset_confirmed op",
+      tredjeReset.nyeAchievements,
+      ["reset_confirmed"],
+    );
+
+    // 11. Beacons ---------------------------------------------------------
+    console.log("\n[Smoke] 11/11 beacons");
 
     const braendbyLat = 55.6533;
     const braendbyLng = 12.4194;
@@ -813,6 +981,26 @@ async function main(): Promise<void> {
         (b) => b._id === beaconKunB,
       ),
       true,
+    );
+
+    // Manuelle achievements kræver admin, og A blev det først i dette
+    // afsnit — derfor ligger de to sidste achievement-tjek her.
+    await klientA.mutation(api.achievements.tildelManuelt, {
+      userId: userIdA,
+      achievementId: "top_donor",
+    });
+    check(
+      "Top Donor tildelt i hånden",
+      (await klientA.query(api.achievements.getAchievementsForUser, {})).find(
+        (a) => a.achievementId === "top_donor",
+      )?.unlocked,
+      true,
+    );
+    await checkRejected("automatisk achievement kan ikke tildeles i hånden", () =>
+      klientA.mutation(api.achievements.tildelManuelt, {
+        userId: userIdA,
+        achievementId: "obeerma",
+      }),
     );
   } finally {
     // Oprydning ----------------------------------------------------------

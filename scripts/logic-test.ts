@@ -41,6 +41,30 @@ import {
   erRunderOpbrugt,
   laesPosition,
 } from "../convex/beaconRules.ts";
+import {
+  alkoholGram,
+  beregnPromille,
+  beruselsesniveau,
+  foersteGenstandTid,
+  kanBeregnePromille,
+  timerTilAedru,
+} from "../convex/promilleRules.ts";
+import {
+  beregnRunStart,
+  byggAggregat,
+  nettoForVariant,
+  variantNoegle,
+} from "../convex/drinkRules.ts";
+import {
+  ACHIEVEMENTS,
+  beregnOplaasninger,
+  erOpnaaet,
+  findAchievement,
+  maalFor,
+  naesteMilepael,
+  taerskelFor,
+  type Maalinger,
+} from "../convex/achievementRules.ts";
 import { kendteFelter, valider, type AnyValidator } from "./lib/validate.ts";
 
 let passed = 0;
@@ -715,6 +739,359 @@ console.log("\n[Logic] beacon-regler");
       position: { ...taetPaa, opdateretAt: nu - 30 * MINUT },
     }),
     { varsl: false, aarsag: "position_foraeldet" },
+  );
+}
+
+console.log("\n[Logic] run-grænse og aggregering");
+{
+  const dayStart = cest("2026-08-16T10:00:00");
+  const kl12 = cest("2026-08-16T12:00:00");
+  const kl14 = cest("2026-08-16T14:00:00");
+
+  check(
+    "uden nulstilling starter runnet ved drikkedagen",
+    beregnRunStart(dayStart, [{ timestamp: kl12 }]),
+    dayStart,
+  );
+  check(
+    "en nulstilling flytter runnets start",
+    beregnRunStart(dayStart, [
+      { timestamp: kl12, isReset: true },
+      { timestamp: kl14 },
+    ]),
+    kl12,
+  );
+  check(
+    "den SENESTE nulstilling vinder",
+    beregnRunStart(dayStart, [
+      { timestamp: kl12, isReset: true },
+      { timestamp: kl14, isReset: true },
+    ]),
+    kl14,
+  );
+  check(
+    "en nulstilling før drikkedagen flytter ikke grænsen",
+    beregnRunStart(dayStart, [{ timestamp: dayStart - 1000, isReset: true }]),
+    dayStart,
+  );
+
+  const oel = (multiplier: number, timestamp: number) => ({
+    categoryId: "beer",
+    variationName: "Tuborg",
+    sizeMultiplier: multiplier,
+    timestamp,
+  });
+
+  const aggregat = byggAggregat([
+    oel(1, kl12), // lille
+    oel(2, kl12), // stor
+    { categoryId: "other", variationName: "Cigaret", timestamp: kl12 },
+    { categoryId: "other", variationName: "Run nulstillet", timestamp: kl14, isReset: true },
+  ]);
+
+  check("stor øl vejer dobbelt", aggregat.perKategori.beer, 3);
+  check("cigaretten tælles i sin kategori", aggregat.perKategori.other, 1);
+  check("men IKKE som genstand", aggregat.genstande, 3);
+  check("nulstillings-rækken tælles slet ikke", aggregat.perVariant["other::Run nulstillet"], undefined);
+  check("variant-nøglen er kategori::variant", variantNoegle("other", "Cigaret"), "other::Cigaret");
+
+  // Fortrydelser bærer negativ vægt og trækker sig selv fra.
+  const medFortrydelse = byggAggregat([oel(1, kl12), oel(1, kl12), oel(-1, kl14)]);
+  check("fortrydelse trækker fra totalen", medFortrydelse.genstande, 1);
+  check(
+    "fortrydelse trækker også fra varianten",
+    nettoForVariant(medFortrydelse, "beer", "Tuborg"),
+    1,
+  );
+  check(
+    "ukendt variant giver 0, ikke undefined",
+    nettoForVariant(medFortrydelse, "wine", "Rødvin"),
+    0,
+  );
+}
+
+console.log("\n[Logic] promille (Widmark)");
+{
+  const start = cest("2026-08-16T20:00:00");
+  const TIME = 60 * 60 * 1000;
+
+  const drink = (categoryId: string, multiplier: number, timestamp: number) => ({
+    categoryId,
+    sizeMultiplier: multiplier,
+    timestamp,
+  });
+
+  check("lille øl = 12 g alkohol", alkoholGram([drink("beer", 1, start)]), 12);
+  check("stor øl = 24 g", alkoholGram([drink("beer", 2, start)]), 24);
+  check("cocktail er stærkere end øl", alkoholGram([drink("cocktail", 1, start)]), 16);
+  check("cigaret indeholder ingen alkohol", alkoholGram([drink("other", 1, start)]), 0);
+  check(
+    "fortrydelse trækker alkoholen fra igen",
+    alkoholGram([drink("beer", 1, start), drink("beer", -1, start)]),
+    0,
+  );
+  check(
+    "en overvægt af fortrydelser går ikke i minus",
+    alkoholGram([drink("beer", -1, start)]),
+    0,
+  );
+
+  check(
+    "første genstand findes",
+    foersteGenstandTid([drink("beer", 1, start + TIME), drink("beer", 1, start)]),
+    start,
+  );
+  check(
+    "en fortrydelse kan ikke flytte starttidspunktet bagud",
+    foersteGenstandTid([drink("beer", -1, start - TIME), drink("beer", 1, start)]),
+    start,
+  );
+  check(
+    "en cigaret starter ikke promillen",
+    foersteGenstandTid([drink("other", 1, start - TIME), drink("beer", 1, start)]),
+    start,
+  );
+  check("ingen genstande giver undefined", foersteGenstandTid([]), undefined);
+
+  // 5 små øl = 60 g. Mand på 80 kg: 60 / (80 × 0,68) = 1,1029…
+  const femOel = [1, 2, 3, 4, 5].map(() => drink("beer", 1, start));
+  check(
+    "5 øl, mand 80 kg, ingen forbrænding endnu",
+    beregnPromille(femOel, 80, "male", start),
+    1.103,
+  );
+  // Kvinder har en lavere Widmark-faktor og får derfor en højere promille
+  // af samme mængde.
+  check(
+    "5 øl, kvinde 60 kg",
+    beregnPromille(femOel, 60, "female", start),
+    1.818,
+  );
+  check(
+    "to timer senere er 0,3 ‰ forbrændt",
+    beregnPromille(femOel, 80, "male", start + 2 * TIME),
+    0.803,
+  );
+  check(
+    "efter mange timer rammer den 0, ikke minus",
+    beregnPromille(femOel, 80, "male", start + 40 * TIME),
+    0,
+  );
+  check("uden vægt kan der ikke regnes", beregnPromille(femOel, 0, "male", start), 0);
+  check("uden genstande er promillen 0", beregnPromille([], 80, "male", start), 0);
+
+  check("under 0,3 er ædru", beruselsesniveau(0.29).label, "Ædru");
+  check("0,3 er let påvirket", beruselsesniveau(0.3).label, "Let påvirket");
+  check("0,8 er beruset", beruselsesniveau(0.8).label, "Beruset");
+  check("1,5 er meget beruset", beruselsesniveau(1.5).status, "danger");
+
+  check("timer til ædru rundes op", timerTilAedru(1.1), 8);
+  check("ædru nu giver 0 timer", timerTilAedru(0), 0);
+
+  check("slået fra → kan ikke regne", kanBeregnePromille({ enabled: false, gender: "male", weight: 80 }), false);
+  check("mangler vægt → kan ikke regne", kanBeregnePromille({ enabled: true, gender: "male" }), false);
+  check("mangler køn → kan ikke regne", kanBeregnePromille({ enabled: true, weight: 80 }), false);
+  check("vægt 0 → kan ikke regne", kanBeregnePromille({ enabled: true, gender: "male", weight: 0 }), false);
+  check("udfyldt → kan regne", kanBeregnePromille({ enabled: true, gender: "female", weight: 62 }), true);
+  check("ingen indstilling → kan ikke regne", kanBeregnePromille(undefined), false);
+}
+
+console.log("\n[Logic] achievements");
+{
+  const runStart = cest("2026-08-16T10:00:00");
+  const tomtAggregat = { genstande: 0, perKategori: {}, perVariant: {} };
+
+  const maalinger = (over: Partial<Maalinger>): Maalinger => ({
+    totalRunResets: 0,
+    runStart,
+    run: tomtAggregat,
+    livstid: tomtAggregat,
+    ...over,
+  });
+
+  // Definitionerne selv.
+  check("alle otte achievements er med", ACHIEVEMENTS.length, 8);
+  check("Top Donor er manuel", findAchievement("top_donor")?.type, "manual");
+  check(
+    "Mr. Worldwides tærskel er antallet af kategorier",
+    taerskelFor(findAchievement("mr_worldwide")!),
+    5,
+  );
+  check("Obeermas tærskel er 10", taerskelFor(findAchievement("obeerma")!), 10);
+
+  const obeerma = findAchievement("obeerma")!;
+  const fullBender = findAchievement("full_bender")!;
+  const likeFineWine = findAchievement("like_fine_wine")!;
+  const puffMinister = findAchievement("puff_minister")!;
+  const feinschmecker = findAchievement("feinschmecker")!;
+  const mrWorldwide = findAchievement("mr_worldwide")!;
+  const resetConfirmed = findAchievement("reset_confirmed")!;
+
+  // Obeerma måler ØL i runnet — ikke variantnavne, som klienten fejlagtigt
+  // gjorde. En stor øl vejer 2.
+  check(
+    "Obeerma måler kategorien beer i runnet",
+    maalFor(obeerma, maalinger({ run: { genstande: 6, perKategori: { beer: 6 }, perVariant: {} } })),
+    6,
+  );
+  // Full Bender har ingen kategori og måler alle genstande.
+  check(
+    "Full Bender måler alle genstande i runnet",
+    maalFor(fullBender, maalinger({ run: { genstande: 21, perKategori: { beer: 12, shot: 9 }, perVariant: {} } })),
+    21,
+  );
+  // Like Fine Wine er livstid, ikke run.
+  check(
+    "Like Fine Wine måler vin over livstiden",
+    maalFor(
+      likeFineWine,
+      maalinger({
+        run: { genstande: 1, perKategori: { wine: 1 }, perVariant: {} },
+        livstid: { genstande: 7, perKategori: { wine: 7 }, perVariant: {} },
+      }),
+    ),
+    7,
+  );
+  check(
+    "Puffminister måler cigaretter i runnet",
+    maalFor(
+      puffMinister,
+      maalinger({ run: { genstande: 0, perKategori: { other: 5 }, perVariant: { "other::Cigaret": 5 } } }),
+    ),
+    5,
+  );
+  check(
+    "Feinschmecker måler én bestemt drink over livstiden",
+    maalFor(
+      feinschmecker,
+      maalinger({
+        livstid: {
+          genstande: 3,
+          perKategori: { cocktail: 3 },
+          perVariant: { "cocktail::Vermouth Tonic": 1, "cocktail::Negroni": 2 },
+        },
+      }),
+    ),
+    1,
+  );
+  check(
+    "Mr. Worldwide tæller kategorier med mindst én genstand",
+    maalFor(
+      mrWorldwide,
+      maalinger({
+        run: {
+          genstande: 4,
+          perKategori: { beer: 1, cider: 1, wine: 1, cocktail: 1, other: 9 },
+          perVariant: {},
+        },
+      }),
+    ),
+    4,
+  );
+  check(
+    "Mr. Worldwide er ikke opnået med 4 af 5",
+    erOpnaaet(mrWorldwide, 4),
+    false,
+  );
+  check("manuelle opnås aldrig af sig selv", erOpnaaet(findAchievement("top_donor")!, 999), false);
+
+  // --- Oplåsninger --------------------------------------------------------
+  const tiOel = maalinger({
+    run: { genstande: 10, perKategori: { beer: 10 }, perVariant: {} },
+  });
+
+  check(
+    "første gang låses Obeerma op",
+    beregnOplaasninger(tiOel, {}).map((o) => o.achievementId),
+    ["obeerma"],
+  );
+  check(
+    "og runnets start gemmes med",
+    beregnOplaasninger(tiOel, {})[0]?.lastRunStart,
+    runStart,
+  );
+
+  // Samme run igen: ingen ny oplåsning. Det var netop den løkke det gamle
+  // repos hasReachedNewMilestone fandtes for at bryde.
+  check(
+    "samme run låser ikke op igen",
+    beregnOplaasninger(tiOel, { obeerma: { count: 1, lastRunStart: runStart } }),
+    [],
+  );
+
+  // Et nyt run — fx dagen efter, uden at nogen har trykket nulstil.
+  const naesteDag = maalinger({
+    runStart: runStart + DAY,
+    run: { genstande: 10, perKategori: { beer: 10 }, perVariant: {} },
+  });
+  check(
+    "et NYT run låser op igen",
+    beregnOplaasninger(naesteDag, {
+      obeerma: { count: 1, lastRunStart: runStart },
+    }).map((o) => o.nyCount),
+    [2],
+  );
+  // Rækker fra før fase 8 (og fra migreringen) mangler lastRunStart.
+  check(
+    "en række uden lastRunStart behandles som et nyt run",
+    beregnOplaasninger(tiOel, { obeerma: { count: 3 } }).map((o) => o.nyCount),
+    [4],
+  );
+
+  // Kumulative: nulstillinger med tærskel 3.
+  const nulstillinger = (antal: number) => maalinger({ totalRunResets: antal });
+  check(
+    "3 nulstillinger giver første oplåsning",
+    beregnOplaasninger(nulstillinger(3), {}).map((o) => o.nyCount),
+    [1],
+  );
+  check(
+    "5 nulstillinger er stadig kun én milepæl",
+    beregnOplaasninger(nulstillinger(5), { reset_confirmed: { count: 1 } }),
+    [],
+  );
+  check(
+    "6 nulstillinger giver den anden",
+    beregnOplaasninger(nulstillinger(6), { reset_confirmed: { count: 1 } }).map(
+      (o) => o.nyCount,
+    ),
+    [2],
+  );
+  // Springer man flere milepæle på én gang, lander tælleren rigtigt med det
+  // samme frem for at stå i kø.
+  check(
+    "15 nulstillinger fra 1 springer helt op til 5",
+    beregnOplaasninger(nulstillinger(15), { reset_confirmed: { count: 1 } }).map(
+      (o) => o.nyCount,
+    ),
+    [5],
+  );
+  check("kumulative gemmer ikke lastRunStart", beregnOplaasninger(nulstillinger(3), {})[0]?.lastRunStart, undefined);
+  check("manuelle låses aldrig op af motoren", beregnOplaasninger(maalinger({}), {}), []);
+
+  check(
+    "resetConfirmed kan gentages",
+    resetConfirmed.repeatable,
+    true,
+  );
+
+  // --- Næste milepæl ------------------------------------------------------
+  const taetPaa = maalinger({
+    run: { genstande: 9, perKategori: { beer: 9 }, perVariant: {} },
+  });
+  check(
+    "nærmeste milepæl er den med færrest tilbage",
+    naesteMilepael(taetPaa, {})?.achievementId,
+    "obeerma",
+  );
+  check("og fremdriften regnes med", naesteMilepael(taetPaa, {})?.percentage, 90);
+  check(
+    "en opnået milepæl er ikke den næste",
+    naesteMilepael(
+      maalinger({ run: { genstande: 10, perKategori: { beer: 10 }, perVariant: {} } }),
+      {},
+    )?.achievementId !== "obeerma",
+    true,
   );
 }
 
