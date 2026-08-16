@@ -16,9 +16,6 @@ export const APP_TIME_ZONE = "Europe/Copenhagen";
 /** Antal rækker scoreboardet returnerer. Samme som Firestore-queryens limit. */
 export const SCOREBOARD_LIMIT = 50;
 
-/** Placeholder-promille per genstand — overtaget fra useLeaderboard.ts. */
-export const PROMILLE_PER_DRINK = 0.18;
-
 /** Drikkekategorier. `id` gemmes i drinkLogs.categoryId; `label` er dansk UI-tekst. */
 export const DRINK_CATEGORIES = [
   { id: "beer", label: "Øl", emoji: "🍺", isDrink: true },

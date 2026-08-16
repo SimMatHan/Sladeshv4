@@ -186,11 +186,8 @@ kør aldrig smoke-testen mod produktion.
 
 ## 5. Tilbage efter denne fase
 
-- **Achievements-motoren.** Tabellen findes; definitionerne og
-  oplåsningslogikken er ikke porteret.
-- **Promille.** Scoreboardet bruger stadig placeholderen `genstande × 0,18`
-  fra `useLeaderboard.ts` i stedet for en rigtig Widmark-beregning.
-- **`removeDrink`.** `logDrink` har ingen modpart, selvom datamodellen
-  understøtter fortrydelser (`action: "remove"` med negativ `sizeMultiplier`).
 - **Levering af varslinger** (afsnit 3).
 - **Produktions-deployment, Vercel og cutover.**
+
+> Achievements-motoren, promilleberegningen og `removeDrink` stod også på
+> denne liste. De kom med i fase 8 — se `docs/achievements-og-promille.md`.

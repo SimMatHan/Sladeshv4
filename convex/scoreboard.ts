@@ -1,13 +1,10 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import {
-  PROMILLE_PER_DRINK,
-  SCOREBOARD_LIMIT,
-  getDrinkDayStart,
-  isDrinkCategory,
-} from "./constants";
+import { SCOREBOARD_LIMIT, getDrinkDayStart, isDrinkCategory } from "./constants";
+import { beregnRunStart } from "./drinkRules";
 import { requireKanalMedlem } from "./identity";
+import { beregnPromille, kanBeregnePromille } from "./promilleRules";
 
 /**
  * Scoreboard.
@@ -27,6 +24,19 @@ import { requireKanalMedlem } from "./identity";
  *
  * Sortering: flest genstande først; ved lige antal vinder den der drak
  * tidligst (samme tie-breaker som før).
+ *
+ * PROMILLE (fase 8): kolonnen viste før pladsholderen `genstande × 0,18` fra
+ * useLeaderboard.ts — det samme tal for alle, uanset vægt og køn. Nu regnes
+ * den efter Widmark ud fra brugerens egne indstillinger, og den er `undefined`
+ * for dem der ikke har slået den til eller ikke har udfyldt vægt og køn. At
+ * vise et opdigtet tal ved siden af et rigtigt ville være værre end at vise
+ * ingenting.
+ *
+ * To ting adskiller scoreboardets promille fra `promille.getMinPromille`:
+ * den regnes kun på logninger i DENNE Kanal, og den ser kun logninger fra
+ * drikkedagens start. Ens egen promille bruger alle ens logninger. Forskellen
+ * er bevidst: at hente hvert medlems fulde logbog for at fylde én kolonne ud
+ * ville koste et opslag per medlem ved hver eneste opdatering af stillingen.
  */
 
 export type ScoreboardRow = {
@@ -39,7 +49,11 @@ export type ScoreboardRow = {
   /** Genstande i den aktuelle drikkedag, vægtet med størrelse. */
   drinksToday: number;
   streak: number;
-  promille: number;
+  /**
+   * Promille efter Widmark. `undefined` når brugeren ikke har slået den til
+   * eller mangler vægt/køn — se filens hoved.
+   */
+  promille?: number;
   /** Seneste logning i dag — bruges som tie-breaker. */
   lastDrinkAt?: number;
   isOnline: boolean;
@@ -72,21 +86,13 @@ export const getScoreboard = query({
       )
       .collect();
 
-    // Aggregér per bruger.
-    const totals = new Map<
-      Id<"users">,
-      { drinks: number; lastDrinkAt: number }
-    >();
-
+    // Grupper per bruger. Nulstillings-rækkerne beholdes her, fordi de er
+    // det der afgør hvornår brugerens igangværende run begyndte.
+    const logsPerBruger = new Map<Id<"users">, typeof logs>();
     for (const log of logs) {
-      // Nulstillings-rækker og ikke-drikkevarer tæller ikke med i stillingen.
-      if (log.isReset === true) continue;
-      if (!isDrinkCategory(log.categoryId)) continue;
-
-      const previous = totals.get(log.userId);
-      const drinks = (previous?.drinks ?? 0) + (log.sizeMultiplier ?? 1);
-      const lastDrinkAt = Math.max(previous?.lastDrinkAt ?? 0, log.timestamp);
-      totals.set(log.userId, { drinks, lastDrinkAt });
+      const liste = logsPerBruger.get(log.userId);
+      if (liste === undefined) logsPerBruger.set(log.userId, [log]);
+      else liste.push(log);
     }
 
     const members = await Promise.all(
@@ -98,8 +104,34 @@ export const getScoreboard = query({
       if (user === null) continue;
       if (user.checkInStatus !== true) continue;
 
-      const total = totals.get(user._id);
-      const drinksToday = round2(total?.drinks ?? 0);
+      const brugerLogs = logsPerBruger.get(user._id) ?? [];
+
+      // Stillingen gøres op for det IGANGVÆRENDE run, ikke hele drikkedagen.
+      // Det var også meningen i det gamle repo, hvor listen sorterede efter
+      // `currentRunDrinkCount` — men den nye `resetRun` skrev kun en markør,
+      // som stillingen sprang over uden at flytte grænsen. En nulstilling
+      // nulstiller nu faktisk stillingen.
+      const runStart = beregnRunStart(dayStart, brugerLogs);
+
+      let drinks = 0;
+      let lastDrinkAt: number | undefined;
+      const runLogs = [];
+
+      for (const log of brugerLogs) {
+        if (log.timestamp < runStart) continue;
+        if (log.isReset === true) continue;
+        runLogs.push(log);
+
+        // Kun rigtige drikkevarer tæller i stillingen — en cigaret gør ikke.
+        if (!isDrinkCategory(log.categoryId)) continue;
+        drinks += log.sizeMultiplier ?? 1;
+        lastDrinkAt = Math.max(lastDrinkAt ?? 0, log.timestamp);
+      }
+
+      const indstilling = user.promille;
+      const promille = kanBeregnePromille(indstilling)
+        ? beregnPromille(runLogs, indstilling.weight, indstilling.gender, now)
+        : undefined;
 
       rows.push({
         userId: user._id,
@@ -108,10 +140,10 @@ export const getScoreboard = query({
         color: user.avatarColor ?? fallbackColor(user._id),
         profileEmoji: user.profileEmoji,
         profileGradient: user.profileGradient,
-        drinksToday,
+        drinksToday: round2(drinks),
         streak: user.currentDayStreak ?? 0,
-        promille: round1(drinksToday * PROMILLE_PER_DRINK),
-        lastDrinkAt: total?.lastDrinkAt,
+        ...(promille !== undefined ? { promille: round2(promille) } : {}),
+        lastDrinkAt,
         // Kun indcheckede brugere når hertil — samme antagelse som før.
         isOnline: true,
       });
@@ -140,10 +172,6 @@ export const getScoreboard = query({
 /** Undgår flydende-komma-støj som 3.0000000000000004. */
 function round2(value: number): number {
   return Number(value.toFixed(2));
-}
-
-function round1(value: number): number {
-  return Number(value.toFixed(1));
 }
 
 /** Stabil farve ud fra bruger-id, når brugeren ikke har valgt en. */
