@@ -1,5 +1,5 @@
 import { ConvexError, v } from "convex/values";
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { evaluerAlleBeacons, type Evalueringsresultat } from "./beacons";
@@ -8,19 +8,67 @@ import { requireCurrentUser } from "./identity";
 /**
  * Understøttelse af smoke-testen.
  *
- * Alt i denne fil deler den samme tre-lags spærre:
- * 1. Kræver login — som alt andet.
- * 2. Virker KUN på den kaldende bruger selv; man kan ikke pege noget af det
+ * Alt i denne fil deler den samme FIRE-lags spærre:
+ * 1. Deploymentet skal udtrykkeligt tillade testfunktioner (se nedenfor).
+ * 2. Kræver login — som alt andet.
+ * 3. Virker KUN på den kaldende bruger selv; man kan ikke pege noget af det
  *    mod en anden konto.
- * 3. Kræver at brugerens email bærer smoke-test-præfikset.
+ * 4. Kræver at brugerens email bærer smoke-test-præfikset.
  *
- * Kør den aldrig mod produktion. Filen bør slettes sammen med
- * convex/migrering.ts, når produktionen er skiftet over.
+ * Lag 1 er nyt i fase 9. Indtil da var "kør den aldrig mod produktion" en
+ * regel man skulle huske — og med et produktions-deployment ved siden af
+ * dev er det for lidt. Nu er det deploymentet selv der bestemmer, og
+ * produktion siger nej, uanset hvad man kommer til at pege scriptet mod.
+ *
+ * Filen bør stadig slettes sammen med convex/migrering.ts, når produktionen
+ * er skiftet over.
  */
 
 /** Præfiks som smoke-testens data SKAL bære for at kunne slettes. */
 export const SMOKE_PREFIX = "smoke-test+";
 export const SMOKE_KANAL_PREFIX = "SMOKE-";
+
+/**
+ * Deployment-variablen der åbner for denne fil. Sættes KUN på dev:
+ *
+ *   npx convex env set TILLAD_TESTFUNKTIONER ja
+ *
+ * Sættes den aldrig på produktion, er hele filen død kode dér.
+ */
+export const TESTFUNKTIONER_VARIABEL = "TILLAD_TESTFUNKTIONER";
+
+/**
+ * Læser en deployment-variabel uden at kræve node-typer.
+ *
+ * Samme grund som i convex/migrering.ts: filen indgår i `api`-modulgrafen,
+ * som frontenden importerer, så den typechecker også i frontend-programmet —
+ * og dér findes `process` ikke.
+ */
+function deploymentVariabel(navn: string): string | undefined {
+  const g = globalThis as {
+    process?: { env?: Record<string, string | undefined> };
+  };
+  return g.process?.env?.[navn];
+}
+
+function testfunktionerTilladt(): boolean {
+  return deploymentVariabel(TESTFUNKTIONER_VARIABEL) === "ja";
+}
+
+/**
+ * Kan smoke-testen køre mod dette deployment?
+ *
+ * Kaster bevidst ikke, og kræver bevidst ikke login: smoke-testen kalder den
+ * som allerførste handling for at kunne stoppe med en forståelig besked FØR
+ * den opretter noget som helst. Svaret er en enkelt boolean om deploymentet,
+ * ikke om data.
+ */
+export const testmiljoStatus = query({
+  args: {},
+  handler: async (): Promise<{ tilladt: boolean }> => {
+    return { tilladt: testfunktionerTilladt() };
+  },
+});
 
 export const cleanupSmokeTest = mutation({
   args: {},
@@ -174,8 +222,23 @@ export const koerBeaconEvaluering = mutation({
   },
 });
 
-/** Den fælles spærre: logget ind, sig selv, og en smoke-test-email. */
+/**
+ * Den fælles spærre: rigtigt deployment, logget ind, sig selv, og en
+ * smoke-test-email.
+ */
 async function kraeverSmokeTestBruger(ctx: MutationCtx): Promise<Doc<"users">> {
+  // Deploymentet spørges FØRST. Er det ikke et testdeployment, skal svaret
+  // være det samme uanset hvem der kalder — og uden at røre databasen.
+  if (!testfunktionerTilladt()) {
+    throw new ConvexError({
+      code: "TESTFUNKTIONER_SLAAET_FRA",
+      message:
+        `Testfunktionerne er slået fra på dette deployment. De kræver ` +
+        `${TESTFUNKTIONER_VARIABEL}=ja, som kun sættes på dev. ` +
+        `Kører du mod produktion ved et uheld?`,
+    });
+  }
+
   const user = await requireCurrentUser(ctx);
 
   if (!user.email.startsWith(SMOKE_PREFIX)) {

@@ -4,8 +4,12 @@ Re-arkitektur af [SladeshApp.dk](https://sladeshapp.dk) fra Firebase/Firestore
 til Convex. Nyt projekt — det gamle repo (`SimMatHan/Sladesh2.0`) bruges kun som
 læse-reference og ændres ikke.
 
-**Status: fase 3 — autentificering.** Datamodel, kernefunktioner og login er
-på plads. Ingen rigtig app-UI, ingen datamigrering endnu.
+**Status: fase 9 — produktions-deployment.** Backenden er komplet: hver
+datafunktion fra det gamle repo har en modpart i Convex, og produktionsdata er
+migreret. Det der mangler, er ikke længere forretningslogik, men frontenden —
+`src/` er stadig en login-skal.
+
+Udrulning til produktion: **[`docs/produktion.md`](docs/produktion.md)**.
 
 ## Kom i gang
 
@@ -43,29 +47,47 @@ bundlingen fejler bagefter med:
 | `npm run dev:backend` | Kun `convex dev` (watch + deploy af schema) |
 | `npm run build` | Typecheck + produktionsbuild |
 | `npm run check` | `tsc --noEmit` for frontend, Convex-funktioner og scripts |
-| `npm run test:logic` | Rene forretningsregler (stræk, point, drikkedag) — kræver intet deployment |
+| `npm run test:logic` | Rene forretningsregler — kræver intet deployment |
 | `npm run smoke-test` | Fuld vej mod dev-deploymentet, autentificeret. Opretter selv sine testkonti |
+| `npm run migrer` | Firestore → Convex. Tørkørsel som default |
+| `npm run datarevision` | Læser produktions-Firestore og rapporterer afvigelser |
 | `npm run lint` | oxlint |
 
 ## Struktur
 
 ```
 convex/
-  schema.ts       Datamodellen — 8 tabeller
-  auth.config.ts  Convex accepterer JWT'er fra Firebase Authentication
-  identity.ts     getCurrentUser + adgangskontrol-hjælpere
+  schema.ts        Datamodellen — 8 tabeller
+  auth.config.ts   Convex accepterer JWT'er fra Firebase Authentication
+  identity.ts      getCurrentUser + adgangskontrol-hjælpere
+  crons.ts         Planlagte job: sladesh-udløb, beacons, chat-oprydning
+
   users.ts kanaler.ts checkIns.ts drinkLogs.ts   Kernemutations og -queries
-  scoreboard.ts   Scoreboard som live query (IKKE en tabel)
-  sladesh.ts      Opslag af aktiv Sladesh-udfordring
-  streaks.ts      Stræk- og pointregler (rene funktioner)
-  constants.ts    Forretningskonstanter overtaget fra det gamle repo
-  _generated/     Genereret af `npx convex dev` — skal committes
+  messages.ts      Kanal-chat
+  beacons.ts       Stress-signaler
+  sladesh.ts       Sladesh-livscyklussen
+  achievements.ts  Achievement-motoren
+  promille.ts      Promille efter Widmark
+  scoreboard.ts    Scoreboard som live query (IKKE en tabel)
+
+  *Rules.ts        Rene regler uden database — afprøves af test:logic
+  streaks.ts       Stræk- og pointregler
+  constants.ts     Forretningskonstanter overtaget fra det gamle repo
+  migrering.ts     Engangsfunktioner til datamigreringen. Slettes efter cutover
+  testing.ts       Smoke-testens hjælpere. Slås fra på produktion. Slettes med
+  _generated/      Genereret af `npx convex dev` — skal committes
 docs/
-  eksisterende-datamodel.md   Kortlægning af den gamle Firestore-model
+  eksisterende-datamodel.md    Kortlægning af den gamle Firestore-model
+  datarevision.md              Revision af produktionsdata før migrering
+  beskeder-og-beacons.md       Fase 7
+  achievements-og-promille.md  Fase 8
+  produktion.md                Udrulning og cutover
 scripts/
-  logic-test.ts   Forretningsregler, kører lokalt
-  smoke-test.ts   Ende-til-ende mod dev-deploymentet
-src/              Login-skal: Firebase Auth + ConvexProviderWithAuth
+  logic-test.ts    Forretningsregler, kører lokalt
+  smoke-test.ts    Ende-til-ende mod dev-deploymentet
+  migrer.ts        Firestore → Convex
+  vercel-build.sh  Byggekommandoen Vercel kører
+src/               Login-skal: Firebase Auth + ConvexProviderWithAuth
 ```
 
 ## Autentificering
@@ -82,9 +104,23 @@ gang. Der skal to til, fordi adgangskontrollen mellem brugere ikke kan
 afprøves med én — B skal være logget ind og alligevel afvises på A's Kanal.
 
 Identiteten kommer altid fra det verificerede token, aldrig fra klientens
-argumenter. `users.authId` = tokenets `sub` = Firebase UID. Når data engang
-migreres, skal `authId` sættes til brugerens eksisterende Firebase UID, så
-login matcher automatisk.
+argumenter. `users.authId` = tokenets `sub` = Firebase UID. Migreringen satte
+`authId` til brugerens eksisterende Firebase UID, så login matcher automatisk
+og ingen skal oprette sig på ny.
+
+## Deployments
+
+Dev og produktion deler **ingenting** — hver har sin egen database og sit eget
+sæt deployment-variabler. To ting følger af det:
+
+- `VITE_FIREBASE_PROJECT_ID` skal sættes begge steder, ellers afvises hvert
+  eneste token.
+- `TILLAD_TESTFUNKTIONER=ja` sættes **kun** på dev. Uden den er
+  `convex/testing.ts` død kode, og smoke-testen kan ikke røre produktionsdata,
+  uanset hvad man kommer til at pege den mod.
+
+Hele udrulningen, inklusive cutover og tilbagerulning, står i
+[`docs/produktion.md`](docs/produktion.md).
 
 ## Konventioner
 

@@ -234,6 +234,25 @@ async function uploadTestbillede(
 async function main(): Promise<void> {
   console.log(`[Smoke] kører mod ${convexUrl}`);
 
+  // Spærren mod at ramme produktion. Deploymentet spørges FØR der oprettes
+  // noget som helst, så en forkert VITE_CONVEX_URL koster en fejlbesked og
+  // ikke to testbrugere i produktionsdatabasen.
+  const status = await new ConvexHttpClient(convexUrl!).query(
+    api.testing.testmiljoStatus,
+    {},
+  );
+  if (!status.tilladt) {
+    console.error(
+      `[Smoke] AFBRUDT — deploymentet tillader ikke testfunktioner.\n` +
+        `  ${convexUrl}\n` +
+        `  Smoke-testen opretter brugere, sender beskeder og kører\n` +
+        `  beacon-evalueringen. Den må kun ramme dev.\n\n` +
+        `  Er dette rent faktisk dit dev-deployment, så åbn for det:\n` +
+        `    npx convex env set TILLAD_TESTFUNKTIONER ja`,
+    );
+    process.exit(1);
+  }
+
   // 0. Login -------------------------------------------------------------
   console.log("\n[Smoke] 0/11 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
   const a = await firebaseSignInOrCreate(accounts[0].email, accounts[0].password);

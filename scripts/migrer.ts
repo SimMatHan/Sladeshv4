@@ -43,13 +43,27 @@ import type { Id } from "../convex/_generated/dataModel.js";
 const skriv = process.argv.includes("--skriv");
 const ryd = process.argv.includes("--ryd");
 
-const convexUrl = process.env.VITE_CONVEX_URL ?? process.env.CONVEX_URL;
+/**
+ * Måldeploymentet.
+ *
+ * `CONVEX_URL` vinder BEVIDST over `VITE_CONVEX_URL`. Den sidste skrives
+ * automatisk af `npx convex dev` til .env.local og peger altså altid på dev.
+ * Skal migreringen køre mod produktion, sættes `CONVEX_URL` udtrykkeligt for
+ * det ene kald — så behøver ingen redigere .env.local og huske at rulle det
+ * tilbage bagefter:
+ *
+ *   CONVEX_URL=https://<produktion>.convex.cloud npm run migrer -- --skriv
+ */
+const convexUrl = process.env.CONVEX_URL ?? process.env.VITE_CONVEX_URL;
 const secret = process.env.MIGRATION_SECRET;
 const nøglesti = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 const projektId = process.env.FIREBASE_PROJECT_ID ?? "sladeshultimate-1";
 
+/** Blev måldeploymentet valgt udtrykkeligt, frem for arvet fra .env.local? */
+const udtrykkeligtMaal = process.env.CONVEX_URL !== undefined;
+
 const mangler = Object.entries({
-  VITE_CONVEX_URL: convexUrl,
+  "CONVEX_URL eller VITE_CONVEX_URL": convexUrl,
   MIGRATION_SECRET: secret,
   GOOGLE_APPLICATION_CREDENTIALS: nøglesti,
 })
@@ -67,6 +81,29 @@ if (mangler.length > 0) {
 if (ryd && !skriv) {
   console.error("[Migrering] --ryd kræver --skriv. Afbryder.");
   process.exit(1);
+}
+
+/**
+ * `--ryd` sletter ALT i måldeploymentet. Det er bygget til gentagne
+ * tørkørsler mod dev, hvor det er harmløst.
+ *
+ * Peger man udtrykkeligt et andet sted hen med `CONVEX_URL`, skal
+ * værtsnavnet skrives af i `--bekraeft=<vært>`. Det er ikke til at gøre ved
+ * et uheld, og til forskel fra et rent forbud står vejen stadig åben, hvis
+ * en produktionsmigrering skal køres om.
+ */
+if (ryd && udtrykkeligtMaal) {
+  const vaert = new URL(convexUrl!).host;
+  const bekraeftet = process.argv.includes(`--bekraeft=${vaert}`);
+
+  if (!bekraeftet) {
+    console.error(
+      `[Migrering] --ryd mod et udtrykkeligt valgt deployment kræver, at du\n` +
+        `  skriver værtsnavnet af. ALT i deploymentet slettes.\n\n` +
+        `    npm run migrer -- --skriv --ryd --bekraeft=${vaert}\n`,
+    );
+    process.exit(1);
+  }
 }
 
 initializeApp({ credential: applicationDefault(), projectId: projektId });
