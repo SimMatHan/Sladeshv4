@@ -422,7 +422,8 @@ async function main(): Promise<void> {
     check("samme idempotencyKey → samme udfordring", igenSamme, challengeId);
 
     const cooldownEfter = await klientA.query(api.sladesh.getCooldown, {});
-    check("A er i cooldown efter afsendelse", cooldownEfter.canSend, false);
+    check("A kan IKKE sende igen (canSend)", cooldownEfter.canSend, false);
+    check("A er blokeret (blocked)", cooldownEfter.blocked, true);
     check("cooldown har en sluttid", cooldownEfter.msTilNaesteBlok > 0, true);
 
     await checkRejected("A sender igen i samme blok", () =>
@@ -507,6 +508,59 @@ async function main(): Promise<void> {
     );
     await checkRejected("opgiv en afsluttet udfordring", () =>
       klientB.mutation(api.sladesh.opgivSladesh, { challengeId }),
+    );
+
+    // --- Udløb -----------------------------------------------------------
+    // Den mest komplekse nye sti. Hovedflowet ovenfor gennemfører inden for
+    // de 10 minutter, så `expired` sættes aldrig — og at vente på
+    // scheduleren ville gøre testen upålidelig og langsom.
+    //
+    // I stedet sender B med et tilbagedateret `now`, så fristen allerede er
+    // overskredet i samme øjeblik udfordringen findes. Enhver handling på
+    // den udløser så oprydningen synkront.
+    console.log("\n[Smoke] udløb (tilbagedateret frist)");
+
+    const eluft = 11 * 60 * 1000; // ældre end fristen på 10 minutter
+    const forGammel = Date.now() - eluft;
+
+    const udloebetId = await klientB.mutation(api.sladesh.sendSladesh, {
+      recipientId: userIdA,
+      channelId,
+      idempotencyKey: crypto.randomUUID(),
+      now: forGammel,
+    });
+
+    const foerUdloeb = await klientA.query(api.users.getMe, {});
+    check(
+      "A har endnu ingen fejlede",
+      foerUdloeb?.sladeshFailedCount ?? 0,
+      0,
+    );
+
+    // A er modtager her. Ethvert forsøg på at rykke frem skal afvises OG
+    // lukke udfordringen som udløbet.
+    await checkRejected("A rykker frem på en udløbet udfordring", () =>
+      klientA.mutation(api.sladesh.registrerBevis, {
+        challengeId: udloebetId,
+        phase: "awaiting_filled",
+      }),
+    );
+
+    const efterUdloeb = await klientA.query(api.users.getMe, {});
+    check(
+      "udløb tæller som fejlet hos modtageren",
+      efterUdloeb?.sladeshFailedCount,
+      1,
+    );
+    check(
+      "en udløbet udfordring er ikke længere aktiv",
+      await klientA.query(api.sladesh.getActiveSladeshForUser, {}),
+      null,
+    );
+    check(
+      "B er heller ikke længere bundet",
+      await klientB.query(api.sladesh.getActiveSladeshForUser, {}),
+      null,
     );
   } finally {
     // Oprydning ----------------------------------------------------------
