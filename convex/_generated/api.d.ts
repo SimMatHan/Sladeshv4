@@ -10,12 +10,14 @@
 
 import type * as checkIns from "../checkIns.js";
 import type * as constants from "../constants.js";
+import type * as crons from "../crons.js";
 import type * as drinkLogs from "../drinkLogs.js";
 import type * as identity from "../identity.js";
 import type * as kanaler from "../kanaler.js";
 import type * as migrering from "../migrering.js";
 import type * as scoreboard from "../scoreboard.js";
 import type * as sladesh from "../sladesh.js";
+import type * as sladeshRules from "../sladeshRules.js";
 import type * as streaks from "../streaks.js";
 import type * as testing from "../testing.js";
 import type * as users from "../users.js";
@@ -29,12 +31,14 @@ import type {
 declare const fullApi: ApiFromModules<{
   checkIns: typeof checkIns;
   constants: typeof constants;
+  crons: typeof crons;
   drinkLogs: typeof drinkLogs;
   identity: typeof identity;
   kanaler: typeof kanaler;
   migrering: typeof migrering;
   scoreboard: typeof scoreboard;
   sladesh: typeof sladesh;
+  sladeshRules: typeof sladeshRules;
   streaks: typeof streaks;
   testing: typeof testing;
   users: typeof users;
