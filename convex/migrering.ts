@@ -92,6 +92,7 @@ export const status = query({
       "messages",
       "beacons",
       "sladeshChallenges",
+      "drinkVariations",
     ] as const;
 
     const ud: Record<string, number> = {};
@@ -114,6 +115,7 @@ export const ryd = mutation({
     kraeverHemmelighed(args.secret);
     const tabeller = [
       "achievements",
+      "drinkVariations",
       "drinkLogs",
       "checkIns",
       "messages",
@@ -370,6 +372,58 @@ export const opretAchievements = mutation({
     kraeverHemmelighed(args.secret);
     for (const raekke of args.raekker) await ctx.db.insert("achievements", raekke);
     return args.raekker.length;
+  },
+});
+
+/**
+ * Kataloget over drikkevarianter.
+ *
+ * Til forskel fra de oevrige opret-funktioner er denne IDEMPOTENT: en variant
+ * der allerede findes i samme kategori springes over. Grunden er, at
+ * hovedmigreringen allerede er koert mod produktion — varianterne kom foerst
+ * med i fase 10 og skal derfor kunne tilfoejes bagefter, uden at noget andet
+ * roeres og uden at en gentagen koersel giver dubletter.
+ */
+export const opretDrinkVariations = mutation({
+  args: {
+    ...hemmelighed,
+    raekker: v.array(
+      v.object({
+        name: v.string(),
+        description: v.optional(v.string()),
+        categoryId: v.string(),
+        createdAt: v.number(),
+        updatedAt: v.optional(v.number()),
+      }),
+    ),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ oprettet: number; sprunget: number }> => {
+    kraeverHemmelighed(args.secret);
+
+    let oprettet = 0;
+    let sprunget = 0;
+
+    for (const raekke of args.raekker) {
+      const findes = await ctx.db
+        .query("drinkVariations")
+        .withIndex("by_category_and_name", (q) =>
+          q.eq("categoryId", raekke.categoryId).eq("name", raekke.name),
+        )
+        .unique();
+
+      if (findes !== null) {
+        sprunget++;
+        continue;
+      }
+
+      await ctx.db.insert("drinkVariations", raekke);
+      oprettet++;
+    }
+
+    return { oprettet, sprunget };
   },
 });
 

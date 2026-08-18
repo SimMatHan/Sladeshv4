@@ -17,6 +17,7 @@ import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
 import type * as drinkLogs from "../drinkLogs.js";
 import type * as drinkRules from "../drinkRules.js";
+import type * as drinkVariations from "../drinkVariations.js";
 import type * as identity from "../identity.js";
 import type * as kanaler from "../kanaler.js";
 import type * as messageRules from "../messageRules.js";
@@ -47,6 +48,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   drinkLogs: typeof drinkLogs;
   drinkRules: typeof drinkRules;
+  drinkVariations: typeof drinkVariations;
   identity: typeof identity;
   kanaler: typeof kanaler;
   messageRules: typeof messageRules;

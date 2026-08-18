@@ -18,11 +18,15 @@
  *   npm run migrer -- --skriv         # skriver rigtigt
  *   npm run migrer -- --skriv --ryd   # rydder først (kun til gentagne dev-kørsler)
  *
+ *   # Kun kataloget over drikkevarianter, uden at røre noget andet. Bruges
+ *   # efter fase 10, hvor hovedmigreringen for længst er kørt:
+ *   npm run migrer -- --skriv --kun-varianter
+ *
  * Rækkefølgen er bestemt af, at users og kanaler peger på hinanden:
  *   1. brugere ind uden kanalreferencer
  *   2. kanaler ind, med medlemmer oversat til Convex-id'er
  *   3. brugernes joinedChannelIds/activeChannelId sættes
- *   4. historik (checkIns, drinkLogs, achievements, beacons)
+ *   4. historik (checkIns, drinkLogs, achievements, beacons) + drikkevarianter
  *   5. totalPoints og stræk genberegnes fra logrækkerne
  *
  * PRIVATLIV: konsoloutput indeholder kun tal og feltnavne — aldrig emails,
@@ -42,6 +46,17 @@ import type { Id } from "../convex/_generated/dataModel.js";
 
 const skriv = process.argv.includes("--skriv");
 const ryd = process.argv.includes("--ryd");
+
+/**
+ * Koer KUN drikkevarianterne.
+ *
+ * Hovedmigreringen er allerede koert mod baade dev og produktion.
+ * Varianterne kom foerst med i fase 10, da skaermkortlaegningen viste at
+ * hverken forsiden eller /log kan fungere uden dem. Dette flag tilfoejer dem
+ * uden at roere noget andet — og `opretDrinkVariations` springer varianter
+ * over der allerede findes, saa den kan koeres igen uden at give dubletter.
+ */
+const kunVarianter = process.argv.includes("--kun-varianter");
 
 /**
  * Måldeploymentet.
@@ -178,6 +193,16 @@ function portioner<T>(liste: T[], størrelse: number): T[][] {
   return ud;
 }
 
+/** Kategorierne kataloget maa referere. Samme liste som convex/constants.ts. */
+const KENDTE_KATEGORIER = new Set([
+  "beer",
+  "cider",
+  "wine",
+  "cocktail",
+  "shot",
+  "other",
+]);
+
 // Afvigelser vi vil rapportere til sidst frem for at fejle på.
 const noter: string[] = [];
 const ukendteGenderVærdier = new Map<string, number>();
@@ -213,9 +238,11 @@ async function main(): Promise<void> {
   const checkInSnap = await db.collectionGroup("checkIns").get();
   const drinkLogSnap = await db.collectionGroup("drinkLogs").get();
   const beaconSnap = await db.collection("stressBeacons").get();
+  const variantSnap = await db.collection("drinkVariations").get();
 
   console.log(
-    `[Migrering]   ${authUids.size} Auth-brugere, ` +
+    `[Migrering]   ${variantSnap.size} drikkevarianter, ` +
+    `${authUids.size} Auth-brugere, ` +
       `${brugerSnap.size} brugere, ${kanalSnap.size} kanaler, ` +
       `${checkInSnap.size} check ins, ${drinkLogSnap.size} drikkelogninger, ` +
       `${beaconSnap.size} beacons`,
@@ -463,6 +490,44 @@ async function main(): Promise<void> {
     });
   });
 
+  // Drikkevarianter: katalogets varianter, ikke brugernes taellere.
+  // Rod-collectionen indgik ikke i datarevisionen i fase 4, saa formen er
+  // ikke maalt paa forhaand — derfor rapporteres afvigelser frem for at
+  // blive antaget vaek.
+  let sprungetVarianter = 0;
+  let varianterUdenBeskrivelse = 0;
+  const ukendteVariantKategorier = new Map<string, number>();
+  const drinkVariations = variantSnap.docs.flatMap((doc) => {
+    const d = doc.data();
+    const name = tekst(d.name)?.trim();
+    const categoryId = tekst(d.categoryId);
+
+    if (name === undefined || categoryId === undefined) {
+      sprungetVarianter++;
+      return [];
+    }
+
+    if (!KENDTE_KATEGORIER.has(categoryId)) {
+      ukendteVariantKategorier.set(
+        categoryId,
+        (ukendteVariantKategorier.get(categoryId) ?? 0) + 1,
+      );
+    }
+
+    const description = tekst(d.description)?.trim();
+    if (description === undefined) varianterUdenBeskrivelse++;
+
+    return [
+      udenTomme({
+        name,
+        description,
+        categoryId,
+        createdAt: tid(d.createdAt) ?? Date.now(),
+        updatedAt: tid(d.updatedAt),
+      }),
+    ];
+  });
+
   // Beacons: legacy `location: {lat,lng}` normaliseres til flad lat/lng.
   let sprungetBeacons = 0;
   let normaliseredeBeacons = 0;
@@ -529,6 +594,17 @@ async function main(): Promise<void> {
   console.log(`    heraf fortrydelser med negativ vægt: ${fortrydelser}`);
   console.log(`  achievements:   ${achievements.length}`);
   console.log(`  beacons:        ${beacons.length} (sprunget over: ${sprungetBeacons}, normaliseret fra legacy: ${normaliseredeBeacons})`);
+  console.log(`  drikkevarianter:${drinkVariations.length} (sprunget over: ${sprungetVarianter})`);
+  if (varianterUdenBeskrivelse > 0) {
+    console.log(`    heraf uden beskrivelse: ${varianterUdenBeskrivelse}`);
+  }
+
+  if (ukendteVariantKategorier.size > 0) {
+    console.log("\n[Migrering] varianter i kategorier der ikke findes i appen:");
+    for (const [kategori, antal] of ukendteVariantKategorier) {
+      console.log(`  ${kategori}: ${antal} → migreres, men vises ingen steder`);
+    }
+  }
 
   if (ukendteGenderVærdier.size > 0) {
     console.log("\n[Migrering] promille.gender med værdier uden for male/female:");
@@ -551,6 +627,33 @@ async function main(): Promise<void> {
   }
 
   // --- Skriv til Convex ----------------------------------------------------
+
+  /** Indsaetter kataloget. Idempotent — se convex/migrering.ts. */
+  const skrivVarianter = async (): Promise<void> => {
+    let oprettet = 0;
+    let sprunget = 0;
+    for (const portion of portioner(drinkVariations, 100)) {
+      const svar = await convex.mutation(api.migrering.opretDrinkVariations, {
+        secret: secret!,
+        raekker: portion,
+      });
+      oprettet += svar.oprettet;
+      sprunget += svar.sprunget;
+    }
+    console.log(
+      `  ${oprettet} drikkevarianter (fandtes allerede: ${sprunget})`,
+    );
+  };
+
+  // Kun kataloget: springer baade oprydningstjekket og alle fem trin over,
+  // fordi hovedmigreringen for laengst er koert. Se flagets kommentar oeverst.
+  if (kunVarianter) {
+    console.log("\n[Migrering] KUN drikkevarianter — intet andet roeres");
+    await skrivVarianter();
+    console.log("\n[Migrering] faerdig.");
+    return;
+  }
+
   if (ryd) {
     console.log("\n[Migrering] rydder eksisterende data …");
     const slettet = await convex.mutation(api.migrering.ryd, { secret: secret! });
@@ -718,6 +821,8 @@ async function main(): Promise<void> {
     });
   }
   console.log(`  ${beacons.length} beacons`);
+
+  await skrivVarianter();
 
   console.log("[Migrering] 5/5 genberegner point og stræk fra logrækkerne …");
   const alleBrugerIds = Object.values(brugerMap);

@@ -64,6 +64,7 @@ convex/
   crons.ts         Planlagte job: sladesh-udløb, beacons, chat-oprydning
 
   users.ts kanaler.ts checkIns.ts drinkLogs.ts   Kernemutations og -queries
+  drinkVariations.ts  Kataloget over drikkevarianter
   messages.ts      Kanal-chat
   beacons.ts       Stress-signaler
   sladesh.ts       Sladesh-livscyklussen

@@ -1,6 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { AVATAR_COLOR_NAMES, isAvatarColor } from "./constants";
 import {
   getAuthId,
   getCurrentUser,
@@ -168,6 +169,114 @@ export const setActiveChannel = mutation({
   },
 });
 
+/** Længdegrænser for profilfelter. Nye — det gamle repo havde ingen. */
+export const NAVN_MAX = 40;
+export const FULDT_NAVN_MAX = 100;
+/** Emoji fylder flere UTF-16-enheder; 8 rummer også sammensatte tegn. */
+export const EMOJI_MAX = 8;
+
+/**
+ * Retter den indloggede brugers egen profil.
+ *
+ * Hullet der blokerede /settings, /profile og /onboarding: felterne har været
+ * i schemaet siden fase 1, men `createUser` satte dem én gang, og der fandtes
+ * ingen vej til at ændre dem bagefter.
+ *
+ * Man kan kun rette SIG SELV. Der er bevidst ingen `userId`-parameter — heller
+ * ikke for admins. Skal en admin kunne rette andres profiler, er det en anden
+ * funktion med sin egen begrundelse.
+ *
+ * Konventionen er som i `promille.setPromilleIndstilling`:
+ * `undefined` = rør ikke feltet, `null` = ryd det.
+ *
+ * `email` og `authId` kan ikke ændres her — de kommer fra Firebase-tokenet og
+ * ville kunne bruges til at overtage en anden profil.
+ */
+export const opdaterProfil = mutation({
+  args: {
+    displayName: v.optional(v.string()),
+    fullName: v.optional(v.union(v.string(), v.null())),
+    photoURL: v.optional(v.union(v.string(), v.null())),
+    emoji: v.optional(v.union(v.string(), v.null())),
+    avatarColor: v.optional(v.union(v.string(), v.null())),
+    profileEmoji: v.optional(v.union(v.string(), v.null())),
+    profileGradient: v.optional(v.union(v.string(), v.null())),
+    onboardingCompleted: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    const user = await requireCurrentUser(ctx);
+
+    const patch: Record<string, unknown> = { updatedAt: Date.now() };
+
+    if (args.displayName !== undefined) {
+      const displayName = args.displayName.trim();
+      // Til forskel fra de øvrige kan visningsnavnet ikke ryddes: det står
+      // på scoreboardet og i hver logrække, og en tom streng ville vise sig
+      // som et hul overalt i appen.
+      if (displayName.length === 0) {
+        throw new ConvexError({
+          code: "EMPTY_DISPLAY_NAME",
+          message: "Visningsnavnet må ikke være tomt.",
+        });
+      }
+      patch.displayName = kraeverLaengde(displayName, NAVN_MAX, "Visningsnavnet");
+    }
+
+    if (args.fullName !== undefined) {
+      patch.fullName = tomTilUndefined(args.fullName, FULDT_NAVN_MAX, "Det fulde navn");
+    }
+
+    if (args.photoURL !== undefined) {
+      patch.photoURL = tomTilUndefined(args.photoURL, 2000, "Billed-URL'en");
+    }
+
+    if (args.emoji !== undefined) {
+      patch.emoji = tomTilUndefined(args.emoji, EMOJI_MAX, "Avatar-emojien");
+    }
+
+    if (args.profileEmoji !== undefined) {
+      patch.profileEmoji = tomTilUndefined(args.profileEmoji, EMOJI_MAX, "Status-emojien");
+    }
+
+    if (args.profileGradient !== undefined) {
+      // Frit format: en Tailwind-klassestreng som "from-gray-400 to-gray-600".
+      patch.profileGradient = tomTilUndefined(args.profileGradient, 200, "Gradienten");
+    }
+
+    if (args.avatarColor !== undefined) {
+      if (args.avatarColor === null || args.avatarColor.trim().length === 0) {
+        patch.avatarColor = undefined;
+      } else {
+        const farve = args.avatarColor.trim();
+        // NY spærre: farven skal være en af de kendte. Uden den kunne der
+        // gemmes et navn, ingen skærm kan tegne, og brugeren ville få
+        // fallback-farven uden at forstå hvorfor.
+        if (!isAvatarColor(farve)) {
+          throw new ConvexError({
+            code: "UNKNOWN_AVATAR_COLOR",
+            message:
+              `"${farve}" er ikke en kendt avatar-farve. Gyldige: ` +
+              AVATAR_COLOR_NAMES.join(", "),
+          });
+        }
+        patch.avatarColor = farve;
+      }
+    }
+
+    if (args.onboardingCompleted !== undefined) {
+      patch.onboardingCompleted = args.onboardingCompleted;
+    }
+
+    await ctx.db.patch(user._id, patch);
+
+    // Kun FELTNAVNE logges. Et visningsnavn er en personoplysning.
+    console.log("[User] profil opdateret", {
+      userId: user._id,
+      felter: Object.keys(patch).filter((navn) => navn !== "updatedAt"),
+    });
+  },
+});
+
 /**
  * Opdaterer den indloggede brugers live-position.
  *
@@ -252,4 +361,29 @@ export const getUser = query({
  */
 function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
+}
+
+/**
+ * Trimmer og længdetjekker. Tom streng og `null` bliver til `undefined`, som
+ * i Convex fjerner feltet — samme virkning som `deleteField()` i Firestore.
+ */
+function tomTilUndefined(
+  raa: string | null,
+  max: number,
+  etiket: string,
+): string | undefined {
+  if (raa === null) return undefined;
+  const vaerdi = raa.trim();
+  if (vaerdi.length === 0) return undefined;
+  return kraeverLaengde(vaerdi, max, etiket);
+}
+
+function kraeverLaengde(vaerdi: string, max: number, etiket: string): string {
+  if (vaerdi.length > max) {
+    throw new ConvexError({
+      code: "FIELD_TOO_LONG",
+      message: `${etiket} må højst fylde ${max} tegn (var ${vaerdi.length}).`,
+    });
+  }
+  return vaerdi;
 }

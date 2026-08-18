@@ -263,6 +263,40 @@ export default defineSchema({
    * achievement-DEFINITIONERNE (titel, billede, tærskel) er fortsat statiske i
    * kode; her ligger kun brugerens oplåsninger.
    */
+  /**
+   * Kataloget over drikkevarianter — "Tuborg", "Rødvin", "Vermouth Tonic".
+   * Det brugeren vælger imellem, når hun logger en genstand.
+   *
+   * Svarer til rod-collectionen `/drinkVariations` i Firestore. Den blev
+   * holdt uden for fase 1's afgrænsning og kom først med i fase 10, da
+   * skærmkortlægningen viste, at hverken forsiden eller /log kan fungere
+   * uden den.
+   *
+   * NAVNEFÆLDE: brugerdokumentet i den gamle app havde et felt med SAMME
+   * navn, som var en tæller per variant i det aktuelle run. Det felt er
+   * bevidst fjernet og beregnes nu fra `drinkLogs`. De to har intet med
+   * hinanden at gøre.
+   *
+   * `drinkLogs.variationName` er et snapshot af navnet, ikke en reference
+   * hertil. Historikken overlever derfor, at en variant omdøbes eller
+   * slettes — hvilket er meningen: man drak den Tuborg, uanset hvad
+   * kataloget hedder i dag.
+   */
+  drinkVariations: defineTable({
+    name: v.string(),
+    // Valgfri: rod-collectionen indgik ikke i datarevisionen i fase 4, så vi
+    // ved ikke om alle rækker i produktionen har en beskrivelse. Migreringen
+    // rapporterer hvor mange der manglede.
+    description: v.optional(v.string()),
+    categoryId: v.string(), // "beer", "wine", … jf. DRINK_CATEGORIES
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  })
+    .index("by_category", ["categoryId"])
+    // Unikhed på (kategori, navn) håndhæves ikke af Convex, men dette index
+    // gør det billigt at tjekke eksplicit før indsættelse.
+    .index("by_category_and_name", ["categoryId", "name"]),
+
   achievements: defineTable({
     userId: v.id("users"),
     achievementId: v.string(), // fx "obeerma", "mr_worldwide", "puff_minister"

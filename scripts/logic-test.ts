@@ -8,7 +8,14 @@
  * Kør: npm run test:logic
  */
 
-import { getDrinkDayStart, getSize } from "../convex/constants";
+import {
+  AVATAR_COLORS,
+  AVATAR_COLOR_NAMES,
+  DRINK_CATEGORIES,
+  getDrinkDayStart,
+  getSize,
+  isAvatarColor,
+} from "../convex/constants";
 import { computeStreak, pointsForDrink } from "../convex/streaks";
 import schema from "../convex/schema.ts";
 import {
@@ -1092,6 +1099,28 @@ console.log("\n[Logic] achievements");
       {},
     )?.achievementId !== "obeerma",
     true,
+  );
+}
+
+console.log("\n[Logic] avatar-farver og kategorier");
+{
+  // Farvelisten er overtaget fra det gamle repos AVATAR_COLORS og bruges nu
+  // to steder: som spærre i users.opdaterProfil og som fallback i
+  // scoreboardet. Står de to lister ikke ens, får brugere en farve appen
+  // ikke kan tegne.
+  check("syv avatar-farver", AVATAR_COLORS.length, 7);
+  check("navnene er udtrukket i samme raekkefoelge", AVATAR_COLOR_NAMES[0], "sunset");
+  check("hver farve har en gradient", AVATAR_COLORS.every((f) => f.gradient.length > 0), true);
+  check("kendt farve godtages", isAvatarColor("cosmic"), true);
+  check("ukendt farve afvises", isAvatarColor("neon"), false);
+  check("tom streng afvises", isAvatarColor(""), false);
+
+  // Kataloget over drikkevarianter må kun referere kategorier appen kender.
+  // Listen i scripts/migrer.ts skal matche denne.
+  check(
+    "seks kategorier",
+    DRINK_CATEGORIES.map((k) => k.id),
+    ["beer", "cider", "wine", "cocktail", "shot", "other"],
   );
 }
 

@@ -281,7 +281,7 @@ async function main(): Promise<void> {
   }
 
   // 0. Login -------------------------------------------------------------
-  console.log("\n[Smoke] 0/11 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
+  console.log("\n[Smoke] 0/12 logger begge testkonti ind via Firebase (oprettes hvis de mangler)");
   const a = await firebaseSignInOrCreate(accounts[0].email, accounts[0].password);
   const b = await firebaseSignInOrCreate(accounts[1].email, accounts[1].password);
   console.log(`  A: ${a.localId}`);
@@ -299,7 +299,7 @@ async function main(): Promise<void> {
 
   try {
     // 1. Profiler --------------------------------------------------------
-    console.log("\n[Smoke] 1/11 opretter profiler");
+    console.log("\n[Smoke] 1/12 opretter profiler");
     const userIdA = await klientA.mutation(api.users.createUser, {
       displayName: "Smoke Tester",
       emoji: "🍺",
@@ -316,7 +316,7 @@ async function main(): Promise<void> {
     check("createUser er idempotent", igen, userIdA);
 
     // 2. Uautentificeret adgang ------------------------------------------
-    console.log("\n[Smoke] 2/11 verificerer at uautentificerede kald ikke slipper igennem");
+    console.log("\n[Smoke] 2/12 verificerer at uautentificerede kald ikke slipper igennem");
     await checkRejected("anonym createUser", () =>
       anonym.mutation(api.users.createUser, {}),
     );
@@ -344,7 +344,7 @@ async function main(): Promise<void> {
     );
 
     // 3. Kanal -----------------------------------------------------------
-    console.log("\n[Smoke] 3/11 opretter Kanal");
+    console.log("\n[Smoke] 3/12 opretter Kanal");
     const code = `SMOKE-${Date.now()}`;
     channelId = await klientA.mutation(api.kanaler.createKanal, {
       name: "Ballade",
@@ -364,7 +364,7 @@ async function main(): Promise<void> {
 
     // 4. Adgangskontrol mellem brugere -----------------------------------
     // Kernen i fase 3: B er logget ind, men er IKKE medlem af A's Kanal.
-    console.log("\n[Smoke] 4/11 verificerer adgangskontrol mellem brugere");
+    console.log("\n[Smoke] 4/12 verificerer adgangskontrol mellem brugere");
     await checkRejected("B læser A's scoreboard", () =>
       klientB.query(api.scoreboard.getScoreboard, { channelId: channelId! }),
     );
@@ -386,7 +386,7 @@ async function main(): Promise<void> {
     );
 
     // 5. Check In --------------------------------------------------------
-    console.log("\n[Smoke] 5/11 logger Check In");
+    console.log("\n[Smoke] 5/12 logger Check In");
     await klientA.mutation(api.checkIns.checkIn, {
       venue: "Brøndby Stadion",
       channelId,
@@ -399,7 +399,7 @@ async function main(): Promise<void> {
     check("checkInCount", profil?.checkInCount, 1);
 
     // 6. Drinks ----------------------------------------------------------
-    console.log("\n[Smoke] 6/11 logger to drinks");
+    console.log("\n[Smoke] 6/12 logger to drinks");
     await klientA.mutation(api.drinkLogs.logDrink, {
       channelId,
       categoryId: "beer",
@@ -428,7 +428,7 @@ async function main(): Promise<void> {
     check("stræk uændret af cigaret", profil?.currentDayStreak, 1);
 
     // 7. Scoreboard ------------------------------------------------------
-    console.log("\n[Smoke] 7/11 henter scoreboard");
+    console.log("\n[Smoke] 7/12 henter scoreboard");
     const board = await klientA.query(api.scoreboard.getScoreboard, { channelId });
     check("antal rækker", board.length, 1);
     check("navn", board[0]?.name, "Smoke Tester");
@@ -444,7 +444,7 @@ async function main(): Promise<void> {
 
     // 8. Sladesh-livscyklus ----------------------------------------------
     // B er nu medlem af A's Kanal, så A må sende til B.
-    console.log("\n[Smoke] 8/11 Sladesh-livscyklussen");
+    console.log("\n[Smoke] 8/12 Sladesh-livscyklussen");
 
     await checkRejected("A sender Sladesh til sig selv", () =>
       klientA.mutation(api.sladesh.sendSladesh, {
@@ -624,7 +624,7 @@ async function main(): Promise<void> {
     );
 
     // 9. Chat -------------------------------------------------------------
-    console.log("\n[Smoke] 9/11 kanal-chat");
+    console.log("\n[Smoke] 9/12 kanal-chat");
 
     await checkRejected("tom besked afvist", () =>
       klientA.mutation(api.messages.sendMessage, { channelId: channelId!, text: "   " }),
@@ -719,7 +719,7 @@ async function main(): Promise<void> {
     );
 
     // 10. Achievements, promille og fortrydelser --------------------------
-    console.log("\n[Smoke] 10/11 achievements, promille og fortrydelser");
+    console.log("\n[Smoke] 10/12 achievements, promille og fortrydelser");
 
     // A er endnu IKKE admin — beacon-afsnittet nedenfor er det der gør ham
     // det. Derfor ligger admin-spærren for manuelle achievements her.
@@ -886,8 +886,74 @@ async function main(): Promise<void> {
       ["reset_confirmed"],
     );
 
-    // 11. Beacons ---------------------------------------------------------
-    console.log("\n[Smoke] 11/11 beacons");
+    // 11. Profil og drikkevarianter ---------------------------------------
+    console.log("\n[Smoke] 11/12 profil og drikkevarianter");
+
+    // Kataloget er globalt og må læses af alle — men kun ændres af admins.
+    // A er stadig almindelig bruger her; admin-delen ligger i afsnit 12.
+    check(
+      "kataloget kan læses uden admin",
+      Array.isArray(await klientA.query(api.drinkVariations.getDrinkVariations, {})),
+      true,
+    );
+    await checkRejected("almindelig bruger opretter en variant", () =>
+      klientA.mutation(api.drinkVariations.opretVariant, {
+        name: "SMOKE-Tuborg",
+        categoryId: "beer",
+      }),
+    );
+
+    await klientA.mutation(api.users.opdaterProfil, {
+      displayName: "Smoke Tester Omdøbt",
+      fullName: "Smoke Test Hansen",
+      emoji: "🍷",
+      avatarColor: "cosmic",
+      onboardingCompleted: true,
+    });
+
+    let minProfil = await klientA.query(api.users.getMe, {});
+    check("visningsnavn opdateret", minProfil?.displayName, "Smoke Tester Omdøbt");
+    check("fulde navn opdateret", minProfil?.fullName, "Smoke Test Hansen");
+    check("emoji opdateret", minProfil?.emoji, "🍷");
+    check("avatarfarve opdateret", minProfil?.avatarColor, "cosmic");
+    check("onboarding markeret", minProfil?.onboardingCompleted, true);
+    // Emailen kommer fra tokenet og kan ikke sættes her — den ville ellers
+    // kunne bruges til at overtage en anden profil.
+    check("emailen er urørt", minProfil?.email, accounts[0].email.toLowerCase());
+
+    // Historikken er snapshots, ikke referencer: en omdøbning må ikke skrive
+    // historien om.
+    const logsEfterOmdoebning = await klientA.query(
+      api.drinkLogs.getDrinkLogsForUser,
+      { limit: 50 },
+    );
+    check(
+      "historikkens navne-snapshot rører sig ikke",
+      logsEfterOmdoebning.some((log) => log.userDisplayName === "Smoke Tester"),
+      true,
+    );
+
+    // `null` rydder feltet, `undefined` rører det ikke.
+    await klientA.mutation(api.users.opdaterProfil, { fullName: null });
+    minProfil = await klientA.query(api.users.getMe, {});
+    check("null rydder feltet", minProfil?.fullName, undefined);
+    check("udeladte felter rører sig ikke", minProfil?.displayName, "Smoke Tester Omdøbt");
+
+    await checkRejected("tomt visningsnavn afvist", () =>
+      klientA.mutation(api.users.opdaterProfil, { displayName: "   " }),
+    );
+    await checkRejected("for langt visningsnavn afvist", () =>
+      klientA.mutation(api.users.opdaterProfil, { displayName: "x".repeat(41) }),
+    );
+    await checkRejected("ukendt avatarfarve afvist", () =>
+      klientA.mutation(api.users.opdaterProfil, { avatarColor: "neon" }),
+    );
+    await checkRejected("anonym opdaterer profil", () =>
+      anonym.mutation(api.users.opdaterProfil, { displayName: "Hacker" }),
+    );
+
+    // 12. Beacons ---------------------------------------------------------
+    console.log("\n[Smoke] 12/12 beacons");
 
     const braendbyLat = 55.6533;
     const braendbyLng = 12.4194;
@@ -1048,6 +1114,57 @@ async function main(): Promise<void> {
         achievementId: "obeerma",
       }),
     );
+
+    // Katalogets skrivevej kræver også admin, og ligger derfor her.
+    // Varianten bærer SMOKE-præfikset og slettes igen nedenfor — kataloget
+    // er globalt, så testen må ikke efterlade noget i det.
+    const variantId = await klientA.mutation(api.drinkVariations.opretVariant, {
+      name: "SMOKE-Tuborg",
+      categoryId: "beer",
+      description: "Kun til test",
+    });
+
+    const iKataloget = async (id: Id<"drinkVariations">) =>
+      (
+        await klientA.query(api.drinkVariations.getDrinkVariations, {
+          categoryId: "beer",
+        })
+      ).find((variant) => variant._id === id);
+
+    check("varianten står i kataloget", (await iKataloget(variantId))?.name, "SMOKE-Tuborg");
+
+    await checkRejected("dublet i samme kategori afvist", () =>
+      klientA.mutation(api.drinkVariations.opretVariant, {
+        name: "SMOKE-Tuborg",
+        categoryId: "beer",
+      }),
+    );
+    await checkRejected("ukendt kategori afvist", () =>
+      klientA.mutation(api.drinkVariations.opretVariant, {
+        name: "SMOKE-Sodavand",
+        categoryId: "sodavand",
+      }),
+    );
+    await checkRejected("tomt variantnavn afvist", () =>
+      klientA.mutation(api.drinkVariations.opretVariant, {
+        name: "   ",
+        categoryId: "beer",
+      }),
+    );
+
+    await klientA.mutation(api.drinkVariations.opdaterVariant, {
+      variationId: variantId,
+      name: "SMOKE-Tuborg Classic",
+      description: null,
+    });
+    const rettet = await iKataloget(variantId);
+    check("navnet er rettet", rettet?.name, "SMOKE-Tuborg Classic");
+    check("beskrivelsen er ryddet", rettet?.description, undefined);
+
+    await klientA.mutation(api.drinkVariations.sletVariant, { variationId: variantId });
+    check("varianten er væk igen", await iKataloget(variantId), undefined);
+    // Idempotent: at slette den igen er ikke en fejl.
+    await klientA.mutation(api.drinkVariations.sletVariant, { variationId: variantId });
   } finally {
     // Oprydning ----------------------------------------------------------
     console.log("\n[Smoke] rydder op");

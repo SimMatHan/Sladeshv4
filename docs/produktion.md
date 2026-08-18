@@ -137,6 +137,18 @@ npx convex env remove --prod MIGRATION_SECRET
 npx convex env list --prod          # der skal igen kun stå projekt-id'et
 ```
 
+### Drikkevarianter (tilføjet i fase 10)
+
+Kataloget over drikkevarianter kom først med efter hovedmigreringen. Det
+tilføjes for sig, uden at røre noget andet:
+
+```bash
+npm run migrer -- --skriv --kun-varianter
+```
+
+`migrering.opretDrinkVariations` springer varianter over, der allerede findes
+i samme kategori, så kommandoen kan køres igen uden at give dubletter.
+
 ### Skal migreringen køres om
 
 `--ryd` sletter **alt** i måldeploymentet. Mod et deployment valgt med
