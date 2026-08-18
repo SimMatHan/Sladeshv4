@@ -11,6 +11,7 @@ til — `src/` er endnu en login-skal.
 
 - Udrulning og cutover: **[`docs/produktion.md`](docs/produktion.md)**
 - Hvad UI'et skal dække: **[`docs/skaermkortlaegning.md`](docs/skaermkortlaegning.md)**
+- Hvordan det skal hænge sammen: **[`docs/brugerrejser.md`](docs/brugerrejser.md)**
 
 ## Kom i gang
 
@@ -85,6 +86,7 @@ docs/
   achievements-og-promille.md  Fase 8
   produktion.md                Udrulning og cutover
   skaermkortlaegning.md        Alle 20 skaerme i den gamle app, og hvad backenden mangler
+  brugerrejser.md              Ny informationsarkitektur og brugerrejser
 scripts/
   logic-test.ts    Forretningsregler, kører lokalt
   smoke-test.ts    Ende-til-ende mod dev-deploymentet
