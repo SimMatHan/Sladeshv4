@@ -35,6 +35,31 @@ export function isDrinkCategory(categoryId: string): boolean {
   return DRINK_CATEGORY_IDS.includes(categoryId);
 }
 
+/**
+ * Avatar-farver. Overtaget uændret fra AVATAR_COLORS i det gamle repos
+ * src/contexts/AvatarContext.tsx.
+ *
+ * `name` er det der gemmes i `users.avatarColor`; gradienten hører til
+ * præsentationen og står her, så navn og udtryk ikke kan komme fra hinanden.
+ */
+export const AVATAR_COLORS = [
+  { name: "sunset", gradient: "from-orange-400 via-rose-400 to-pink-500" },
+  { name: "ocean", gradient: "from-cyan-400 via-blue-500 to-indigo-600" },
+  { name: "aurora", gradient: "from-emerald-400 via-cyan-400 to-blue-500" },
+  { name: "berry", gradient: "from-purple-400 via-pink-500 to-rose-500" },
+  { name: "gold", gradient: "from-amber-300 via-yellow-400 to-orange-400" },
+  { name: "mint", gradient: "from-emerald-300 via-teal-400 to-cyan-500" },
+  { name: "cosmic", gradient: "from-violet-500 via-purple-500 to-fuchsia-500" },
+] as const;
+
+export const AVATAR_COLOR_NAMES: readonly string[] = AVATAR_COLORS.map(
+  (farve) => farve.name,
+);
+
+export function isAvatarColor(navn: string): boolean {
+  return AVATAR_COLOR_NAMES.includes(navn);
+}
+
 /** Størrelser. Overtaget uændret fra src/lib/drinkSizes.ts. */
 export const DRINK_SIZES = [
   { id: "small", label: "Lille", volumeLabel: "33cl", multiplier: 1.0 },

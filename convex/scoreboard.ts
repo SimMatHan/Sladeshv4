@@ -1,7 +1,12 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { SCOREBOARD_LIMIT, getDrinkDayStart, isDrinkCategory } from "./constants";
+import {
+  AVATAR_COLOR_NAMES,
+  SCOREBOARD_LIMIT,
+  getDrinkDayStart,
+  isDrinkCategory,
+} from "./constants";
 import { beregnRunStart } from "./drinkRules";
 import { requireKanalMedlem } from "./identity";
 import { beregnPromille, kanBeregnePromille } from "./promilleRules";
@@ -174,13 +179,18 @@ function round2(value: number): number {
   return Number(value.toFixed(2));
 }
 
-/** Stabil farve ud fra bruger-id, når brugeren ikke har valgt en. */
+/**
+ * Stabil farve ud fra bruger-id, når brugeren ikke har valgt en.
+ *
+ * Listen kommer fra `AVATAR_COLOR_NAMES` i convex/constants.ts — den stod før
+ * skrevet af her, hvilket betød at en ny farve i den ene liste ikke fandtes i
+ * den anden.
+ */
 function fallbackColor(userId: string): string {
-  const colors = ["sunset", "ocean", "berry", "gold", "aurora", "cosmic", "mint"];
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
     hash = userId.charCodeAt(i) + ((hash << 5) - hash);
     hash |= 0;
   }
-  return colors[Math.abs(hash) % colors.length];
+  return AVATAR_COLOR_NAMES[Math.abs(hash) % AVATAR_COLOR_NAMES.length];
 }

@@ -58,16 +58,15 @@ Forsiden. Sammensat af syv komponenter frem for at være en side i sig selv:
 
 **Convex:** `scoreboard.getScoreboard`, `promille.getMinPromille`,
 `achievements.getNaesteMilepael`, `drinkLogs.logDrink`, `drinkLogs.resetRun`,
-`users.getMe`. ✅ dækket — bortset fra variantlisten i `DrinkSelector`
-(afsnit 4.1).
+`users.getMe`, `drinkVariations.getDrinkVariations`. ✅ dækket.
 
 #### `/log` — DrinkLog, 374 linjer
 
 Selve logningen. Et Embla-karrusel med én slide per kategori; inde i hver
 kategori vælges variant og størrelse. Plus/minus per variant.
 
-**Convex:** `drinkLogs.logDrink`, `drinkLogs.removeDrink`. ✅ — men hele
-skærmen står og falder med **variantlisten**, som ikke er migreret (4.1).
+**Convex:** `drinkLogs.logDrink`, `drinkLogs.removeDrink`,
+`drinkVariations.getDrinkVariations`. ✅ dækket siden trin 0.
 
 > Minus-knappen kalder i dag `removeDrink` med kategori og variantnavn løst.
 > Den nye `removeDrink` fortryder en **bestemt** logning (`logId`). Det er en
@@ -146,7 +145,7 @@ positioner og aktive beacons; admins kan placere en beacon.
 
 Egen profil: avatar, navn, tal, genveje til Settings/Support/Admin/Channels.
 
-**Convex:** `users.getMe`. ✅ til visning — ❌ til redigering (4.2).
+**Convex:** `users.getMe`, `users.opdaterProfil`. ✅
 
 #### `/user/:userId` — UserProfile, 527 linjer
 
@@ -160,7 +159,8 @@ En anden brugers profil: statistik, achievements, drikkefordeling.
 Profilbillede, kontooplysninger (brugernavn, fulde navn), **promille-counter**
 (til/fra, Mand/Kvinde, vægt), tema, push-notifikationer, lokationstilladelse.
 
-**Convex:** `promille.setPromilleIndstilling` ✅ — resten ❌ (4.2, 4.7).
+**Convex:** `promille.setPromilleIndstilling`, `users.opdaterProfil`. ✅ —
+bortset fra push og tema (4.7).
 
 #### `/achievements` — Achievements, 196 linjer
 
@@ -173,7 +173,7 @@ dækket — fase 8.
 
 Førstegangsforløb; sætter `onboardingCompleted`.
 
-**Convex:** feltet findes i schemaet, men ❌ ingen mutation (4.2).
+**Convex:** `users.opdaterProfil` sætter `onboardingCompleted`. ✅
 
 #### `/login`, `/signup`, `/splash`
 
@@ -187,7 +187,8 @@ pointen i at beholde Firebase Auth: ingen bruger skal oprette sig på ny.
 Overview, DevTools, Users, Channels, Drinks, Broadcasts, Donors.
 
 **Convex:** spredt. `beacons.opretBeacon`, `achievements.tildelManuelt`,
-`achievements.genberegnForBruger` findes. Broadcasts og Donors ❌ (4.7).
+`achievements.genberegnForBruger` og hele `drinkVariations` findes.
+Broadcasts og Donors ❌ (4.7).
 
 > Adgang styres i dag af `isAdminEmail` — en **hårdkodet liste i klientkoden**.
 > Convex bruger `users.isAdmin` og `requireAdmin` på serveren. Det er en reel
@@ -230,7 +231,7 @@ mindre end 25.500 linjer uden at appen kan mindre.
 Det kortlægningen var til for. Ingen af dem er store, men de skal være der,
 før de tilhørende skærme kan bygges.
 
-### 4.1 Drikkevarianter — **blokerer `/log` og forsiden**
+### 4.1 Drikkevarianter — ✅ **lukket i trin 0**
 
 `useDrinkVariations` læser rod-collectionen `/drinkVariations`: hvilke
 varianter der findes i hver kategori ("Tuborg", "Carlsberg", "Vermouth
@@ -256,13 +257,25 @@ Værd at beslutte samtidig: skal varianter være globale, per Kanal, eller kan
 brugere tilføje deres egne? I dag er de globale med admin-styring
 (`AdminDrinks`).
 
-### 4.2 Redigering af egen profil — **blokerer `/settings`, `/profile`, `/onboarding`**
+> **Lukket:** tabellen `drinkVariations` med `convex/drinkVariations.ts`
+> (`getDrinkVariations` til alle, `opretVariant` / `opdaterVariant` /
+> `sletVariant` til admins) og en migrering, der kan køres for sig med
+> `npm run migrer -- --skriv --kun-varianter`. Varianterne forbliver globale;
+> spørgsmålet om Kanal-specifikke varianter er stadig åbent.
+
+### 4.2 Redigering af egen profil — ✅ **lukket i trin 0**
 
 Der findes ingen mutation til at ændre `displayName`, `fullName`, `emoji`,
 `avatarColor`, `profileEmoji`, `profileGradient` eller `onboardingCompleted`.
 `createUser` sætter dem ved oprettelsen, og så aldrig igen.
 
 Alle felterne er i schemaet. Der mangler én `users.opdaterProfil`.
+
+> **Lukket:** `users.opdaterProfil`. Man kan kun rette sig selv — der er
+> bevidst ingen `userId`-parameter, heller ikke for admins. `undefined` rører
+> ikke feltet, `null` rydder det. Visningsnavnet kan ikke ryddes (det står på
+> scoreboardet og i hver logrække), og `avatarColor` skal være en af de syv
+> kendte farver.
 
 ### 4.3 Kanalens aktivitetslog — **blokerer `/channel-log`**
 
@@ -335,9 +348,9 @@ formentlig en opfordring til at udfylde det.
 
 ## 6. Foreslået rækkefølge
 
-**Trin 0 — luk de blokerende huller.** 4.1 (drikkevarianter, inkl. migrering)
-og 4.2 (redigér profil). Uden dem kan hverken forsiden, `/log` eller
-`/settings` bygges. Det er en kort backend-opgave.
+**Trin 0 — luk de blokerende huller.** ✅ Gjort. 4.1 (drikkevarianter, inkl.
+migrering) og 4.2 (redigér profil). Der er ikke længere noget backend-arbejde,
+der spærrer for UI'et.
 
 **Trin 1 — én lodret skive.** Login → vælg Kanal → log en genstand → se
 stillingen, hele vejen i det nye design. Beviser plumbingen, og giver noget
