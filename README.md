@@ -7,8 +7,8 @@ læse-reference og ændres ikke.
 **Status: trin 1 — frontenden er begyndt.** Backenden er komplet,
 produktionsdata er migreret, og appen kører på Vercel. Den lodrette skive står:
 log en genstand, se stillingen, skift Kanal, se en profil, og hele
-Sladesh-livscyklussen. Chat, kort og historik mangler skærme — backenden kan
-dem allerede.
+Sladesh-livscyklussen og kanal-chatten. Kort og historik mangler skærme —
+backenden kan dem allerede.
 
 Domænet `sladeshapp.dk` peger stadig på det gamle site og skifter først, når
 appen kan det, brugerne bruger den til.
@@ -99,7 +99,7 @@ scripts/
 src/
   App.tsx          Skallen: to faner, ( + )-knappen, arkene
   index.css        Designtokens og grundstil — bevidst uden CSS-framework
-  ui/              Stilling, LogArk, KanalVaelger, Personkort, Mig,
+  ui/              Stilling, Chat, LogArk, KanalVaelger, Personkort, Mig,
                    SladeshOvertagelse, Ark, Avatar
   lib/             firebase.ts (kun Auth) + visning.ts (farver og formatering)
   contexts/        AuthContext

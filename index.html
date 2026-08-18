@@ -3,7 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- `interactive-widget=resizes-content` faar tastaturet til at skubbe
+         indholdet op i stedet for at lægge sig hen over den faste skriver
+         i chatten. `viewport-fit=cover` giver env(safe-area-inset-*) vaerdier
+         paa telefoner med hak. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <title>SladeshApp</title>
   </head>
   <body>

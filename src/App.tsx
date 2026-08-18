@@ -4,6 +4,7 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { useAuth } from "./contexts/AuthContext";
 import { fejltekst, formatUr } from "./lib/visning";
+import { Chat } from "./ui/Chat";
 import { KanalVaelger } from "./ui/KanalVaelger";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
@@ -76,6 +77,10 @@ function Appen() {
   // ingenting man skal gøre.
   const aktivSladesh = useQuery(api.sladesh.getActiveSladeshForUser, {});
   const [minimeret, setMinimeret] = useState(false);
+
+  // Ulæst-prikken på Chat-segmentet. Ét kald for alle ens Kanaler, så den
+  // også kan bruges på kanalvælgeren, den dag den skal vise det.
+  const ulaeste = useQuery(api.messages.getUlaeste, {});
 
   // Første login efter signup: profilen findes endnu ikke i Convex. Vi
   // opretter den uden at spørge — brugeren har allerede sagt ja til at være
@@ -179,12 +184,24 @@ function Appen() {
                     onClick={() => setVisning(id)}
                   >
                     {etiket}
+                    {/* Prikken siger "der er sket noget", ikke hvor meget.
+                        Et tal ville invitere til at tælle ulæste beskeder i
+                        en chat, der alligevel tømmer sig selv hvert døgn. */}
+                    {id === "chat" &&
+                      ulaeste?.find((k) => k.channelId === channelId)?.ulaest ===
+                        true && <span className="prik" />}
                   </button>
                 ))}
               </div>
 
               {visning === "stilling" ? (
                 <Stilling
+                  channelId={channelId}
+                  minUserId={mig._id}
+                  onVaelgPerson={setValgtPerson}
+                />
+              ) : visning === "chat" ? (
+                <Chat
                   channelId={channelId}
                   minUserId={mig._id}
                   onVaelgPerson={setValgtPerson}
@@ -333,7 +350,6 @@ function Kvittering({
 
 function KommerSenere({ visning }: { visning: Visning }) {
   const tekster: Record<string, { ikon: string; hvad: string }> = {
-    chat: { ikon: "💬", hvad: "Kanalens chat" },
     kort: { ikon: "📍", hvad: "Kortet med beacons" },
     historik: { ikon: "📈", hvad: "Kanalens aktivitet dag for dag" },
   };

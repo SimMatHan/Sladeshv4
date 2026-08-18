@@ -825,3 +825,141 @@ input {
   margin-left: auto;
   color: var(--tekst);
 }
+
+/* ------------------------------------------------------------------- chat */
+/*
+ * Skriveren er fast over navigationen, saa den ikke skal scrolles frem.
+ * Det kraever `interactive-widget=resizes-content` i viewport-metaen
+ * (index.html) — ellers lægger tastaturet sig hen over den paa iOS.
+ */
+
+.chat {
+  /* Plads til den faste skriver nederst. */
+  padding-bottom: 66px;
+}
+
+.beskeder {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.besked {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  max-width: 84%;
+}
+
+.besked + .besked:not(.samlet) {
+  margin-top: 12px;
+}
+
+.besked.min {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.afsender {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 5px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 620;
+  color: var(--tekst-daempet);
+}
+
+.afsender .avatar {
+  width: 26px;
+  height: 26px;
+  font-size: 13px;
+}
+
+/* Samlede beskeder rykkes ind under avataren, saa traaden staar lige. */
+.besked.samlet:not(.min) .boble {
+  margin-left: 33px;
+}
+
+.boble {
+  position: relative;
+  padding: 9px 13px 9px 13px;
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: 16px;
+  border-bottom-left-radius: 5px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.besked.min .boble {
+  background: linear-gradient(160deg, var(--accent), var(--accent-mork));
+  border-color: transparent;
+  color: var(--accent-tekst);
+  border-radius: 16px;
+  border-bottom-right-radius: 5px;
+}
+
+.boble .tid {
+  margin-left: 9px;
+  font-size: 11px;
+  color: var(--tekst-svag);
+  /* Klokkeslaettet flyder med i sidste linje, saa korte beskeder ikke faar
+     en tom raekke under sig. */
+  float: right;
+  position: relative;
+  top: 5px;
+}
+
+.besked.min .boble .tid {
+  color: color-mix(in srgb, var(--accent-tekst) 62%, transparent);
+}
+
+.skriver {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--navhoejde) + var(--bund-sikker));
+  z-index: 25;
+  display: flex;
+  gap: 8px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 9px 16px;
+  background: color-mix(in srgb, var(--bund) 94%, transparent);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid var(--kant);
+}
+
+.skriver .felt {
+  flex: 1;
+  border-radius: 999px;
+}
+
+.sendknap {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--accent-tekst);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.sendknap:disabled {
+  background: var(--flade-hvaelvet);
+  color: var(--tekst-svag);
+}
+
+/* Ulaest-prik paa segmentet. */
+.segment .prik {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-left: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  vertical-align: 1px;
+}

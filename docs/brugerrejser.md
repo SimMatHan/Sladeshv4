@@ -330,6 +330,7 @@ Den lodrette skive står:
 4. ✅ **Personkortet** — fra en række i Stillingen, med Send Sladesh.
 5. ✅ **Mig** — egne tal, promille, achievements, nulstil run.
 6. ✅ **Sladesh** — send fra personkortet, modtag som overtagelse.
+7. ✅ **Kanal → Chat** — beskeder, ulæst-prik og tilstedeværelse.
 
 Det er R1, R2, R3, R4, R6, R7 og R8 hele vejen igennem mod dev-Convex med
 rigtige migrerede brugere.
@@ -354,7 +355,6 @@ står man præcis samme sted.
 
 | Næste | Hvor |
 |---|---|
-| Chat | Kanal → Chat |
 | Kort | Kanal → Kort |
 | Historik | Kanal → Historik |
 | Indstillinger | Mig → Indstillinger (navn, avatar, promille) |
