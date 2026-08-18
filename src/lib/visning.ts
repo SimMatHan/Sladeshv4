@@ -52,6 +52,18 @@ export function promille(vaerdi: number): string {
   })} ‰`;
 }
 
+/**
+ * Millisekunder → "9:07". Aldrig negativ.
+ *
+ * Bruges af Sladesh-nedtællingen, hvor et minus ville se ud som en fejl frem
+ * for som "tiden er løbet ud".
+ */
+export function formatUr(millisekunder: number): string {
+  const sekunder = Math.max(0, Math.ceil(millisekunder / 1000));
+  const minutter = Math.floor(sekunder / 60);
+  return `${minutter}:${String(sekunder % 60).padStart(2, "0")}`;
+}
+
 /** Klokkeslæt i dansk format. */
 export function klokken(tidspunkt: number): string {
   return new Date(tidspunkt).toLocaleTimeString("da-DK", {
