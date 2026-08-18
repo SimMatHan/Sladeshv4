@@ -4,10 +4,13 @@ Re-arkitektur af [SladeshApp.dk](https://sladeshapp.dk) fra Firebase/Firestore
 til Convex. Nyt projekt — det gamle repo (`SimMatHan/Sladesh2.0`) bruges kun som
 læse-reference og ændres ikke.
 
-**Status: fase 10 — frontenden.** Backenden er komplet, produktionsdata er
-migreret, og appen kører på Vercel mod produktions-Convex. Domænet
-`sladeshapp.dk` peger stadig på det gamle site, indtil der er et UI at skifte
-til — `src/` er endnu en login-skal.
+**Status: trin 1 — frontenden er begyndt.** Backenden er komplet,
+produktionsdata er migreret, og appen kører på Vercel. Den lodrette skive står:
+log en genstand, se stillingen, skift Kanal, se en profil. Chat, kort,
+historik og Sladesh mangler skærme — backenden kan dem allerede.
+
+Domænet `sladeshapp.dk` peger stadig på det gamle site og skifter først, når
+appen kan det, brugerne bruger den til.
 
 - Udrulning og cutover: **[`docs/produktion.md`](docs/produktion.md)**
 - Hvad UI'et skal dække: **[`docs/skaermkortlaegning.md`](docs/skaermkortlaegning.md)**
@@ -92,7 +95,13 @@ scripts/
   smoke-test.ts    Ende-til-ende mod dev-deploymentet
   migrer.ts        Firestore → Convex
   vercel-build.sh  Byggekommandoen Vercel kører
-src/               Login-skal: Firebase Auth + ConvexProviderWithAuth
+src/
+  App.tsx          Skallen: to faner, ( + )-knappen, arkene
+  index.css        Designtokens og grundstil — bevidst uden CSS-framework
+  ui/              Stilling, LogArk, KanalVaelger, Personkort, Mig, Ark, Avatar
+  lib/             firebase.ts (kun Auth) + visning.ts (farver og formatering)
+  contexts/        AuthContext
+  hooks/           useFirebaseAuthForConvex — broen mellem Firebase og Convex
 ```
 
 ## Autentificering

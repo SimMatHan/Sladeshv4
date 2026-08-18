@@ -87,8 +87,23 @@ export const logDrink = mutation({
 
     const points = pointsForDrink(args.categoryId, size?.multiplier);
 
+    // Den første rigtige genstand i en drikkedag checker dig ind.
+    //
+    // Før skulle man trykke "Check ind" for overhovedet at stå på stillingen,
+    // og markeringen udløb kl. 10:00. Loggede man en øl uden, talte den — men
+    // man var usynlig for de andre. Man havde gjort det rigtige og fik
+    // ingenting at vide. Se docs/brugerrejser.md, afsnit 5.
+    //
+    // Kun rigtige drikkevarer tæller: en cigaret siger ikke, at man er ude.
+    const alleredeUdeIDag =
+      user.checkInStatus === true &&
+      user.lastCheckIn !== undefined &&
+      user.lastCheckIn >= getDrinkDayStart(now);
+    const checkerInd = streak.changed && !alleredeUdeIDag;
+
     await ctx.db.patch(user._id, {
       totalPoints: (user.totalPoints ?? 0) + points,
+      ...(checkerInd ? { checkInStatus: true, lastCheckIn: now } : {}),
       currentDayStreak: streak.currentDayStreak,
       longestStreak: streak.longestStreak,
       // `lastDrinkAt` og `lastDrinkDayStart` flyttes kun af rigtige
@@ -117,6 +132,7 @@ export const logDrink = mutation({
       størrelse: size?.label,
       point: points,
       stræk: streak.currentDayStreak,
+      checkedInd: checkerInd,
       achievements: nyeAchievements.length,
     });
 
