@@ -721,6 +721,37 @@ async function main(): Promise<void> {
     // 10. Achievements, promille og fortrydelser --------------------------
     console.log("\n[Smoke] 10/12 achievements, promille og fortrydelser");
 
+    // --- Automatisk check ind ---------------------------------------------
+    // B har aldrig kaldt checkIn. Før trin 1 var han derfor usynlig på
+    // stillingen, uanset hvor meget han drak — den mest forvirrende regel i
+    // appen. Nu sætter den første genstand ham selv på listen.
+    check(
+      "B står ikke på listen, før han har drukket noget",
+      (
+        await klientB.query(api.scoreboard.getScoreboard, { channelId })
+      ).some((raekke) => raekke.userId === userIdB),
+      false,
+    );
+
+    await klientB.mutation(api.drinkLogs.logDrink, {
+      channelId,
+      categoryId: "beer",
+      variationName: "Tuborg",
+    });
+
+    check(
+      "logningen satte B på listen uden et check ind",
+      (
+        await klientB.query(api.scoreboard.getScoreboard, { channelId })
+      ).some((raekke) => raekke.userId === userIdB),
+      true,
+    );
+    check(
+      "og B er nu markeret som ude",
+      (await klientB.query(api.users.getMe, {}))?.checkInStatus,
+      true,
+    );
+
     // A er endnu IKKE admin — beacon-afsnittet nedenfor er det der gør ham
     // det. Derfor ligger admin-spærren for manuelle achievements her.
     await checkRejected("almindelig bruger tildeler achievement manuelt", () =>

@@ -232,13 +232,18 @@ checket ind, tæller den — men man er usynlig for de andre.
 Det er den mest forvirrende regel i appen. Man har gjort det rigtige og får
 ingenting at vide.
 
-**Forslag: den første genstand i et run checker dig ind.** Er du med i legen,
-er du på listen. Knappen bliver stående for dem, der vil markere "jeg er ude",
-før de drikker noget — men ingen kan længere falde af listen ved at glemme
-den.
+**Den første genstand i et run checker dig ind.** Er du med i legen, er du på
+listen. `checkIn` findes stadig for dem, der vil markere "jeg er ude", før de
+drikker noget — men ingen kan længere falde af listen ved at glemme den.
 
-Det kræver én linje i `drinkLogs.logDrink`. Jeg har ikke gjort det endnu; det
-er en produktbeslutning, ikke en teknisk (se afsnit 8).
+> ✅ **Bygget.** `drinkLogs.logDrink` sætter `checkInStatus` ved første rigtige
+> genstand i drikkedagen (en cigaret siger ikke, at man er ude).
+>
+> Samtidig fik deltagerkriteriet på stillingen et **udløb**. Før var reglen
+> `checkInStatus === true` uden tidsgrænse, hvilket havde to fejl på én gang:
+> man kunne drikke og være usynlig, og et check-in fra i marts talte som "ude i
+> aften". Nu er man med, hvis man har drukket i det igangværende run **eller**
+> har checket ind siden kl. 10:00.
 
 ---
 
@@ -303,10 +308,6 @@ Mit forslag, hvis kortet bliver: positionen deles **kun mens du er ude**, den
 kan slås fra per Kanal, og du kan altid se på ét blik, hvem der kan se dig.
 Det er stadig et valg, du skal træffe — også muligheden at lade kortet gå.
 
-**Skal den første genstand checke dig ind?** (Afsnit 5.) Det fjerner den
-forvirrende regel, men det fjerner også muligheden for at drikke uden at være
-på listen. Nogle vil måske gerne det.
-
 **Skal `/support` og donationer med?** Collectionen blev valgt fra i fase 1.
 Det er en beslutning om, hvorvidt appen stadig skal bede om penge.
 
@@ -319,18 +320,37 @@ Skal de være ens?
 
 ---
 
-## 9. Hvad trin 1 så bliver
+## 9. Trin 1 — bygget
 
-Den lodrette skive, med denne arkitektur:
+Den lodrette skive står:
 
-1. **Skallen** — de to faner, kanalvælgeren i toppen, ( + )-knappen.
-2. **Kanal → Stilling** — rigtige data fra `scoreboard.getScoreboard`.
-3. **( + )-arket** — kataloget, dine sædvanlige, log og fortryd.
-4. **Personkortet** — fra en række i Stillingen.
+1. ✅ **Skallen** — to faner, kanalvælgeren i toppen, ( + )-knappen.
+2. ✅ **Kanal → Stilling** — rigtige data, reaktivt.
+3. ✅ **( + )-arket** — kataloget, dine sædvanlige, log og fortryd.
+4. ✅ **Personkortet** — fra en række i Stillingen.
+5. ✅ **Mig** — egne tal, promille, achievements, nulstil run.
 
-Det er R1, R2 og R6 hele vejen igennem, mod dev-Convex, med rigtige migrerede
-brugere. Når den kører, er mønsteret bevist, og resten er at fylde de øvrige
-visninger ud.
+Det er R1, R2, R6, R7 og R8 hele vejen igennem mod dev-Convex med rigtige
+migrerede brugere.
 
-Chat, kort, historik, Sladesh, achievements og Mig kommer bagefter — én ad
-gangen, hver især færdig.
+**Ingen router endnu.** To faner og tre ark er tilstand, ikke adresser. Den
+kommer, når der er URL'er værd at dele — fx et link direkte til en Kanal.
+`vercel.json` har SPA-rewrites klar til den dag.
+
+**Send Sladesh er bevidst ikke med.** Knappen hører til på personkortet (R4),
+men at kunne sende, uden at modtageren har et flow at gennemføre udfordringen
+i, ville efterlade folk med noget, de ikke kan komme af med. R3 og R4 bygges
+sammen.
+
+### Tilbage
+
+| Næste | Hvor |
+|---|---|
+| Sladesh: send + modtag | Personkortet og overtagelsen (R3, R4) |
+| Chat | Kanal → Chat |
+| Kort | Kanal → Kort |
+| Historik | Kanal → Historik |
+| Indstillinger | Mig → Indstillinger (navn, avatar, promille) |
+| Onboarding | R5, trin 2–3 |
+
+Backenden kan dem alle. Det, der mangler, er skærme.

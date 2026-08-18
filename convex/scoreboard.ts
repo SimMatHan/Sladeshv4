@@ -20,12 +20,19 @@ import { beregnPromille, kanBeregnePromille } from "./promilleRules";
  * Det gamle repo læste `users.currentRunDrinkCount`, som kunne komme ud af
  * trit med de faktiske logrækker.
  *
- * Deltagerkriterier, uændret fra src/hooks/useLeaderboard.ts:
- * - medlem af Kanalen, OG
- * - checket ind (`checkInStatus === true`).
+ * Deltagerkriterier — medlem af Kanalen, OG med i legen i dag:
+ * - har logget mindst én genstand i det igangværende run, ELLER
+ * - har checket ind siden drikkedagens start.
  *
- * Medlemmer uden logninger i dag er med på listen med 0 — de forsvinder ikke,
- * præcis som i den gamle query der hentede alle indcheckede medlemmer.
+ * ÆNDRET i trin 1. Før var kriteriet `checkInStatus === true` alene, uden
+ * udløb, hvilket havde to fejl på én gang: man kunne logge en øl og alligevel
+ * være usynlig, fordi man havde glemt at trykke Check ind — og man blev
+ * stående på listen for evigt, fordi et check-in fra i marts talte som "ude i
+ * aften". Nu følger deltagelsen drikkedagen, og `logDrink` checker dig selv
+ * ind ved første genstand (se convex/drinkLogs.ts).
+ *
+ * Medlemmer der ER med i dag, men endnu ikke har drukket noget, står på
+ * listen med 0 — de forsvinder ikke.
  *
  * Sortering: flest genstande først; ved lige antal vinder den der drak
  * tidligst (samme tie-breaker som før).
@@ -107,9 +114,18 @@ export const getScoreboard = query({
     const rows: ScoreboardRow[] = [];
     for (const user of members) {
       if (user === null) continue;
-      if (user.checkInStatus !== true) continue;
 
       const brugerLogs = logsPerBruger.get(user._id) ?? [];
+
+      // Med i dag? Enten har man markeret det, eller også har man drukket.
+      const checketIndIDag =
+        user.checkInStatus === true &&
+        user.lastCheckIn !== undefined &&
+        user.lastCheckIn >= dayStart;
+      const harLoggetIDag = brugerLogs.some(
+        (log) => log.isReset !== true && isDrinkCategory(log.categoryId),
+      );
+      if (!checketIndIDag && !harLoggetIDag) continue;
 
       // Stillingen gøres op for det IGANGVÆRENDE run, ikke hele drikkedagen.
       // Det var også meningen i det gamle repo, hvor listen sorterede efter
@@ -149,7 +165,7 @@ export const getScoreboard = query({
         streak: user.currentDayStreak ?? 0,
         ...(promille !== undefined ? { promille: round2(promille) } : {}),
         lastDrinkAt,
-        // Kun indcheckede brugere når hertil — samme antagelse som før.
+        // Alle på listen er "med i dag" — det er selve deltagerkriteriet.
         isOnline: true,
       });
     }
