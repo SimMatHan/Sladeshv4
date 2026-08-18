@@ -3,11 +3,12 @@ import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { useAuth } from "./contexts/AuthContext";
-import { fejltekst } from "./lib/visning";
+import { fejltekst, formatUr } from "./lib/visning";
 import { KanalVaelger } from "./ui/KanalVaelger";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
 import { Personkort } from "./ui/Personkort";
+import { SladeshOvertagelse } from "./ui/SladeshOvertagelse";
 import { Stilling } from "./ui/Stilling";
 
 /**
@@ -65,9 +66,16 @@ function Appen() {
   const [logAabent, setLogAabent] = useState(false);
   const [kanalAabent, setKanalAabent] = useState(false);
   const [valgtPerson, setValgtPerson] = useState<Id<"users"> | undefined>();
+  // `logId` er valgfri: en logning kan fortrydes, en afgjort Sladesh kan ikke.
   const [kvittering, setKvittering] = useState<
-    { tekst: string; logId: Id<"drinkLogs"> } | undefined
+    { tekst: string; logId?: Id<"drinkLogs"> } | undefined
   >();
+
+  // Den aktive Sladesh — i BEGGE retninger. Er man modtager, tager den
+  // skærmen; er man afsender, får man kun en stille bjælke, for der er
+  // ingenting man skal gøre.
+  const aktivSladesh = useQuery(api.sladesh.getActiveSladeshForUser, {});
+  const [minimeret, setMinimeret] = useState(false);
 
   // Første login efter signup: profilen findes endnu ikke i Convex. Vi
   // opretter den uden at spørge — brugeren har allerede sagt ja til at være
@@ -75,6 +83,13 @@ function Appen() {
   useEffect(() => {
     if (mig === null) void createUser({});
   }, [mig, createUser]);
+
+  // En NY udfordring skal altid tage skærmen, også selvom man minimerede den
+  // forrige. Nøglen er udfordringens id, ikke om der er en.
+  const sladeshId = aktivSladesh?._id;
+  useEffect(() => {
+    setMinimeret(false);
+  }, [sladeshId]);
 
   // Bekræftelsen forsvinder af sig selv. Den er en mulighed, ikke en besked
   // man skal lukke.
@@ -90,6 +105,21 @@ function Appen() {
   const channelId = mig.activeChannelId;
   const harKanal = mig.joinedChannelIds.length > 0;
 
+  const jegErModtager =
+    aktivSladesh !== undefined &&
+    aktivSladesh !== null &&
+    aktivSladesh.recipientId === mig._id;
+
+  if (jegErModtager && !minimeret) {
+    return (
+      <SladeshOvertagelse
+        udfordring={aktivSladesh}
+        onMinimer={() => setMinimeret(true)}
+        onAfgjort={(tekst) => setKvittering({ tekst })}
+      />
+    );
+  }
+
   return (
     <div className="skal">
       <header className="top">
@@ -100,6 +130,26 @@ function Appen() {
       </header>
 
       <main className="indhold">
+        {jegErModtager && (
+          <button className="sladeshbjaelke" onClick={() => setMinimeret(false)}>
+            🍺 {aktivSladesh.senderName} har sladeshet dig
+            <span className="ur">
+              <Ur deadlineAt={aktivSladesh.deadlineAt} />
+            </span>
+          </button>
+        )}
+
+        {aktivSladesh !== undefined &&
+          aktivSladesh !== null &&
+          aktivSladesh.senderId === mig._id && (
+            <div className="venterbjaelke">
+              🍺 Venter på at {aktivSladesh.recipientName} gennemfører
+              <span className="ur">
+                <Ur deadlineAt={aktivSladesh.deadlineAt} />
+              </span>
+            </div>
+          )}
+
         {fane === "kanal" ? (
           !harKanal || channelId === undefined ? (
             <div className="tom">
@@ -192,7 +242,7 @@ function Appen() {
         <LogArk
           channelId={channelId}
           onLuk={() => setLogAabent(false)}
-          onLogget={(tekst, logId) => setKvittering({ tekst, logId })}
+          onLogget={(navn, logId) => setKvittering({ tekst: `${navn} logget`, logId })}
         />
       )}
 
@@ -203,11 +253,28 @@ function Appen() {
       {valgtPerson !== undefined && (
         <Personkort
           userId={valgtPerson}
+          minUserId={mig._id}
+          channelId={channelId}
           onLuk={() => setValgtPerson(undefined)}
         />
       )}
     </div>
   );
+}
+
+/**
+ * Nedtællingen i en bjælke.
+ *
+ * Egen komponent, så kun den gentegner hvert sekund. Lå tikket i skallen,
+ * ville hele appen gentegne 600 gange i løbet af en Sladesh.
+ */
+function Ur({ deadlineAt }: { deadlineAt: number }) {
+  const [nu, setNu] = useState(Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNu(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return <>{formatUr(deadlineAt - nu)}</>;
 }
 
 /** Kanalens navn i toppen. Egen komponent, så kun den henter opslaget. */
@@ -233,7 +300,7 @@ function Kvittering({
   onFaerdig,
 }: {
   tekst: string;
-  logId: Id<"drinkLogs">;
+  logId?: Id<"drinkLogs">;
   onFaerdig: () => void;
 }) {
   const removeDrink = useMutation(api.drinkLogs.removeDrink);
@@ -241,6 +308,7 @@ function Kvittering({
   const [fejl, setFejl] = useState<string | undefined>();
 
   const fortryd = async () => {
+    if (logId === undefined) return;
     setArbejder(true);
     try {
       await removeDrink({ logId });
@@ -253,8 +321,8 @@ function Kvittering({
 
   return (
     <div className="kvittering" role="status">
-      <span className="tekst">{fejl ?? `${tekst} logget`}</span>
-      {fejl === undefined && (
+      <span className="tekst">{fejl ?? tekst}</span>
+      {fejl === undefined && logId !== undefined && (
         <button disabled={arbejder} onClick={() => void fortryd()}>
           Fortryd
         </button>

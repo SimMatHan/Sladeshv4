@@ -327,26 +327,33 @@ Den lodrette skive står:
 1. ✅ **Skallen** — to faner, kanalvælgeren i toppen, ( + )-knappen.
 2. ✅ **Kanal → Stilling** — rigtige data, reaktivt.
 3. ✅ **( + )-arket** — kataloget, dine sædvanlige, log og fortryd.
-4. ✅ **Personkortet** — fra en række i Stillingen.
+4. ✅ **Personkortet** — fra en række i Stillingen, med Send Sladesh.
 5. ✅ **Mig** — egne tal, promille, achievements, nulstil run.
+6. ✅ **Sladesh** — send fra personkortet, modtag som overtagelse.
 
-Det er R1, R2, R6, R7 og R8 hele vejen igennem mod dev-Convex med rigtige
-migrerede brugere.
+Det er R1, R2, R3, R4, R6, R7 og R8 hele vejen igennem mod dev-Convex med
+rigtige migrerede brugere.
 
 **Ingen router endnu.** To faner og tre ark er tilstand, ikke adresser. Den
 kommer, når der er URL'er værd at dele — fx et link direkte til en Kanal.
 `vercel.json` har SPA-rewrites klar til den dag.
 
-**Send Sladesh er bevidst ikke med.** Knappen hører til på personkortet (R4),
-men at kunne sende, uden at modtageren har et flow at gennemføre udfordringen
-i, ville efterlade folk med noget, de ikke kan komme af med. R3 og R4 bygges
-sammen.
+**Sladesh blev bygget som ét stykke.** Send og modtag hører sammen: at kunne
+sende, uden at modtageren har et flow at gennemføre udfordringen i, ville
+efterlade folk med noget, de ikke kan komme af med.
+
+Kameraet er `<input capture>` frem for `getUserMedia`. Det giver telefonens
+eget kamera med det samme, uden en tilladelsesdialog vi selv skal håndtere —
+og på en computer bliver det en filvælger, så flowet kan afprøves uden mobil.
+
+Faserne er serverens. `registrerBevis` afviser at gå baglæns eller springe
+over, så skærmen kun tegner det, `phase` siger. Genindlæser man midt i det,
+står man præcis samme sted.
 
 ### Tilbage
 
 | Næste | Hvor |
 |---|---|
-| Sladesh: send + modtag | Personkortet og overtagelsen (R3, R4) |
 | Chat | Kanal → Chat |
 | Kort | Kanal → Kort |
 | Historik | Kanal → Historik |
