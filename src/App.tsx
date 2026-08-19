@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { Suspense, lazy, useEffect, useState, type FormEvent } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -12,6 +12,15 @@ import { Mig } from "./ui/Mig";
 import { Personkort } from "./ui/Personkort";
 import { SladeshOvertagelse } from "./ui/SladeshOvertagelse";
 import { Stilling } from "./ui/Stilling";
+
+/**
+ * Kortet hentes dovent.
+ *
+ * Leaflet og dets CSS fylder omkring 45 kB gzippet — halvdelen af alt det
+ * andet tilsammen — og de fleste sessioner åbner aldrig kortet. Prisen
+ * betales først, når nogen trykker på fanen.
+ */
+const Kort = lazy(() => import("./ui/Kort"));
 
 /**
  * Skallen.
@@ -210,10 +219,9 @@ function Appen() {
               ) : visning === "historik" ? (
                 <Historik channelId={channelId} onVaelgPerson={setValgtPerson} />
               ) : (
-                // Pladsen står med vilje åben. Arkitekturen er besluttet, og
-                // de tre visninger bygges én ad gangen — det er tydeligere at
-                // vise hvor de lander end at skjule dem, indtil de er der.
-                <KommerSenere visning={visning} />
+                <Suspense fallback={<p className="midtstillet">Henter kortet …</p>}>
+                  <Kort channelId={channelId} onVaelgPerson={setValgtPerson} />
+                </Suspense>
               )}
             </>
           )
@@ -347,21 +355,6 @@ function Kvittering({
           Fortryd
         </button>
       )}
-    </div>
-  );
-}
-
-function KommerSenere({ visning }: { visning: Visning }) {
-  const tekster: Record<string, { ikon: string; hvad: string }> = {
-    kort: { ikon: "📍", hvad: "Kortet med beacons" },
-  };
-  const { ikon, hvad } = tekster[visning];
-
-  return (
-    <div className="tom">
-      <div className="stort">{ikon}</div>
-      <p>{hvad}</p>
-      <p className="hjaelp">Bygges i næste omgang. Backenden er klar.</p>
     </div>
   );
 }

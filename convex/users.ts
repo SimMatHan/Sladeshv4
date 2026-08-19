@@ -1,7 +1,12 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { AVATAR_COLOR_NAMES, isAvatarColor } from "./constants";
+import {
+  AVATAR_COLOR_NAMES,
+  getDrinkDayStart,
+  isAvatarColor,
+} from "./constants";
+import { erUdeIDag } from "./drinkRules";
 import {
   getAuthId,
   getCurrentUser,
@@ -281,13 +286,22 @@ export const opdaterProfil = mutation({
  * Opdaterer den indloggede brugers live-position.
  *
  * Modparten til det gamle repos kort, som skrev `users.location` direkte fra
- * klienten. Feltet er det beacon-evalueringen læser, og dets `lastUpdated`
- * afgør om positionen er frisk nok til at tælle — derfor sættes tidsstemplet
- * her på serveren og ikke af klienten.
+ * klienten. Feltet er det beacon-evalueringen og kortet læser, og dets
+ * `lastUpdated` afgør om positionen er frisk nok til at tælle — derfor sættes
+ * tidsstemplet her på serveren og ikke af klienten.
+ *
+ * POSITIONEN GEMMES KUN, MENS MAN ER UDE. Er man det ikke, skrives der
+ * ingenting, og svaret siger `delt: false`. Det er den strenge halvdel af
+ * reglen: der ligger ikke en position at lække, hvis man ikke er med i legen.
+ * Den anden halvdel — at den heller ikke udleveres — står i convex/kort.ts.
+ *
+ * Kaldet KASTER ikke, når man ikke er ude. Det bliver kaldt som et
+ * regelmæssigt hjerteslag, mens kortet er åbent, og en fejl per minut ville
+ * være støj frem for information.
  */
 export const opdaterPosition = mutation({
   args: { lat: v.number(), lng: v.number() },
-  handler: async (ctx, args): Promise<void> => {
+  handler: async (ctx, args): Promise<{ delt: boolean }> => {
     const user = await requireCurrentUser(ctx);
 
     const gyldig =
@@ -306,10 +320,17 @@ export const opdaterPosition = mutation({
     }
 
     const now = Date.now();
+
+    if (!erUdeIDag(user, getDrinkDayStart(now))) {
+      return { delt: false };
+    }
+
     await ctx.db.patch(user._id, {
       location: { lat: args.lat, lng: args.lng, lastUpdated: now },
       updatedAt: now,
     });
+
+    return { delt: true };
   },
 });
 

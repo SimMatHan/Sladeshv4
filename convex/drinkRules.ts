@@ -43,6 +43,28 @@ export function beregnRunStart(
   return start;
 }
 
+/**
+ * Er brugeren "ude" i den drikkedag, der begynder ved `dayStart`?
+ *
+ * Det ene kriterium, tre steder bruger: hvem der står på stillingen, hvem der
+ * kan ses på kortet, og om ens position overhovedet gemmes.
+ *
+ * Siden trin 1 checker `logDrink` selv brugeren ind ved første genstand, så
+ * "har drukket i dag" medfører "checket ind i dag". Derfor er markeringen
+ * alene nok — bortset fra i scoreboardet, som beholder et ekstra tjek på
+ * logninger som sikkerhedsnet for rækker skrevet før den regel fandtes.
+ */
+export function erUdeIDag(
+  bruger: { checkInStatus?: boolean; lastCheckIn?: number },
+  dayStart: number,
+): boolean {
+  return (
+    bruger.checkInStatus === true &&
+    bruger.lastCheckIn !== undefined &&
+    bruger.lastCheckIn >= dayStart
+  );
+}
+
 /** Sammenlagte tal for et sæt logninger. */
 export type Aggregat = {
   /** Vægtet antal genstande på tværs af alle drikkekategorier. */

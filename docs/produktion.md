@@ -250,7 +250,9 @@ JSON kan ikke bære kommentarer, så valgene står her:
 - **Ingen CSP endnu.** En Content-Security-Policy skal kende Firebase Auth'
   og Convex' endpoints, og de sidste varierer med deploymentet. En forkert
   CSP slår login ud på en måde der er svær at gennemskue. Den hører til, når
-  UI'et er på plads og kan afprøves — noteret i afsnit 7.
+  UI'et er på plads og kan afprøves — noteret i afsnit 7. Bemærk at kortet
+  henter baggrundsfliser fra `https://tile.openstreetmap.org`, så en CSP skal
+  også åbne for den.
 - **`Cache-Control: immutable`** på `/assets/` er sikkert, fordi Vite giver
   hver fil et indholds-hash i navnet. `index.html` får det bevidst ikke.
 

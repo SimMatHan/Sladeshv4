@@ -7,7 +7,8 @@ læse-reference og ændres ikke.
 **Status: trin 1 — frontenden er begyndt.** Backenden er komplet,
 produktionsdata er migreret, og appen kører på Vercel. Den lodrette skive står:
 log en genstand, se stillingen, skift Kanal, se en profil, og hele
-Sladesh-livscyklussen, kanal-chatten og historikken. Kortet mangler.
+Sladesh-livscyklussen, chatten, historikken og kortet. Alle fire visninger
+under Kanal er der; tilbage er indstillinger og onboarding.
 
 Domænet `sladeshapp.dk` peger stadig på det gamle site og skifter først, når
 appen kan det, brugerne bruger den til.
@@ -76,6 +77,7 @@ convex/
   promille.ts      Promille efter Widmark
   scoreboard.ts    Scoreboard som live query (IKKE en tabel)
   historik.ts      Kanalens aktivitet dag for dag
+  kort.ts          Hvem er ude, og hvor
 
   *Rules.ts        Rene regler uden database — afprøves af test:logic
   streaks.ts       Stræk- og pointregler
@@ -99,7 +101,7 @@ scripts/
 src/
   App.tsx          Skallen: to faner, ( + )-knappen, arkene
   index.css        Designtokens og grundstil — bevidst uden CSS-framework
-  ui/              Stilling, Chat, Historik, LogArk, KanalVaelger,
+  ui/              Stilling, Chat, Historik, Kort, LogArk, KanalVaelger,
                    Personkort, Mig, SladeshOvertagelse, Ark, Avatar
   lib/             firebase.ts (kun Auth) + visning.ts (farver og formatering)
   contexts/        AuthContext
