@@ -497,6 +497,131 @@ input {
   font-size: 17px;
 }
 
+/* Faner over kataloget. Vandret rul frem for ombrydning: seks kategorier i
+   to raekker ville skubbe selve listen ned under skaermkanten. */
+.faner {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  /* Raekken ruller helt ud til arkets kant: en fane, der er skaaret over i
+     siden, er den eneste maade at se, at der er flere. Den lodrette luft er
+     til den valgte fanes kant, som ellers klippes af rullet. */
+  margin-inline: -20px;
+  padding: 2px 20px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.faner::-webkit-scrollbar {
+  display: none;
+}
+
+.chip.fane {
+  flex: 0 0 auto;
+  padding: 9px 13px;
+  font-size: 14.5px;
+}
+
+.chip.fane .enhed {
+  font-size: 12px;
+  color: var(--tekst-svag);
+  font-variant-numeric: tabular-nums;
+}
+
+.chip.fane[aria-pressed="true"] .enhed {
+  color: color-mix(in srgb, var(--accent-tekst) 65%, transparent);
+}
+
+/* Fanerne bliver staaende, mens man ruller i en lang kategori. Arkets
+   indhold har 20px vandret luft; de negative marginer lader baggrunden gaa
+   helt ud til kanten, saa raekkerne ikke skinner igennem bagved. */
+.arkgruppe.klaebende {
+  position: sticky;
+  top: -8px;
+  z-index: 2;
+  margin-inline: -20px;
+  padding: 8px 20px 6px;
+  background: var(--flade);
+}
+
+/* ------------------------------------------------------- katalogets liste */
+
+.varianter {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.variant {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 11px 14px;
+  text-align: left;
+  border-radius: var(--radius);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  transition: transform 100ms ease;
+}
+
+.variant:active {
+  transform: scale(0.985);
+}
+
+.variant .emoji {
+  font-size: 19px;
+}
+
+.variant .midt {
+  flex: 1;
+  min-width: 0;
+}
+
+.variant .navn {
+  display: block;
+  font-size: 15.5px;
+  font-weight: 570;
+}
+
+/* Beskrivelsen er det, der goer "Fisk" og "Blanc" til at kende fra hinanden.
+   Den maa fylde én linje — bliver den til to, holder listen op med at kunne
+   skimmes. */
+.variant .under {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--tekst-daempet);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.variant .maerke {
+  margin-right: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--kant);
+  color: var(--tekst-daempet);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Plusset siger hvad trykket goer: raekken logger, den aabner ikke noget. */
+.variant .plus {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* --------------------------------------------------------------- knapper */
 
 .knap {

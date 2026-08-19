@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../convex/_generated/dataModel";
 import {
   DRINK_CATEGORIES,
   DRINK_SIZES,
@@ -21,8 +21,25 @@ import { Ark } from "./Ark";
  * — fem tryk, hvis man ramte rigtigt første gang.
  *
  * Øverst står "dine sædvanlige": de fire, du oftest logger, i den størrelse du
- * plejer. Det almindelige tilfælde er dermed ÉT tryk. Resten af kataloget
- * ligger nedenunder for det, man ikke plejer at drikke.
+ * plejer. Det almindelige tilfælde er dermed ÉT tryk.
+ *
+ * DEN LANGE VEJ blev lavet om, da kataloget voksede til over 60 varianter.
+ * Før lå alle kategorier under hinanden som chips i ét langt rul: for tre øl
+ * og to shots var det fint, men med 63 skal man rulle forbi alt det, man ikke
+ * skal bruge, og navnene stod uden den beskrivelse, der gør dem til at kende
+ * fra hinanden ("Fisk", "Blanc", "Sour").
+ *
+ * Nu er der tre veje ind, i den rækkefølge man typisk bruger dem:
+ *
+ *   1. Dine sædvanlige — ét tryk, dækker det meste.
+ *   2. Søgefeltet — ved du hvad du vil have, er det hurtigere end at lede.
+ *      Det søger på tværs af ALLE kategorier, også i beskrivelserne.
+ *   3. Kategorifanerne — én kategori ad gangen, så listen er til at overskue.
+ *      Fanerne bliver stående, mens man ruller.
+ *
+ * Hver variant står som en fuld række med navn og beskrivelse. Rækken er
+ * større at ramme end en chip, og beskrivelsen fjerner tvivlen om, hvad
+ * "Fernet" eller "Radler" er, uden at man skal trykke for at finde ud af det.
  */
 
 /** Hvor mange logninger tilbage vi udleder vanerne af. */
@@ -31,12 +48,22 @@ const HISTORIK_DYBDE = 120;
 /** Antal genveje øverst. Fire fylder to rækker på en telefon. */
 const ANTAL_SAEDVANLIGE = 4;
 
+/**
+ * Hvor mange varianter der skal til, før søgefeltet er umagen værd.
+ *
+ * Under den er kategorifanerne nok — et søgefelt over en liste, man kan
+ * overskue, er bare en ekstra ting at kigge på.
+ */
+const SOEG_FRA_ANTAL = 12;
+
 type Saedvanlig = {
   categoryId: string;
   variationName: string;
   sizeId: string;
   antal: number;
 };
+
+type Variant = Doc<"drinkVariations">;
 
 export function LogArk({
   channelId,
@@ -65,18 +92,48 @@ export function LogArk({
   const logDrink = useLogDrink();
 
   const [stoerrelse, setStoerrelse] = useState("small");
+  // Bredden er sat udtrykkeligt: DRINK_CATEGORIES er `as const`, saa uden
+  // den ville tilstanden blive laast til literalen "beer".
+  const [kategori, setKategori] = useState<string>(DRINK_CATEGORIES[0].id);
+  const [soeg, setSoeg] = useState("");
 
   const saedvanlige = useMemo(() => udledSaedvanlige(mineLogs), [mineLogs]);
 
   const efterKategori = useMemo(() => {
-    const kort = new Map<string, string[]>();
+    const kort = new Map<string, Variant[]>();
     for (const variant of katalog ?? []) {
       const liste = kort.get(variant.categoryId);
-      if (liste === undefined) kort.set(variant.categoryId, [variant.name]);
-      else liste.push(variant.name);
+      if (liste === undefined) kort.set(variant.categoryId, [variant]);
+      else liste.push(variant);
     }
     return kort;
   }, [katalog]);
+
+  const soegning = soeg.trim();
+  const soeger = soegning !== "";
+
+  const traef = useMemo(() => {
+    if (!soeger) return [];
+    const noegle = fold(soegning);
+    return (katalog ?? []).filter(
+      (variant) =>
+        fold(variant.name).includes(noegle) ||
+        fold(variant.description ?? "").includes(noegle),
+    );
+  }, [katalog, soeger, soegning]);
+
+  /** Listen der vises lige nu: enten søgetræffene eller den valgte kategori. */
+  const viste = soeger ? traef : (efterKategori.get(kategori) ?? []);
+
+  // "Andet" har ingen størrelse — en cigaret er hverken stor eller lille.
+  // Vælgeren forsvinder derfor, frem for at stå og se ud som om den betyder
+  // noget. Under en søgning afhænger det af, om træffene overhovedet kan have
+  // en størrelse.
+  const visStoerrelse = soeger
+    ? viste.some((variant) => categorySupportsSize(variant.categoryId))
+    : categorySupportsSize(kategori);
+
+  const antalIKatalog = katalog?.length ?? 0;
 
   /**
    * Logger uden at vente.
@@ -102,6 +159,15 @@ export function LogArk({
     onLogget(variationName, vaegtForStoerrelse(categoryId, sizeId), svar);
     onLuk();
   };
+
+  const logVariant = (variant: Variant) =>
+    log(
+      variant.categoryId,
+      variant.name,
+      // Kategorier uden størrelse får den lille med. Serveren udelader den
+      // alligevel, men vi sender ikke noget misvisende afsted.
+      categorySupportsSize(variant.categoryId) ? stoerrelse : "small",
+    );
 
   return (
     <Ark titel="Log en genstand" onLuk={onLuk}>
@@ -130,68 +196,127 @@ export function LogArk({
         </div>
       )}
 
-      <div className="arkgruppe">
-        <h3>Størrelse</h3>
-        <div className="segmenter">
-          {DRINK_SIZES.map((size) => (
-            <button
-              key={size.id}
-              className="segment"
-              aria-selected={stoerrelse === size.id}
-              onClick={() => setStoerrelse(size.id)}
-            >
-              {size.label}
-              <br />
-              <span className="enhed">{size.volumeLabel}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
       {katalog === undefined ? (
         <p className="tom">Henter kataloget …</p>
-      ) : (
-        DRINK_CATEGORIES.map((kategori) => {
-          const varianter = efterKategori.get(kategori.id) ?? [];
-          if (varianter.length === 0) return null;
-
-          return (
-            <div className="arkgruppe" key={kategori.id}>
-              <h3>
-                {kategori.emoji} {kategori.label}
-              </h3>
-              <div className="chips">
-                {varianter.map((navn) => (
-                  <button
-                    key={navn}
-                    className="chip"
-                    onClick={() =>
-                      log(
-                        kategori.id,
-                        navn,
-                        // "Andet" har ingen størrelse — en cigaret er ikke
-                        // stor eller lille. Serveren udelader den alligevel,
-                        // men vi sender ikke noget misvisende afsted.
-                        categorySupportsSize(kategori.id) ? stoerrelse : "small",
-                      )
-                    }
-                  >
-                    {navn}
-                  </button>
-                ))}
-              </div>
-            </div>
-          );
-        })
-      )}
-
-      {katalog !== undefined && katalog.length === 0 && (
+      ) : antalIKatalog === 0 ? (
         <div className="tom">
           <p>Kataloget er tomt.</p>
           <p className="hjaelp">
             En admin skal tilføje drikkevarer, før der er noget at vælge.
           </p>
         </div>
+      ) : (
+        <>
+          {antalIKatalog >= SOEG_FRA_ANTAL && (
+            <div className="arkgruppe">
+              <h3>Find en drikkevare</h3>
+              <input
+                className="felt"
+                type="search"
+                inputMode="search"
+                enterKeyHint="search"
+                autoComplete="off"
+                value={soeg}
+                onChange={(event) => setSoeg(event.target.value)}
+                placeholder={`Søg blandt ${antalIKatalog} — fx øl, gin, jule …`}
+                aria-label="Søg i kataloget"
+              />
+            </div>
+          )}
+
+          {/* Fanerne klæber til toppen: ruller man langt ned i shots og vil
+              videre til vin, skal man ikke først rulle hele vejen op igen.
+              De skjules under en søgning, hvor træffene går på tværs af
+              kategorier og en markeret fane derfor ville lyve. */}
+          {!soeger && (
+            <div className="arkgruppe klaebende">
+              <div className="faner" role="group" aria-label="Kategori">
+                {DRINK_CATEGORIES.map((valg) => {
+                  const antal = efterKategori.get(valg.id)?.length ?? 0;
+                  return (
+                    <button
+                      key={valg.id}
+                      className="chip fane"
+                      aria-pressed={kategori === valg.id}
+                      onClick={() => setKategori(valg.id)}
+                    >
+                      <span className="emoji">{valg.emoji}</span>
+                      {valg.label}
+                      <span className="enhed">{antal}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {visStoerrelse && (
+            <div className="arkgruppe">
+              <h3>Størrelse</h3>
+              <div className="segmenter">
+                {DRINK_SIZES.map((size) => (
+                  <button
+                    key={size.id}
+                    className="segment"
+                    aria-selected={stoerrelse === size.id}
+                    onClick={() => setStoerrelse(size.id)}
+                  >
+                    {size.label}
+                    <br />
+                    <span className="enhed">{size.volumeLabel}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="arkgruppe">
+            <h3>
+              {soeger
+                ? `${traef.length} ${traef.length === 1 ? "træffer" : "træffere"}`
+                : `${etiketFor(kategori)} · ${viste.length}`}
+            </h3>
+
+            {viste.length === 0 ? (
+              <p className="tom">
+                {soeger
+                  ? `Ingen drikkevarer matcher "${soegning}".`
+                  : "Der er ikke lagt noget i denne kategori endnu."}
+              </p>
+            ) : (
+              <div className="varianter">
+                {viste.map((variant) => (
+                  <button
+                    key={variant._id}
+                    className="variant"
+                    onClick={() => logVariant(variant)}
+                  >
+                    <span className="emoji" aria-hidden="true">
+                      {emojiFor(variant.categoryId)}
+                    </span>
+                    <span className="midt">
+                      <span className="navn">{variant.name}</span>
+                      {/* Under en søgning står kategorien med, så man kan se
+                          om "Mimosa" er den fra vin eller den fra cocktails. */}
+                      <span className="under">
+                        {soeger && (
+                          <span className="maerke">
+                            {etiketFor(variant.categoryId)}
+                          </span>
+                        )}
+                        {variant.description ??
+                          (soeger ? "" : "Ingen beskrivelse")}
+                      </span>
+                    </span>
+                    <span className="plus" aria-hidden="true">
+                      +
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
       )}
     </Ark>
   );
@@ -266,8 +391,30 @@ function udledSaedvanlige(
     });
 }
 
+/**
+ * Gør en tekst søgbar: små bogstaver, uden accenter, og med de danske
+ * bogstaver skrevet som det, folk taster på vej efter dem.
+ *
+ * Uden det ville "rose" ikke finde "Rosé", "jager" ikke "Jägermeister" og
+ * "glogg" ikke "Gløgg" — og man ville tro, at drikkevaren ikke fandtes.
+ */
+function fold(tekst: string): string {
+  return tekst
+    .toLowerCase()
+    .normalize("NFD")
+    // Kombinerende accenter (é, ä, ü). Æ, Ø og Å dækkes ikke af NFD.
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/æ/g, "ae")
+    .replace(/ø/g, "o")
+    .replace(/å/g, "a");
+}
+
 function emojiFor(categoryId: string): string {
   return DRINK_CATEGORIES.find((k) => k.id === categoryId)?.emoji ?? "🥤";
+}
+
+function etiketFor(categoryId: string): string {
+  return DRINK_CATEGORIES.find((k) => k.id === categoryId)?.label ?? categoryId;
 }
 
 function navnPaaStoerrelse(sizeId: string): string {

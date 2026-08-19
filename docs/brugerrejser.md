@@ -119,9 +119,21 @@ faner i stedet for fem.
    du oftest logger, i den størrelse du plejer.
 3. Tryk på "Tuborg". Arket lukker med en kort bekræftelse.
 
-Nedenunder de sædvanlige ligger hele kataloget efter kategori, for det man
-ikke plejer at drikke. Størrelse kan ændres i arket, men har en default, så
-det almindelige valg ikke koster et tryk.
+Nedenunder de sædvanlige ligger resten af kataloget, for det man ikke plejer
+at drikke. Kataloget er over 60 varianter, så det er ikke ét langt rul:
+
+- **Søgefeltet** går på tværs af alle kategorier og søger også i
+  beskrivelserne — "gin" finder både Gin & Tonic og de drinks, der er lavet
+  på gin. Æ, ø, å og accenter er ligegyldige: "rose" finder Rosé.
+- **Kategorifanerne** (Øl, Cider, Vin, Cocktails, Shots, Andet) viser én
+  kategori ad gangen med antallet på fanen. De bliver stående, mens man
+  ruller, så man kan skifte kategori uden at rulle op igen.
+- Hver variant står som en **fuld række med navn og beskrivelse** — det er
+  beskrivelsen, der skiller "Fisk" fra "Blanc" fra "Sour".
+
+Størrelse kan ændres i arket, men har en default, så det almindelige valg
+ikke koster et tryk. Under **Andet** — cigaret, vand, toiletbesøg — forsvinder
+størrelsesvælgeren helt: de har ingen størrelse og tæller ikke som genstande.
 
 **Fortryd** ligger i selve bekræftelsen — "Tuborg logget · Fortryd" — nogle
 sekunder. Bagefter kan man fortryde fra Historik. Det svarer til `removeDrink`,
