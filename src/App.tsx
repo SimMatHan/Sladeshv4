@@ -9,6 +9,7 @@ import { Historik } from "./ui/Historik";
 import { KanalVaelger } from "./ui/KanalVaelger";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
+import { Onboarding } from "./ui/Onboarding";
 import { Personkort } from "./ui/Personkort";
 import { SladeshOvertagelse } from "./ui/SladeshOvertagelse";
 import { Stilling } from "./ui/Stilling";
@@ -119,6 +120,14 @@ function Appen() {
 
   const channelId = mig.activeChannelId;
   const harKanal = mig.joinedChannelIds.length > 0;
+
+  // Førstegangsforløbet vises kun til dem, der faktisk er nye: uden Kanal OG
+  // uden at have været igennem det før. De 32 migrerede brugere har begge
+  // dele på plads og skal ikke bydes velkommen til en app, de har brugt i
+  // årevis.
+  if (mig.onboardingCompleted !== true && !harKanal) {
+    return <Onboarding mig={mig} />;
+  }
 
   const jegErModtager =
     aktivSladesh !== undefined &&

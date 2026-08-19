@@ -13,6 +13,19 @@ export const DRINK_DAY_START_HOUR = 10;
  */
 export const APP_TIME_ZONE = "Europe/Copenhagen";
 
+/**
+ * Længdegrænser for profilfelter. Nye — det gamle repo havde ingen.
+ *
+ * De ligger HER frem for i convex/users.ts, fordi frontenden skal kende dem
+ * (feltet sætter `maxLength`, så man ikke kan skrive noget, serveren afviser).
+ * `users.ts` importerer `_generated/server`, og at trække den ind i
+ * klientbundlet for tre tal ville koste hele modulet.
+ */
+export const NAVN_MAX = 40;
+export const FULDT_NAVN_MAX = 100;
+/** Emoji fylder flere UTF-16-enheder; 8 rummer også sammensatte tegn. */
+export const EMOJI_MAX = 8;
+
 /** Antal rækker scoreboardet returnerer. Samme som Firestore-queryens limit. */
 export const SCOREBOARD_LIMIT = 50;
 

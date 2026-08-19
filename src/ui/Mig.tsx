@@ -5,6 +5,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "../contexts/AuthContext";
 import { fejltekst, genstande, promille } from "../lib/visning";
 import { Avatar } from "./Avatar";
+import { Indstillinger } from "./Indstillinger";
 
 /**
  * Mig — den anden af de to faner.
@@ -14,8 +15,8 @@ import { Avatar } from "./Avatar";
  * for resten af dagen, og det er ikke til at fortryde. Det er den ene
  * handling i appen, der spørger.
  *
- * SENERE: indstillinger (navn, avatar, promille), achievements i fuld form,
- * admin og støt-appen. De hører alle til her, jf. docs/brugerrejser.md.
+ * SENERE: achievements i fuld form, admin og støt-appen. De hører alle til
+ * her, jf. docs/brugerrejser.md.
  */
 export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
   const mig = useQuery(api.users.getMe, {});
@@ -25,6 +26,7 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
   const { signOut } = useAuth();
 
   const [spoerger, setSpoerger] = useState(false);
+  const [indstillingerAabne, setIndstillingerAabne] = useState(false);
   const [arbejder, setArbejder] = useState(false);
   const [fejl, setFejl] = useState<string | undefined>();
 
@@ -122,6 +124,10 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
       )}
 
       <div style={{ marginTop: 22 }}>
+        <button className="knap" onClick={() => setIndstillingerAabne(true)}>
+          Indstillinger
+        </button>
+
         {spoerger ? (
           <div className="kort">
             <p style={{ marginTop: 0 }}>
@@ -146,6 +152,10 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
       </div>
 
       {fejl !== undefined && <p className="fejl">{fejl}</p>}
+
+      {indstillingerAabne && (
+        <Indstillinger mig={mig} onLuk={() => setIndstillingerAabne(false)} />
+      )}
     </>
   );
 }
