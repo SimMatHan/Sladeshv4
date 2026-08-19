@@ -106,36 +106,20 @@ export function localWallClock(now: number): {
   hour: number;
   minute: number;
   second: number;
-  /** Millisekunder siden lokal midnat. */
+  /** Millisekunder siden lokal midnat. Kan være 23 eller 25 timer om året. */
   msSinceLocalMidnight: number;
   /** Epoch ms for lokal midnat. */
   localMidnight: number;
 } {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: APP_TIME_ZONE,
-    hour12: false,
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-  }).formatToParts(new Date(now));
-
-  const get = (type: Intl.DateTimeFormatPartTypes): number =>
-    Number(parts.find((part) => part.type === type)?.value ?? "0");
-
-  // `hour: "numeric"` med hour12:false giver 24 for midnat i nogle runtimes.
-  const hour = get("hour") % 24;
-  const minute = get("minute");
-  const second = get("second");
-
-  const msSinceLocalMidnight =
-    ((hour * 60 + minute) * 60 + second) * 1000 + (now % 1000);
+  const { year, month, day, hour, minute, second } = lokalDele(now);
+  const localMidnight = epochForLokalTid(year, month, day, 0);
 
   return {
     hour,
     minute,
     second,
-    msSinceLocalMidnight,
-    localMidnight: now - msSinceLocalMidnight,
+    msSinceLocalMidnight: now - localMidnight,
+    localMidnight,
   };
 }
 
@@ -146,9 +130,143 @@ export function localWallClock(now: number): {
  * klokken før 10:00, hører tidspunktet til gårsdagens drikkedag.
  */
 export function getDrinkDayStart(now: number): number {
-  const { localMidnight } = localWallClock(now);
-  const boundary = localMidnight + DRINK_DAY_START_HOUR * 60 * 60 * 1000;
+  const { year, month, day } = lokalDele(now);
+  const iDag = epochForLokalTid(year, month, day, DRINK_DAY_START_HOUR);
 
-  // Før kl. 10:00 hører vi stadig til gårsdagens drikkedag.
-  return now >= boundary ? boundary : boundary - 24 * 60 * 60 * 1000;
+  if (now >= iDag) return iDag;
+
+  const igaar = forrigeKalenderdag(year, month, day);
+  return epochForLokalTid(
+    igaar.year,
+    igaar.month,
+    igaar.day,
+    DRINK_DAY_START_HOUR,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tidszone-regning
+// ---------------------------------------------------------------------------
+//
+// Convex kører i UTC, så enhver døgngrænse skal regnes eksplicit i
+// Europe/Copenhagen. Det lyder som et opslag, men er det ikke: to gange om
+// året er et døgn 23 eller 25 timer langt.
+//
+// FEJLEN DER LÅ HER FØR: lokal midnat blev regnet som `now` minus den
+// forløbne VÆGURSTID siden midnat. På et almindeligt døgn er de to ens, men
+// natten til den sidste søndag i oktober er der gået 11 rigtige timer, når
+// uret viser 10:00 — og grænsen skred en time. Kl. 09:00 den morgen svarede
+// `getDrinkDayStart`, at drikkedagen begyndte kl. 11:00 dagen før. Det ramte
+// alt, der hænger på grænsen: stillingen, stræk, promille og historikken.
+//
+// I stedet regnes nu den anden vej: fra en lokal DATO og et klokkeslæt til et
+// tidspunkt. Så er svaret rigtigt, uanset hvor lang dagen var.
+
+type LokaleDele = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  second: number;
+};
+
+const DELE_FORMAT = new Intl.DateTimeFormat("en-US", {
+  timeZone: APP_TIME_ZONE,
+  hour12: false,
+  year: "numeric",
+  month: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+  second: "numeric",
+});
+
+/** Væguret i dansk tid, opdelt. */
+function lokalDele(ms: number): LokaleDele {
+  const dele = DELE_FORMAT.formatToParts(new Date(ms));
+
+  const hent = (type: Intl.DateTimeFormatPartTypes): number =>
+    Number(dele.find((del) => del.type === type)?.value ?? "0");
+
+  return {
+    year: hent("year"),
+    month: hent("month"),
+    day: hent("day"),
+    // `hour: "numeric"` med hour12:false giver 24 for midnat i nogle runtimes.
+    hour: hent("hour") % 24,
+    minute: hent("minute"),
+    second: hent("second"),
+  };
+}
+
+/** Tidszonens forskydning fra UTC på et givet tidspunkt, i millisekunder. */
+function forskydningVed(ms: number): number {
+  const d = lokalDele(ms);
+  const somUtc = Date.UTC(d.year, d.month - 1, d.day, d.hour, d.minute, d.second);
+  // Millisekunderne skæres væk begge steder, så de ikke forstyrrer.
+  return somUtc - Math.floor(ms / 1000) * 1000;
+}
+
+/**
+ * Epoch ms for et klokkeslæt på en lokal dato.
+ *
+ * Forskydningen afhænger af det tidspunkt, vi er ved at finde — derfor gættes
+ * der én gang og rettes én gang. To omgange er nok: et gæt kan højst være én
+ * time galt, og en time er aldrig nok til at flytte os over endnu et skifte.
+ */
+export function epochForLokalTid(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+): number {
+  const oensket = Date.UTC(year, month - 1, day, hour);
+  const gaet = oensket - forskydningVed(oensket);
+  return oensket - forskydningVed(gaet);
+}
+
+/** Kalenderdagen før. Ren datoregning, uden tidszoner indblandet. */
+function forrigeKalenderdag(
+  year: number,
+  month: number,
+  day: number,
+): { year: number; month: number; day: number } {
+  const d = new Date(Date.UTC(year, month - 1, day));
+  d.setUTCDate(d.getUTCDate() - 1);
+  return {
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+  };
+}
+
+/**
+ * Drikkedagen før denne.
+ *
+ * Regnes ved at gå ét millisekund tilbage fra grænsen og spørge om, hvilken
+ * drikkedag DET tidspunkt hører til — ikke ved at trække 24 timer fra.
+ * Forskellen betyder noget to gange om året: ved sommertidsskiftet er der 23
+ * eller 25 timer mellem to grænser, og et fast døgn ville skride en time og
+ * derefter lægge to dage i samme kasse.
+ */
+export function forrigeDrikkedag(dayStart: number): number {
+  return getDrinkDayStart(dayStart - 1);
+}
+
+/**
+ * De seneste `antal` drikkedage, ældste først.
+ *
+ * Sidste element er den drikkedag, `now` selv ligger i.
+ */
+export function drikkedageBagud(now: number, antal: number): number[] {
+  const dage: number[] = [];
+  let dag = getDrinkDayStart(now);
+
+  for (let i = 0; i < antal; i++) {
+    dage.push(dag);
+    dag = forrigeDrikkedag(dag);
+  }
+
+  return dage.reverse();
 }
