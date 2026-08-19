@@ -4,11 +4,13 @@ Re-arkitektur af [SladeshApp.dk](https://sladeshapp.dk) fra Firebase/Firestore
 til Convex. Nyt projekt — det gamle repo (`SimMatHan/Sladesh2.0`) bruges kun som
 læse-reference og ændres ikke.
 
-**Status: trin 1 — frontenden er begyndt.** Backenden er komplet,
-produktionsdata er migreret, og appen kører på Vercel. Den lodrette skive står:
-log en genstand, se stillingen, skift Kanal, se en profil, og hele
-Sladesh-livscyklussen, chatten, historikken og kortet. Alle fire visninger
-under Kanal er der; tilbage er indstillinger og onboarding.
+**Status: trin 1 er bygget.** Backenden er komplet, produktionsdata er migreret,
+og appen kører på Vercel. Alle skærme fra kortlægningen er der: log en genstand,
+se stillingen, skift Kanal, se en profil, hele Sladesh-livscyklussen, chatten,
+historikken, kortet, indstillingerne og førstegangsforløbet.
+
+Tilbage er det, der er bevidst udskudt — push-levering, donationer, broadcasts,
+temaer og admin-skærme — og selve redesignet.
 
 Domænet `sladeshapp.dk` peger stadig på det gamle site og skifter først, når
 appen kan det, brugerne bruger den til.
@@ -102,7 +104,8 @@ src/
   App.tsx          Skallen: to faner, ( + )-knappen, arkene
   index.css        Designtokens og grundstil — bevidst uden CSS-framework
   ui/              Stilling, Chat, Historik, Kort, LogArk, KanalVaelger,
-                   Personkort, Mig, SladeshOvertagelse, Ark, Avatar
+                   Personkort, Mig, Indstillinger, Onboarding, ProfilFelter,
+                   SladeshOvertagelse, Ark, Avatar
   lib/             firebase.ts (kun Auth) + visning.ts (farver og formatering)
   contexts/        AuthContext
   hooks/           useFirebaseAuthForConvex — broen mellem Firebase og Convex

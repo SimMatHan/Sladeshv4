@@ -1181,3 +1181,96 @@ p.dagliste {
   color: var(--tekst);
   border-color: color-mix(in srgb, var(--medgang) 40%, var(--kant));
 }
+
+/* ------------------------------------------------- profilfelter og onboarding */
+
+.emojigitter {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 6px;
+}
+
+.emojiknap {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: var(--radius-lille);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  font-size: 22px;
+  line-height: 1;
+  transition: transform 90ms ease;
+}
+
+.emojiknap:active {
+  transform: scale(0.9);
+}
+
+.emojiknap[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.farver {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.farve {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: transform 90ms ease;
+}
+
+.farve:active {
+  transform: scale(0.9);
+}
+
+.farve[aria-pressed="true"] {
+  border-color: var(--tekst);
+  box-shadow: 0 0 0 2px var(--bund) inset;
+}
+
+/* En "til/fra"-knap: samme form som de oevrige, men markeret naar den er slaaet
+   til. Et rigtigt kontaktpunkt er stoerre end en switch og lettere at ramme. */
+.knap[aria-pressed="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.onboarding {
+  min-height: 100dvh;
+  padding: var(--top-sikker) 0 calc(var(--bund-sikker) + 30px);
+  background:
+    radial-gradient(
+      120% 60% at 50% 0%,
+      color-mix(in srgb, var(--accent) 16%, var(--bund)),
+      var(--bund) 65%
+    );
+}
+
+.onboardingindhold {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 8dvh 20px 0;
+}
+
+.onboardingindhold h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.onboardingindhold > .under {
+  margin: 0 0 26px;
+  color: var(--tekst-daempet);
+}
+
+.onboardingindhold .stortikon {
+  font-size: 52px;
+  margin-bottom: 14px;
+}

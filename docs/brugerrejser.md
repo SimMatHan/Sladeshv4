@@ -333,9 +333,11 @@ Den lodrette skive står:
 7. ✅ **Kanal → Chat** — beskeder, ulæst-prik og tilstedeværelse.
 8. ✅ **Kanal → Historik** — 14 dage, foldes ud dag for dag.
 9. ✅ **Kanal → Kort** — hvem er ude og hvor, plus beacons.
+10. ✅ **Mig → Indstillinger** — navn, emoji, farve og promille.
+11. ✅ **Onboarding** — find din Kanal, og hvem er du.
 
-Det er R1, R2, R3, R4, R6, R7 og R8 hele vejen igennem mod dev-Convex med
-rigtige migrerede brugere.
+Det er R1 til R8 hele vejen igennem mod dev-Convex med rigtige migrerede
+brugere.
 
 **Ingen router endnu.** To faner og tre ark er tilstand, ikke adresser. Den
 kommer, når der er URL'er værd at dele — fx et link direkte til en Kanal.
@@ -353,13 +355,21 @@ Faserne er serverens. `registrerBevis` afviser at gå baglæns eller springe
 over, så skærmen kun tegner det, `phase` siger. Genindlæser man midt i det,
 står man præcis samme sted.
 
+**Indstillinger og onboarding blev bygget sammen.** Det er de samme tre felter
+— navn, emoji, farve — første gang og hver gang. `src/ui/ProfilFelter.tsx` er
+den ene kopi, begge skærme bruger. Havde de haft hver sin, ville de skride fra
+hinanden, første gang der kom et felt til.
+
+Onboarding vises kun til dem, der faktisk er nye: `onboardingCompleted !== true`
+**og** ingen Kanaler. De 32 migrerede brugere har begge dele på plads og skal
+ikke bydes velkommen til en app, de har brugt i årevis.
+
+Kanalen kommer før profilen i forløbet, fordi den er det eneste, der ER
+nødvendigt — uden en Kanal er der ingenting at se. Profilen kan springes over
+og rettes bagefter.
+
 ### Tilbage
 
-| Næste | Hvor |
-|---|---|
-| Kort | Kanal → Kort |
-| Historik | Kanal → Historik |
-| Indstillinger | Mig → Indstillinger (navn, avatar, promille) |
-| Onboarding | R5, trin 2–3 |
-
-Backenden kan dem alle. Det, der mangler, er skærme.
+Ingen skærme fra kortlægningen mangler. Det, der ikke er bygget, er bevidst
+udskudt og står i `docs/skaermkortlaegning.md`: push-levering, donationer,
+broadcasts, temaer og admin-skærme.

@@ -3,6 +3,9 @@ import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import {
   AVATAR_COLOR_NAMES,
+  EMOJI_MAX,
+  FULDT_NAVN_MAX,
+  NAVN_MAX,
   getDrinkDayStart,
   isAvatarColor,
 } from "./constants";
@@ -173,12 +176,6 @@ export const setActiveChannel = mutation({
     });
   },
 });
-
-/** Længdegrænser for profilfelter. Nye — det gamle repo havde ingen. */
-export const NAVN_MAX = 40;
-export const FULDT_NAVN_MAX = 100;
-/** Emoji fylder flere UTF-16-enheder; 8 rummer også sammensatte tegn. */
-export const EMOJI_MAX = 8;
 
 /**
  * Retter den indloggede brugers egen profil.
