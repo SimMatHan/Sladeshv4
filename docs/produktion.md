@@ -149,6 +149,26 @@ npm run migrer -- --skriv --kun-varianter
 `migrering.opretDrinkVariations` springer varianter over, der allerede findes
 i samme kategori, så kommandoen kan køres igen uden at give dubletter.
 
+Efter cutover findes migreringsfunktionerne ikke længere. Kataloget
+vedligeholdes derfra af `scripts/lib/katalog.ts` — den skrevne liste over
+varianter — og lægges ind med:
+
+```bash
+export KATALOG_EMAIL=<admin-konto>
+export KATALOG_PASSWORD=...
+
+# Tørkørsel: viser hvad der mangler, hvad der er ændret, og hvad der kun
+# findes i deploymentet. Skriver intet.
+CONVEX_URL=https://<produktion>.convex.cloud npm run katalog
+
+CONVEX_URL=https://<produktion>.convex.cloud npm run katalog -- --skriv
+```
+
+Kontoen skal have `isAdmin` sat i dashboardet — `opretVariant` er spærret af
+`requireAdmin`. Scriptet er idempotent og **sletter aldrig noget**: varianter,
+der kun findes i deploymentet, bliver stående og bliver blot rapporteret, så
+de kan skrives ind i filen (eller fjernes i hånden).
+
 ### Skal migreringen køres om
 
 `--ryd` sletter **alt** i måldeploymentet. Mod et deployment valgt med
