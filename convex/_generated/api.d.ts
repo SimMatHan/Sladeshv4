@@ -21,6 +21,7 @@ import type * as drinkVariations from "../drinkVariations.js";
 import type * as historik from "../historik.js";
 import type * as identity from "../identity.js";
 import type * as kanaler from "../kanaler.js";
+import type * as kort from "../kort.js";
 import type * as messageRules from "../messageRules.js";
 import type * as messages from "../messages.js";
 import type * as migrering from "../migrering.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   historik: typeof historik;
   identity: typeof identity;
   kanaler: typeof kanaler;
+  kort: typeof kort;
   messageRules: typeof messageRules;
   messages: typeof messages;
   migrering: typeof migrering;

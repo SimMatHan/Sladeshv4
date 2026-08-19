@@ -137,7 +137,7 @@ Kun en ramme om `AntigravityMap` (komponenten er stor). Viser medlemmers
 positioner og aktive beacons; admins kan placere en beacon.
 
 **Convex:** `beacons.getBeacons`, `beacons.opretBeacon`,
-`users.opdaterPosition`. Delvist — mangler **andres positioner** (4.6).
+`users.opdaterPosition`, `kort.getKanalPositioner`. ✅
 
 ### Profil og konto
 
@@ -300,7 +300,7 @@ queryen findes ikke.
 Mangler: sæt favorit-Kanal (`favoriteChannelId` findes i schemaet), meld dig
 ud af en Kanal, og admin-redigering af en Kanal.
 
-### 4.6 Andres positioner på kortet
+### 4.6 Andres positioner på kortet — ✅ **lukket**
 
 `users.opdaterPosition` skriver ens egen. Der mangler en query, der giver
 positionerne for medlemmerne af ens Kanal — med samme forældelsesregel som
@@ -309,6 +309,13 @@ beacon-evalueringen bruger (15 minutter).
 Det er også det sted, hvor et redesign bør tage stilling: **skal andre kunne
 se, hvor man er?** I dag kan de. Det er den mest personfølsomme funktion i
 appen.
+
+> **Lukket:** `convex/kort.ts` med `getKanalPositioner`. Beslutningen blev, at
+> **positionen kun deles, mens man er ude** — og reglen håndhæves to steder:
+> `users.opdaterPosition` GEMMER ingenting, når man ikke er ude, og queryen
+> UDLEVERER ingenting. Oven i det gælder samme 15-minutters friskhedsgrænse
+> som beacon-evalueringen. Man kommer på kortet ved at være med i legen, ikke
+> ved at have appen åben.
 
 ### 4.7 Bevidst uden for afgrænsningen
 

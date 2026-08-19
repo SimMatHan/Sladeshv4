@@ -300,13 +300,13 @@ ellers er usynlig og virker som en fejl.
 
 ## 8. Det jeg ikke kan beslutte for dig
 
-**Skal andre kunne se, hvor du er?** Kortet viser i dag medlemmernes
-positioner løbende, for alle i Kanalen. Det er den mest personfølsomme
-funktion i appen, og det her er det rigtige tidspunkt at tage stilling.
-
-Mit forslag, hvis kortet bliver: positionen deles **kun mens du er ude**, den
-kan slås fra per Kanal, og du kan altid se på ét blik, hvem der kan se dig.
-Det er stadig et valg, du skal træffe — også muligheden at lade kortet gå.
+> ~~**Skal andre kunne se, hvor du er?**~~ **Besluttet:** positionen deles
+> **kun mens man er ude**. Reglen er håndhævet to steder — den gemmes ikke, og
+> den udleveres ikke — plus en 15-minutters friskhedsgrænse. Kortet fortæller
+> altid dig selv, om din position deles, og hvorfor ikke.
+>
+> Muligheden for at slå den fra **per Kanal** er ikke bygget. Den kan tilføjes,
+> hvis nogen savner den.
 
 **Skal `/support` og donationer med?** Collectionen blev valgt fra i fase 1.
 Det er en beslutning om, hvorvidt appen stadig skal bede om penge.
@@ -332,6 +332,7 @@ Den lodrette skive står:
 6. ✅ **Sladesh** — send fra personkortet, modtag som overtagelse.
 7. ✅ **Kanal → Chat** — beskeder, ulæst-prik og tilstedeværelse.
 8. ✅ **Kanal → Historik** — 14 dage, foldes ud dag for dag.
+9. ✅ **Kanal → Kort** — hvem er ude og hvor, plus beacons.
 
 Det er R1, R2, R3, R4, R6, R7 og R8 hele vejen igennem mod dev-Convex med
 rigtige migrerede brugere.

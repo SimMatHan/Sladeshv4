@@ -1114,3 +1114,70 @@ p.dagliste {
 .logning.fortrudt .under {
   text-decoration: line-through;
 }
+
+/* ------------------------------------------------------------------ kort */
+
+.kortvisning {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.kortflade {
+  height: 58dvh;
+  min-height: 320px;
+  border-radius: var(--radius);
+  border: 1px solid var(--kant);
+  overflow: hidden;
+  /* Leaflets egen baggrund er lys; her er den maerkbar, mens fliser hentes. */
+  background: var(--flade);
+  z-index: 0;
+}
+
+/* Leaflets kontroller skal ligne resten af appen, ikke 2011. */
+.kortflade .leaflet-control-attribution {
+  background: color-mix(in srgb, var(--bund) 78%, transparent);
+  color: var(--tekst-svag);
+  font-size: 10px;
+}
+
+.kortflade .leaflet-control-attribution a {
+  color: var(--tekst-daempet);
+}
+
+.kortnaal {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-size: 18px;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
+  border: 2px solid var(--bund);
+}
+
+/* Ens egen naal skal kunne findes paa ét blik i en klynge. */
+.kortnaal.mig {
+  border-color: var(--accent);
+  box-shadow:
+    0 2px 8px rgb(0 0 0 / 0.4),
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.kortstatus {
+  margin: 0;
+  padding: 11px 14px;
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--tekst-daempet);
+}
+
+.kortstatus.deler {
+  color: var(--tekst);
+  border-color: color-mix(in srgb, var(--medgang) 40%, var(--kant));
+}
