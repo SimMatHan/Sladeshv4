@@ -32,6 +32,51 @@ export type Katalogvariant = {
   categoryId: string;
 };
 
+/** Øl. */
+const OEL: Katalogvariant[] = [
+  { name: "Pilsner", description: "Let i kroppen med floral bitterhed." },
+  { name: "Lager", description: "Ren og sprød gylden øl." },
+  { name: "Classic", description: "Balanceret favorit med maltsødme." },
+  { name: "IPA", description: "Humlet med citrus- og blomsternoter." },
+  { name: "Hvede Øl", description: "Uklar hvedeøl med banan og nellike." },
+  { name: "Blanc", description: "Hvedeøl i belgisk stil med citrus og krydderi." },
+  { name: "Stout", description: "Mørke ristede malte med strejf af chokolade." },
+  { name: "Guinness", description: "Ikonisk irsk stout med cremet skum." },
+  { name: "Sour", description: "Syrlig ale med livlig syre." },
+  { name: "Ale", description: "Hvem fanden drikker Ale?" },
+  { name: "Guldøl", description: "De gyldne dråber" },
+  { name: "Julebryg", description: "Julemandens yndlingsøl" },
+  { name: "Radler", description: "Er radler en øl?" },
+  { name: "Rice Lager", description: "Japansk pis øl" },
+].map((variant) => ({ ...variant, categoryId: "beer" }));
+
+/** Cider. */
+const CIDER: Katalogvariant[] = [
+  { name: "Apple", description: "Klassisk æblecider med frisk syrlighed." },
+  { name: "Pear", description: "Blød, saftig pæresødme." },
+  { name: "Strawberry", description: "Sommerlig sødme med frugtig finish." },
+  { name: "Mixed Berries", description: "Blend af bær med livlig farve." },
+  { name: "Elderflower", description: "Blomstrende twist med let brus." },
+].map((variant) => ({ ...variant, categoryId: "cider" }));
+
+/**
+ * Vin.
+ *
+ * "Mimosa" står også under cocktails. Det er ikke en dublet: nøglen er
+ * (kategori, navn), så den samme drink må gerne ligge to steder — man leder
+ * efter den begge steder.
+ */
+const VIN: Katalogvariant[] = [
+  { name: "Red", description: "Dybe, fløjlsbløde noter af mørke frugter." },
+  { name: "White", description: "Lys, sprød afslutning med citrus." },
+  { name: "Rosé", description: "Tør rosé perfekt til solrige dage." },
+  { name: "Sparkling", description: "Bobler med festligt flair." },
+  { name: "Gløgg", description: "Varm krydret vin til hyggelige aftener." },
+  { name: "Orange", description: "Skinkontakt-hvidvin med markant karakter." },
+  { name: "Dessert Vin", description: "Du drikker det kun til dessert" },
+  { name: "Mimosa", description: "Brunch alkohol, sygt" },
+].map((variant) => ({ ...variant, categoryId: "wine" }));
+
 /**
  * Cocktails.
  *
@@ -97,6 +142,9 @@ const ANDET: Katalogvariant[] = [
 
 /** Hele kataloget, samlet. */
 export const STANDARD_KATALOG: readonly Katalogvariant[] = [
+  ...OEL,
+  ...CIDER,
+  ...VIN,
   ...COCKTAILS,
   ...SHOTS,
   ...ANDET,
