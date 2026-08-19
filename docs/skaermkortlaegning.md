@@ -119,7 +119,7 @@ Liste over ens Kanaler, skift aktiv Kanal, meld dig ind med kode, opret ny.
 Kanalens aktivitet over tid: `ProgressChart`, `ActivityCalendar`,
 `StickyDateHeader`, dag-for-dag-historik med `date-fns` på dansk.
 
-**Convex:** ❌ **ikke dækket.** Se 4.3.
+**Convex:** `historik.getKanalHistorik`, `historik.getKanalDag`. ✅
 
 #### `/messages` — Messages, 188 linjer
 
@@ -277,11 +277,17 @@ Alle felterne er i schemaet. Der mangler én `users.opdaterProfil`.
 > scoreboardet og i hver logrække), og `avatarColor` skal være en af de syv
 > kendte farver.
 
-### 4.3 Kanalens aktivitetslog — **blokerer `/channel-log`**
+### 4.3 Kanalens aktivitetslog — ✅ **lukket**
 
 Der findes `getDrinkLogsForUser` (én bruger) og `getScoreboard` (i dag), men
 intet der giver Kanalens logninger over en periode, grupperet per dag.
 Indexet `by_kanal_and_timestamp` findes allerede, så det er én query.
+
+> **Lukket:** `convex/historik.ts` med `getKanalHistorik` (per-dag-aggregater
+> over op til 60 drikkedage) og `getKanalDag` (én dags rækker, hentes først
+> når dagen foldes ud). Historikken viser hele drikkedagen, ikke det
+> igangværende run — en nulstilling fjerner dig fra stillingen, men aftenen
+> står stadig i historikken.
 
 ### 4.4 Mine sendte Sladesh'er
 

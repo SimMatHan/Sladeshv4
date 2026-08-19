@@ -331,6 +331,7 @@ Den lodrette skive står:
 5. ✅ **Mig** — egne tal, promille, achievements, nulstil run.
 6. ✅ **Sladesh** — send fra personkortet, modtag som overtagelse.
 7. ✅ **Kanal → Chat** — beskeder, ulæst-prik og tilstedeværelse.
+8. ✅ **Kanal → Historik** — 14 dage, foldes ud dag for dag.
 
 Det er R1, R2, R3, R4, R6, R7 og R8 hele vejen igennem mod dev-Convex med
 rigtige migrerede brugere.

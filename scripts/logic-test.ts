@@ -12,6 +12,8 @@ import {
   AVATAR_COLORS,
   AVATAR_COLOR_NAMES,
   DRINK_CATEGORIES,
+  drikkedageBagud,
+  forrigeDrikkedag,
   getDrinkDayStart,
   getSize,
   isAvatarColor,
@@ -131,6 +133,39 @@ console.log("\n[Logic] drikkedagens grænse (10:00, Europe/Copenhagen)");
     "vintertid 09:00 → gårsdagens kl. 10:00",
     getDrinkDayStart(cet("2026-01-15T09:00:00")),
     cet("2026-01-14T10:00:00"),
+  );
+
+  // --- Sommertidsskiftene -------------------------------------------------
+  // Her lå en fejl indtil historikken blev bygget: grænsen blev regnet som
+  // "nu minus forløben vægurstid siden midnat", og de to er ikke det samme
+  // på et døgn med 23 eller 25 timer. Kl. 09:00 den 25. oktober svarede
+  // funktionen, at drikkedagen begyndte kl. 11:00 dagen før.
+  check(
+    "efterårets 25-timers døgn, kl. 09:00 → gårsdagens kl. 10:00",
+    getDrinkDayStart(cet("2026-10-25T09:00:00")),
+    cest("2026-10-24T10:00:00"),
+  );
+  check(
+    "efterårets 25-timers døgn, kl. 12:00 → samme dags kl. 10:00",
+    getDrinkDayStart(cet("2026-10-25T12:00:00")),
+    cet("2026-10-25T10:00:00"),
+  );
+  check(
+    "forårets 23-timers døgn, kl. 09:00 → gårsdagens kl. 10:00",
+    getDrinkDayStart(cest("2026-03-29T09:00:00")),
+    cet("2026-03-28T10:00:00"),
+  );
+  check(
+    "forårets 23-timers døgn, kl. 12:00 → samme dags kl. 10:00",
+    getDrinkDayStart(cest("2026-03-29T12:00:00")),
+    cest("2026-03-29T10:00:00"),
+  );
+
+  // Sladesh-blokkene deler den samme regning og var derfor ramt af det samme.
+  check(
+    "12-timers blokken rammer også rigtigt på skiftedøgnet",
+    getBlockStart(cet("2026-10-25T09:00:00")),
+    cest("2026-10-25T00:00:00"),
   );
 }
 
@@ -1099,6 +1134,51 @@ console.log("\n[Logic] achievements");
       {},
     )?.achievementId !== "obeerma",
     true,
+  );
+}
+
+console.log("\n[Logic] drikkedage bagud (historikkens akse)");
+{
+  check(
+    "forrige drikkedag er dagen før kl. 10",
+    forrigeDrikkedag(cest("2026-08-16T10:00:00")),
+    cest("2026-08-15T10:00:00"),
+  );
+
+  // Skiftedøgnene: et fast døgn tilbage ville skride en time.
+  check(
+    "efterårets 25-timers døgn rammer stadig kl. 10",
+    forrigeDrikkedag(cet("2026-10-25T10:00:00")),
+    cest("2026-10-24T10:00:00"),
+  );
+  check(
+    "forårets 23-timers døgn rammer stadig kl. 10",
+    forrigeDrikkedag(cest("2026-03-29T10:00:00")),
+    cet("2026-03-28T10:00:00"),
+  );
+  // Og at en akse hen over skiftet ikke får to dage i samme kasse.
+  check(
+    "aksen hen over efterårsskiftet har tre forskellige dage",
+    new Set(drikkedageBagud(cet("2026-10-26T12:00:00"), 3)).size,
+    3,
+  );
+
+  const tre = drikkedageBagud(cest("2026-08-16T14:00:00"), 3);
+  check("tre dage, ældste først", tre, [
+    cest("2026-08-14T10:00:00"),
+    cest("2026-08-15T10:00:00"),
+    cest("2026-08-16T10:00:00"),
+  ]);
+  check(
+    "sidste element er dagen man står i",
+    tre[tre.length - 1],
+    getDrinkDayStart(cest("2026-08-16T14:00:00")),
+  );
+  // Kl. 03:00 hører til aftenen før — også i historikkens akse.
+  check(
+    "kl. 03:00 lander i gårsdagens kasse",
+    drikkedageBagud(cest("2026-08-16T03:00:00"), 1),
+    [cest("2026-08-15T10:00:00")],
   );
 }
 

@@ -5,6 +5,7 @@ import type { Id } from "../convex/_generated/dataModel";
 import { useAuth } from "./contexts/AuthContext";
 import { fejltekst, formatUr } from "./lib/visning";
 import { Chat } from "./ui/Chat";
+import { Historik } from "./ui/Historik";
 import { KanalVaelger } from "./ui/KanalVaelger";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
@@ -206,6 +207,8 @@ function Appen() {
                   minUserId={mig._id}
                   onVaelgPerson={setValgtPerson}
                 />
+              ) : visning === "historik" ? (
+                <Historik channelId={channelId} onVaelgPerson={setValgtPerson} />
               ) : (
                 // Pladsen står med vilje åben. Arkitekturen er besluttet, og
                 // de tre visninger bygges én ad gangen — det er tydeligere at
@@ -351,7 +354,6 @@ function Kvittering({
 function KommerSenere({ visning }: { visning: Visning }) {
   const tekster: Record<string, { ikon: string; hvad: string }> = {
     kort: { ikon: "📍", hvad: "Kortet med beacons" },
-    historik: { ikon: "📈", hvad: "Kanalens aktivitet dag for dag" },
   };
   const { ikon, hvad } = tekster[visning];
 
