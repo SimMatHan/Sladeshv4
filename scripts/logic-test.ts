@@ -20,6 +20,12 @@ import {
 } from "../convex/constants";
 import { computeStreak, pointsForDrink } from "../convex/streaks";
 import schema from "../convex/schema.ts";
+import type { ScoreboardRow } from "../convex/scoreboard.ts";
+import {
+  medGenstand,
+  udenGenstand,
+  vaegtForStoerrelse,
+} from "../src/lib/optimistisk.ts";
 import {
   PHASE_ORDER,
   beregnCooldown,
@@ -1202,6 +1208,57 @@ console.log("\n[Logic] avatar-farver og kategorier");
     DRINK_CATEGORIES.map((k) => k.id),
     ["beer", "cider", "wine", "cocktail", "shot", "other"],
   );
+}
+
+console.log("\n[Logic] optimistisk stilling");
+{
+  // Gættet, skærmen viser FØR serveren svarer. Det farlige her er ikke, at
+  // tallet er en anelse forkert — serveren retter det inden for et øjeblik —
+  // men at RÆKKEFØLGEN afviger fra convex/scoreboard.ts. Så ville rækker
+  // hoppe rundt, hver gang svaret landede.
+  const nu = cest("2026-08-13T22:00:00");
+  const mig = {
+    userId: "u1" as ScoreboardRow["userId"],
+    name: "Mig",
+    avatar: "🍺",
+    color: "sunset",
+  };
+
+  check("øl i lille tæller 1", vaegtForStoerrelse("beer", "small"), 1);
+  check("øl i stor tæller 2", vaegtForStoerrelse("beer", "large"), 2);
+  // "other" er cigaretter og lignende. De logges, men flytter ikke stillingen.
+  check("andet tæller ikke med", vaegtForStoerrelse("other", "small"), 0);
+  // Kategorier uden størrelse har ingen multiplikator at slå op.
+  check("ukendt størrelse falder til 1", vaegtForStoerrelse("beer", "xxl"), 1);
+
+  const tom = medGenstand([], mig, 1, nu);
+  check("kommer på listen ved første genstand", tom.length, 1);
+  check("med det rigtige antal", tom[0]?.drinksToday, 1);
+  check("og markeret som med i dag", tom[0]?.isOnline, true);
+
+  const start: ScoreboardRow[] = [
+    { userId: "u2" as ScoreboardRow["userId"], name: "Anden", avatar: "🍷", color: "ocean", drinksToday: 3, streak: 0, lastDrinkAt: nu - 5000, isOnline: true },
+    { ...mig, drinksToday: 2, streak: 1, lastDrinkAt: nu - 9000, isOnline: true },
+  ];
+
+  const efter = medGenstand(start, mig, 1.5, nu);
+  check("egen række tæller op", efter.find((r) => r.userId === mig.userId)?.drinksToday, 3.5);
+  check("og overhaler", efter[0]?.userId, mig.userId);
+  check("andres rækker røres ikke", efter.find((r) => r.userId === "u2")?.drinksToday, 3);
+
+  // Ved lige antal vinder den, der drak TIDLIGST — samme tie-breaker som
+  // serveren. Her ender begge på 3, og u2's seneste er ældst.
+  const lige = medGenstand(start, mig, 1, nu);
+  check("lige antal: tidligste først", lige[0]?.userId, "u2");
+
+  const fortrudt = udenGenstand(efter, mig.userId, 1.5);
+  check("fortryd trækker fra igen", fortrudt.find((r) => r.userId === mig.userId)?.drinksToday, 2);
+  check("og sorterer tilbage", fortrudt[0]?.userId, "u2");
+
+  // Halve genstande må ikke give 3.0000000000000004 på skærmen.
+  check("ingen flydende-komma-støj", medGenstand(start, mig, 1.5, nu)[0]?.drinksToday, 3.5);
+  // Kan ikke gå i minus, uanset hvad der bliver trukket fra.
+  check("aldrig negativ", udenGenstand(start, mig.userId, 99).find((r) => r.userId === mig.userId)?.drinksToday, 0);
 }
 
 console.log(

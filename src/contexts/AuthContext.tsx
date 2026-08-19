@@ -17,6 +17,7 @@ import {
   type User,
 } from "firebase/auth";
 import { auth } from "../lib/firebase";
+import { saetOejebliksbilledeEjer } from "../lib/oejebliksbillede";
 
 /**
  * Login-flow.
@@ -55,6 +56,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           indlogget: nextUser !== null,
           email: nextUser?.email,
         });
+        // De lokale øjebliksbilleder hører til ÉN bruger. Skiftes der konto —
+        // eller logges der ud — ryddes de, så næste bruger ikke kan komme til
+        // at se den forriges stilling i det sekund, appen åbner.
+        saetOejebliksbilledeEjer(nextUser?.uid);
+
         setUser(nextUser);
         setLoading(false);
         setError(null);

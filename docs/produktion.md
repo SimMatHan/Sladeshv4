@@ -290,6 +290,42 @@ unauthorized-domain`) dukker først op når nogen prøver at logge ind.
 > det nye. Der findes ingen synkronisering, og det er ikke meningen at der
 > skal være. Beslut ét tidspunkt hvor det gamle site slukkes, og hold det.
 
+### Den gamle service worker skal fortrænges
+
+**Det her er den fælde, der kan få DNS-skiftet til at se ud, som om det ikke
+virkede.**
+
+Det gamle site kører `vite-plugin-pwa` med `scope: "/"` og
+`registerType: "prompt"`. Alle, der har besøgt eller installeret
+`sladeshapp.dk`, har altså allerede en service worker registreret på domænet,
+og den serverer den gamle app fra sin egen cache. Når DNS peger et nyt sted
+hen, ændrer det **ikke** noget for dem: browseren spørger service workeren,
+ikke serveren.
+
+Heldigt sammenfald: `vite-plugin-pwa` lægger sin worker på `/sw.js`, og det
+gør vores også. Registreringer slås op på (origin, scope), så browseren
+opdager ved sit næste tjek, at scriptet på `/sw.js` er et andet, og
+installerer vores i stedet. Men — også vores venter, til alle faner er lukket,
+og en installeret PWA lukkes sjældent helt. Der kan gå dage.
+
+Så gør det her:
+
+1. **Tjek det på din egen telefon først.** Åbn `sladeshapp.dk` efter skiftet.
+   Ser du den gamle app, er det netop det her, og ikke DNS.
+   Chrome: `chrome://inspect/#service-workers`. Safari/iOS: afinstallér appen
+   fra hjemmeskærmen og tilføj den igen.
+2. **Sig det til brugerne.** "Luk appen helt og åbn den igen" er den ene
+   handling, der løser det for alle. På iOS: swipe den væk fra
+   app-skifteren — ikke bare tryk hjem.
+3. Vores workers `activate` sletter alle andre cacher end sine egne, så
+   workbox' precache ryger med, i samme øjeblik den tager over. Der bliver
+   ikke to sæt liggende.
+
+Overvej at slå DNS om **på en hverdag om formiddagen** frem for en fredag
+aften. Ikke fordi noget går i stykker, men fordi vinduet, hvor nogen kan sidde
+med den gamle app uden at vide det, så ikke falder sammen med den aften, de
+faktisk skal bruge den.
+
 ### Tilbagerulning
 
 Indtil DNS er skiftet, er tilbagerulning at lade være med at skifte det.

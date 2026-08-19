@@ -826,6 +826,55 @@ input {
   color: var(--tekst);
 }
 
+/* ----------------------------------------------------------- forbindelse */
+/*
+ * Statusbjælken. Vises kun, når der er noget at sige — se src/ui/Forbindelse.tsx.
+ *
+ * Bevidst dæmpet. Det er en oplysning, ikke en fejl: appen virker fint uden
+ * dækning, og bjælken er der for at sige netop det. Skreg den i rødt, ville
+ * folk holde op med at logge.
+ */
+.forbindelse {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 12px 0 4px;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  line-height: 1.35;
+}
+
+.forbindelse.nede {
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  color: var(--tekst-daempet);
+}
+
+.forbindelse.gemmer {
+  background: transparent;
+  padding: 6px 2px;
+  color: var(--tekst-svag);
+}
+
+.forbindelse.ny {
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  color: var(--tekst);
+}
+
+.forbindelse.ny button {
+  margin-left: auto;
+  padding: 6px 12px;
+  background: var(--accent);
+  color: var(--accent-tekst);
+  border: none;
+  border-radius: var(--radius-lille);
+  font: inherit;
+  font-weight: 620;
+  cursor: pointer;
+}
+
 /* ------------------------------------------------------------------- chat */
 /*
  * Skriveren er fast over navigationen, saa den ikke skal scrolles frem.
