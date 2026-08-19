@@ -9,6 +9,10 @@ og appen kører på Vercel. Alle skærme fra kortlægningen er der: log en genst
 se stillingen, skift Kanal, se en profil, hele Sladesh-livscyklussen, chatten,
 historikken, kortet, indstillingerne og førstegangsforløbet.
 
+Appen er en **installerbar PWA**: den åbner uden dækning, trykkene reagerer
+med det samme, og den siger til, når forbindelsen er væk — se
+[`docs/offline.md`](docs/offline.md).
+
 Tilbage er det, der er bevidst udskudt — push-levering, donationer, broadcasts,
 temaer og admin-skærme — og selve redesignet.
 
@@ -16,6 +20,7 @@ Domænet `sladeshapp.dk` peger stadig på det gamle site og skifter først, når
 appen kan det, brugerne bruger den til.
 
 - Udrulning og cutover: **[`docs/produktion.md`](docs/produktion.md)**
+- Appen på dårligt net: **[`docs/offline.md`](docs/offline.md)**
 - Hvad UI'et skal dække: **[`docs/skaermkortlaegning.md`](docs/skaermkortlaegning.md)**
 - Hvordan det skal hænge sammen: **[`docs/brugerrejser.md`](docs/brugerrejser.md)**
 
@@ -95,18 +100,22 @@ docs/
   produktion.md                Udrulning og cutover
   skaermkortlaegning.md        Alle 20 skaerme i den gamle app, og hvad backenden mangler
   brugerrejser.md              Ny informationsarkitektur og brugerrejser
+  offline.md                   PWA, cache og optimistiske opdateringer
 scripts/
   logic-test.ts    Forretningsregler, kører lokalt
   smoke-test.ts    Ende-til-ende mod dev-deploymentet
   migrer.ts        Firestore → Convex
   vercel-build.sh  Byggekommandoen Vercel kører
+  sw-skabelon.js   Service workeren. Fillisten udfyldes af pluginet i vite.config.ts
 src/
   App.tsx          Skallen: to faner, ( + )-knappen, arkene
   index.css        Designtokens og grundstil — bevidst uden CSS-framework
   ui/              Stilling, Chat, Historik, Kort, LogArk, KanalVaelger,
                    Personkort, Mig, Indstillinger, Onboarding, ProfilFelter,
-                   SladeshOvertagelse, Ark, Avatar
-  lib/             firebase.ts (kun Auth) + visning.ts (farver og formatering)
+                   SladeshOvertagelse, Forbindelse, Ark, Avatar
+  lib/             firebase.ts (kun Auth), visning.ts (farver og formatering),
+                   oejebliksbillede.ts (sidst kendte svar), optimistisk.ts +
+                   optimistiskeKald.ts (svar foer serveren), serviceworker.ts
   contexts/        AuthContext
   hooks/           useFirebaseAuthForConvex — broen mellem Firebase og Convex
 ```

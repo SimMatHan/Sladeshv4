@@ -6,6 +6,7 @@ import "./index.css";
 import App from "./App.tsx";
 import { AuthProvider } from "./contexts/AuthContext.tsx";
 import { useFirebaseAuthForConvex } from "./hooks/useFirebaseAuthForConvex.ts";
+import { registrerServiceWorker } from "./lib/serviceworker.ts";
 
 const convexUrl = import.meta.env.VITE_CONVEX_URL as string | undefined;
 
@@ -20,6 +21,9 @@ if (!convexUrl) {
 console.log("[Convex] forbinder til deployment", { url: convexUrl });
 
 const convex = new ConvexReactClient(convexUrl);
+
+// Skallen i cachen, så appen åbner uden dækning. Se scripts/sw-skabelon.js.
+registrerServiceWorker();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>

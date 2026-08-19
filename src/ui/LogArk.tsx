@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import {
@@ -7,7 +7,9 @@ import {
   DRINK_SIZES,
   categorySupportsSize,
 } from "../../convex/constants";
-import { fejltekst } from "../lib/visning";
+import { useCachetQuery } from "../lib/oejebliksbillede";
+import { vaegtForStoerrelse } from "../lib/optimistisk";
+import { useLogDrink } from "../lib/optimistiskeKald";
 import { Ark } from "./Ark";
 
 /**
@@ -43,17 +45,26 @@ export function LogArk({
 }: {
   channelId: Id<"kanaler"> | undefined;
   onLuk: () => void;
-  onLogget: (besked: string, logId: Id<"drinkLogs">) => void;
+  onLogget: (
+    navn: string,
+    vaegt: number,
+    svar: Promise<Id<"drinkLogs">>,
+  ) => void;
 }) {
-  const katalog = useQuery(api.drinkVariations.getDrinkVariations, {});
+  // Kataloget skifter næsten aldrig og er det, arket ikke kan vise noget uden.
+  // Gemt lokalt er ( + ) fyldt ud i det øjeblik, det åbner — også på et net,
+  // der ikke er kommet op endnu.
+  const katalog = useCachetQuery(
+    "katalog",
+    api.drinkVariations.getDrinkVariations,
+    {},
+  );
   const mineLogs = useQuery(api.drinkLogs.getDrinkLogsForUser, {
     limit: HISTORIK_DYBDE,
   });
-  const logDrink = useMutation(api.drinkLogs.logDrink);
+  const logDrink = useLogDrink();
 
   const [stoerrelse, setStoerrelse] = useState("small");
-  const [arbejder, setArbejder] = useState(false);
-  const [fejl, setFejl] = useState<string | undefined>();
 
   const saedvanlige = useMemo(() => udledSaedvanlige(mineLogs), [mineLogs]);
 
@@ -67,33 +78,29 @@ export function LogArk({
     return kort;
   }, [katalog]);
 
-  const log = async (
-    categoryId: string,
-    variationName: string,
-    sizeId: string,
-  ) => {
-    if (arbejder) return;
-    setArbejder(true);
-    setFejl(undefined);
+  /**
+   * Logger uden at vente.
+   *
+   * FØR ventede arket på serverens svar, før det lukkede. På fuld dækning var
+   * det umærkeligt; på to bjælker i en kælder betød det, at man trykkede på en
+   * knap, der ikke gjorde noget, i flere sekunder — og så trykkede igen.
+   *
+   * Nu lukker arket på trykket, og stillingen flytter sig med det samme via
+   * den optimistiske opdatering i useLogDrink. Serverens svar bruges kun til
+   * to ting: at give kvitteringen sit logId, så Fortryd kan komme frem, og at
+   * sige til, hvis det gik galt. Begge dele håndteres af skallen, som stadig
+   * står, når arket er væk.
+   *
+   * Uden dækning fejler kaldet ikke — Convex lægger mutationen i kø og sender
+   * den, når der er hul igennem. Den optimistiske +1 bliver stående så længe.
+   */
+  const log = (categoryId: string, variationName: string, sizeId: string) => {
+    const svar = logDrink({ channelId, categoryId, variationName, sizeId }).then(
+      (resultat) => resultat.logId,
+    );
 
-    try {
-      const svar = await logDrink({
-        channelId,
-        categoryId,
-        variationName,
-        sizeId,
-      });
-
-      // Arket lukker med det samme. Bekræftelsen — med Fortryd — vises af
-      // skallen, så den overlever, at arket forsvinder.
-      onLogget(variationName, svar.logId);
-      onLuk();
-    } catch (error) {
-      // Arket bliver stående ved fejl. Lukkede det, ville brugeren ikke vide,
-      // om genstanden blev talt med.
-      setFejl(fejltekst(error));
-      setArbejder(false);
-    }
+    onLogget(variationName, vaegtForStoerrelse(categoryId, sizeId), svar);
+    onLuk();
   };
 
   return (
@@ -106,9 +113,8 @@ export function LogArk({
               <button
                 key={`${vane.categoryId}::${vane.variationName}`}
                 className="chip stor"
-                disabled={arbejder}
                 onClick={() =>
-                  void log(vane.categoryId, vane.variationName, vane.sizeId)
+                  log(vane.categoryId, vane.variationName, vane.sizeId)
                 }
               >
                 <span className="emoji">{emojiFor(vane.categoryId)}</span>
@@ -159,9 +165,8 @@ export function LogArk({
                   <button
                     key={navn}
                     className="chip"
-                    disabled={arbejder}
                     onClick={() =>
-                      void log(
+                      log(
                         kategori.id,
                         navn,
                         // "Andet" har ingen størrelse — en cigaret er ikke
@@ -188,8 +193,6 @@ export function LogArk({
           </p>
         </div>
       )}
-
-      {fejl !== undefined && <p className="fejl">{fejl}</p>}
     </Ark>
   );
 }

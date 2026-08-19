@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { BESKED_MAX_LAENGDE } from "../../convex/messageRules";
+import { useSendMessage } from "../lib/optimistiskeKald";
 import { fejltekst, klokken } from "../lib/visning";
 import { Avatar } from "./Avatar";
 
@@ -35,7 +36,10 @@ export function Chat({
   onVaelgPerson: (userId: Id<"users">) => void;
 }) {
   const beskeder = useQuery(api.messages.getMessages, { channelId });
-  const sendMessage = useMutation(api.messages.sendMessage);
+  // Optimistisk: beskeden står i tråden, i det sekund man trykker send, og
+  // erstattes af serverens, når den lander. Uden dækning bliver den stående,
+  // indtil Convex faar sendt den — man har ikke tabt det, man skrev.
+  const sendMessage = useSendMessage();
   const markerLaest = useMutation(api.messages.markerLaest);
   const setAktivChat = useMutation(api.messages.setAktivChat);
 

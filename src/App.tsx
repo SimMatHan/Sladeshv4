@@ -1,10 +1,13 @@
-import { Suspense, lazy, useEffect, useState, type FormEvent } from "react";
+import { Suspense, lazy, useEffect, useRef, useState, type FormEvent } from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { useAuth } from "./contexts/AuthContext";
+import { useCachetQuery } from "./lib/oejebliksbillede";
+import { udenGenstand } from "./lib/optimistisk";
 import { fejltekst, formatUr } from "./lib/visning";
 import { Chat } from "./ui/Chat";
+import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
 import { KanalVaelger } from "./ui/KanalVaelger";
 import { LogArk } from "./ui/LogArk";
@@ -70,7 +73,10 @@ export default function App() {
 }
 
 function Appen() {
-  const mig = useQuery(api.users.getMe, {});
+  // Profilen er det, hele skallen hænger på — uden den står appen på
+  // "Henter din profil …". Derfor er den den vigtigste at kunne male fra
+  // sidste besøg, mens forbindelsen kommer op.
+  const mig = useCachetQuery("mig", api.users.getMe, {});
   const createUser = useMutation(api.users.createUser);
 
   const [fane, setFane] = useState<Fane>("kanal");
@@ -80,8 +86,42 @@ function Appen() {
   const [valgtPerson, setValgtPerson] = useState<Id<"users"> | undefined>();
   // `logId` er valgfri: en logning kan fortrydes, en afgjort Sladesh kan ikke.
   const [kvittering, setKvittering] = useState<
-    { tekst: string; logId?: Id<"drinkLogs"> } | undefined
+    { id: number; tekst: string; logId?: Id<"drinkLogs">; vaegt?: number } | undefined
   >();
+  const kvitteringNummer = useRef(0);
+
+  /**
+   * Tager imod en logning, FØR serveren har svaret.
+   *
+   * Arket lukker på trykket, og stillingen flytter sig med det samme via den
+   * optimistiske opdatering. Kvitteringen står der straks — men Fortryd kan
+   * først komme, når vi kender logningens id, for det er dét, serveren skal
+   * bruge for at fjerne den igen.
+   *
+   * Nummeret afgør, at svaret på den FØRSTE logning ikke sætter sig på
+   * kvitteringen for den anden, hvis man når at logge to i træk.
+   */
+  const modtagLogning = (
+    navn: string,
+    vaegt: number,
+    svar: Promise<Id<"drinkLogs">>,
+  ) => {
+    const nummer = ++kvitteringNummer.current;
+    setKvittering({ id: nummer, tekst: `${navn} logget`, vaegt });
+
+    svar.then(
+      (logId) =>
+        setKvittering((forrige) =>
+          forrige?.id === nummer ? { ...forrige, logId } : forrige,
+        ),
+      (fejl: unknown) =>
+        // Uden logId kommer Fortryd ikke frem — og der er heller ikke noget at
+        // fortryde. Convex har allerede rullet den optimistiske +1 tilbage.
+        setKvittering((forrige) =>
+          forrige?.id === nummer ? { ...forrige, tekst: fejltekst(fejl) } : forrige,
+        ),
+    );
+  };
 
   // Den aktive Sladesh — i BEGGE retninger. Er man modtager, tager den
   // skærmen; er man afsender, får man kun en stille bjælke, for der er
@@ -139,7 +179,11 @@ function Appen() {
       <SladeshOvertagelse
         udfordring={aktivSladesh}
         onMinimer={() => setMinimeret(true)}
-        onAfgjort={(tekst) => setKvittering({ tekst })}
+        // En afgjort Sladesh kan ikke fortrydes, så den har hverken logId
+        // eller vægt — kun nummeret, så kvitteringerne kan skelnes.
+        onAfgjort={(tekst) =>
+          setKvittering({ id: ++kvitteringNummer.current, tekst })
+        }
       />
     );
   }
@@ -154,6 +198,8 @@ function Appen() {
       </header>
 
       <main className="indhold">
+        <Forbindelse />
+
         {jegErModtager && (
           <button className="sladeshbjaelke" onClick={() => setMinimeret(false)}>
             🍺 {aktivSladesh.senderName} har sladeshet dig
@@ -271,6 +317,9 @@ function Appen() {
         <Kvittering
           tekst={kvittering.tekst}
           logId={kvittering.logId}
+          vaegt={kvittering.vaegt}
+          channelId={channelId}
+          minUserId={mig._id}
           onFaerdig={() => setKvittering(undefined)}
         />
       )}
@@ -279,7 +328,7 @@ function Appen() {
         <LogArk
           channelId={channelId}
           onLuk={() => setLogAabent(false)}
-          onLogget={(navn, logId) => setKvittering({ tekst: `${navn} logget`, logId })}
+          onLogget={modtagLogning}
         />
       )}
 
@@ -316,7 +365,8 @@ function Ur({ deadlineAt }: { deadlineAt: number }) {
 
 /** Kanalens navn i toppen. Egen komponent, så kun den henter opslaget. */
 function KanalNavn({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
-  const kanal = useQuery(
+  const kanal = useCachetQuery(
+    `kanal:${channelId ?? "ingen"}`,
     api.kanaler.getKanal,
     channelId === undefined ? "skip" : { channelId },
   );
@@ -334,13 +384,46 @@ function KanalNavn({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
 function Kvittering({
   tekst,
   logId,
+  vaegt,
+  channelId,
+  minUserId,
   onFaerdig,
 }: {
   tekst: string;
   logId?: Id<"drinkLogs">;
+  /** Hvad logningen vejede i stillingen. Bruges til at trække den fra igen. */
+  vaegt?: number;
+  channelId?: Id<"kanaler">;
+  minUserId?: Id<"users">;
   onFaerdig: () => void;
 }) {
-  const removeDrink = useMutation(api.drinkLogs.removeDrink);
+  // `withOptimisticUpdate` får kun mutationens egne argumenter, og
+  // `removeDrink` tager kun et logId — serveren har jo selv resten. Vægten og
+  // Kanalen kender KVITTERINGEN, fordi den lige har vist logningen, så de
+  // rækkes ind gennem en ref frem for at blive hentet forfra.
+  const info = useRef({ vaegt, channelId, minUserId });
+  info.current = { vaegt, channelId, minUserId };
+
+  const removeDrink = useMutation(api.drinkLogs.removeDrink).withOptimisticUpdate(
+    (localStore) => {
+      const { vaegt, channelId, minUserId } = info.current;
+      if (vaegt === undefined || channelId === undefined || minUserId === undefined) {
+        return;
+      }
+
+      const raekker = localStore.getQuery(api.scoreboard.getScoreboard, {
+        channelId,
+      });
+      if (raekker === undefined) return;
+
+      localStore.setQuery(
+        api.scoreboard.getScoreboard,
+        { channelId },
+        udenGenstand(raekker, minUserId, vaegt),
+      );
+    },
+  );
+
   const [arbejder, setArbejder] = useState(false);
   const [fejl, setFejl] = useState<string | undefined>();
 

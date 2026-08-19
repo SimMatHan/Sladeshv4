@@ -1,6 +1,6 @@
-import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { useCachetQuery } from "../lib/oejebliksbillede";
 import { genstande, promille } from "../lib/visning";
 import { Avatar } from "./Avatar";
 
@@ -24,7 +24,13 @@ export function Stilling({
 }) {
   // Reaktiv af sig selv: logger en anden en genstand, flytter rækken sig her
   // uden at nogen skal hente noget igen.
-  const raekker = useQuery(api.scoreboard.getScoreboard, { channelId });
+  //
+  // Nøglen bærer Kanalen, ellers ville et skift vise den forriges stilling i
+  // et øjeblik. Det gemte er sidste kendte stilling — den maler skærmen med
+  // det samme ved koldstart og bliver skrevet over, så snart serveren svarer.
+  const raekker = useCachetQuery(`stilling:${channelId}`, api.scoreboard.getScoreboard, {
+    channelId,
+  });
 
   if (raekker === undefined) {
     return <p className="midtstillet">Henter stillingen …</p>;
