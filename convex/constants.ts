@@ -29,6 +29,28 @@ export const EMOJI_MAX = 8;
 /** Antal rækker scoreboardet returnerer. Samme som Firestore-queryens limit. */
 export const SCOREBOARD_LIMIT = 50;
 
+/**
+ * Emails der altid er admin.
+ *
+ * FØR lå adgangen kun i feltet `users.isAdmin`, som skulle sættes i hånden i
+ * Convex-dashboardet. Det virker, men det kan ikke skrives ned: et nyt
+ * deployment — et frisk dev-miljø, en gendannelse — starter uden en eneste
+ * admin, og så kan ingen komme til admin-siden for at rette op på det.
+ *
+ * Listen her er derfor den skrevne kilde. `isAdmin` bliver stående ved siden
+ * af og virker som før: sættes flaget i dashboardet, er man admin uanset
+ * email. De to er et ELLER, ikke et ENTEN-ELLER.
+ *
+ * Emails sammenlignes med små bogstaver — Firebase leverer dem i forskellig
+ * skrivemåde afhængigt af hvordan man skrev sig op.
+ */
+export const ADMIN_EMAILS: readonly string[] = ["simonmathiashansen@gmail.com"];
+
+export function erAdminEmail(email: string | undefined): boolean {
+  if (email === undefined) return false;
+  return ADMIN_EMAILS.includes(email.trim().toLowerCase());
+}
+
 /** Drikkekategorier. `id` gemmes i drinkLogs.categoryId; `label` er dansk UI-tekst. */
 export const DRINK_CATEGORIES = [
   { id: "beer", label: "Øl", emoji: "🍺", isDrink: true },

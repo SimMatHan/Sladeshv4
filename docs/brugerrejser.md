@@ -347,6 +347,8 @@ Den lodrette skive står:
 9. ✅ **Kanal → Kort** — hvem er ude og hvor, plus beacons.
 10. ✅ **Mig → Indstillinger** — navn, emoji, farve og promille.
 11. ✅ **Onboarding** — find din Kanal, og hvem er du.
+12. ✅ **Mig → Achievements** — trofæhylden med billeder og fremdrift.
+13. ✅ **Mig → Admin** — kataloget over drikkevarianter, kun for admins.
 
 Det er R1 til R8 hele vejen igennem mod dev-Convex med rigtige migrerede
 brugere.

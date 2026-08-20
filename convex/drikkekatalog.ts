@@ -2,7 +2,16 @@
  * Standardkataloget over drikkevarianter.
  *
  * Det, ( + )-arket lader dig vælge imellem. Rækkerne herfra lægges ind i
- * tabellen `drinkVariations` af scripts/katalog.ts.
+ * tabellen `drinkVariations` to steder fra — begge idempotente:
+ *
+ *   - Admin-siden i appen ("Indlæs standardkataloget"), via
+ *     `drinkVariations.indlaesStandardkatalog`. Den nemme vej, og den eneste
+ *     der virker på et frisk dev-deployment, hvor kataloget er tomt.
+ *   - `npm run katalog` fra en terminal, når det skal køres mod et bestemt
+ *     deployment uden at åbne appen.
+ *
+ * Filen ligger i convex/ og ikke i scripts/, netop fordi serveren skal kunne
+ * læse den. Den importerer intet fra `_generated` og er ren data.
  *
  * HVORFOR EN FIL, OG IKKE BARE DATA I DATABASEN: kataloget kom oprindeligt
  * med fra Firestore ved migreringen, og siden er varianter blevet tilføjet i
@@ -19,8 +28,9 @@
  * for at skrive en tom streng.
  *
  * Rettes et NAVN her, opfattes den som en ny variant, og den gamle bliver
- * stående (kataloget ryddes aldrig af scriptet — se scripts/katalog.ts).
- * Rettes en BESKRIVELSE, kan ændringen køres ud med `--opdater`.
+ * stående (kataloget ryddes aldrig automatisk — hverken af scriptet eller af
+ * admin-siden). Rettes en BESKRIVELSE, kan ændringen køres ud med
+ * `npm run katalog -- --skriv --opdater`.
  *
  * Historikken påvirkes ikke af noget af det: `drinkLogs.variationName` er et
  * snapshot fra logtidspunktet, ikke en reference hertil.

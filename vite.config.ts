@@ -68,4 +68,23 @@ function serviceWorker(): Plugin {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), serviceWorker()],
+
+  optimizeDeps: {
+    /**
+     * Leaflet skal med i forbundtningen fra starten.
+     *
+     * Kortet hentes dovent (`lazy(() => import("./ui/Kort"))`), og Leaflet
+     * importeres kun derinde. I udvikling betyder det, at Vite foerst
+     * OPDAGER afhaengigheden i det oejeblik, man trykker paa Kort-fanen: den
+     * forbundter den paa stedet og genstarter sin egen modulgraf, mens
+     * browseren staar og venter paa netop det modul. Resultatet er
+     * "Failed to fetch dynamically imported module .../src/ui/Kort.tsx" —
+     * og fanen bliver ved med at fejle, indtil man genindlaeser siden.
+     *
+     * Naevnt her forbundtes den, naar dev-serveren starter, og den doevne
+     * import henter noget, der allerede ligger klar. Bygningen er upaavirket
+     * — der forbundtes alt alligevel.
+     */
+    include: ["leaflet"],
+  },
 });

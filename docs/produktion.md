@@ -150,8 +150,14 @@ npm run migrer -- --skriv --kun-varianter
 i samme kategori, så kommandoen kan køres igen uden at give dubletter.
 
 Efter cutover findes migreringsfunktionerne ikke længere. Kataloget
-vedligeholdes derfra af `scripts/lib/katalog.ts` — den skrevne liste over
-varianter — og lægges ind med:
+vedligeholdes derfra af `convex/drikkekatalog.ts` — den skrevne liste over
+varianter.
+
+**Den nemme vej:** log ind som admin og tryk **Mig → Admin → Indlæs
+standardkataloget**. Det er den samme liste og den samme idempotens, og det
+er den eneste vej, der virker på et frisk dev-deployment, hvor kataloget er
+tomt. Terminalvejen er der stadig, når det skal køres mod et bestemt
+deployment uden at åbne appen:
 
 ```bash
 export KATALOG_EMAIL=<admin-konto>

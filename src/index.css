@@ -274,6 +274,15 @@ input {
   margin: 0 0 4px;
 }
 
+/* Hjaelpetekst: den forklarende linje under en knap eller et felt. Klassen
+   blev brugt paa tvaers af appen, men havde kun en regel inde i .tom — saa
+   alle andre steder saa den ud som broedtekst. */
+.hjaelp {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--tekst-daempet);
+}
+
 .tom .hjaelp {
   font-size: 14px;
   color: var(--tekst-svag);
@@ -605,6 +614,18 @@ input {
   color: var(--tekst-daempet);
   font-size: 11px;
   font-weight: 600;
+}
+
+/* Raekkerne bruges ogsaa paa admin-siden, hvor de ikke er en knap, men en
+   linje med en slet-knap i. */
+.variant .handlinger {
+  display: flex;
+  gap: 6px;
+}
+
+.chip.fare {
+  color: var(--fare);
+  border-color: color-mix(in srgb, var(--fare) 35%, var(--kant));
 }
 
 /* Plusset siger hvad trykket goer: raekken logger, den aabner ikke noget. */
@@ -1447,4 +1468,157 @@ p.dagliste {
 .onboardingindhold .stortikon {
   font-size: 52px;
   margin-bottom: 14px;
+}
+
+/* ------------------------------------------------------------- trofaehylde */
+
+/* Achievement-kortet paa Mig er en knap, men skal ligne resten af kortene. */
+.trofaekort {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
+.trofaekort .hjaelp {
+  display: block;
+  margin: 9px 0 0;
+  color: var(--accent);
+}
+
+/* Fremdrift: én bjaelke, brugt baade til "12 af 20 laast op" og til den
+   enkelte achievement. */
+.bjaelke {
+  display: block;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--kant);
+  overflow: hidden;
+}
+
+.bjaelke > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.trofaeer {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.trofae {
+  border-radius: var(--radius);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  overflow: hidden;
+}
+
+/* En laast achievement er daempet, men ikke skjult — man skal kunne se, hvad
+   der er at jagte. */
+.trofae.laast .maerkat {
+  opacity: 0.55;
+}
+
+.trofae.laast .navn {
+  color: var(--tekst-daempet);
+}
+
+.trofaeraekke {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+}
+
+.trofaeraekke .maerkat {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--bund);
+  font-size: 21px;
+}
+
+.trofaeraekke .midt {
+  flex: 1;
+  min-width: 0;
+}
+
+.trofaeraekke .navn {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.trofaeraekke .under {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  color: var(--tekst-daempet);
+}
+
+.trofaeraekke .fremdrift {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.trofaeraekke .fremdrift .bjaelke {
+  flex: 1;
+}
+
+.trofaeraekke .fremdrift .tal {
+  font-size: 11.5px;
+  color: var(--tekst-svag);
+  font-variant-numeric: tabular-nums;
+}
+
+.trofaeraekke .pil {
+  flex: 0 0 auto;
+  color: var(--tekst-svag);
+  font-size: 15px;
+}
+
+.trofaedetalje {
+  padding: 0 14px 14px;
+  border-top: 1px solid var(--kant);
+}
+
+/* Billedet er praemien. Det fylder, fordi det er meningen — men det hentes
+   foerst, naar raekken foldes ud. */
+.trofaedetalje img {
+  display: block;
+  width: 100%;
+  max-height: 260px;
+  object-fit: contain;
+  margin: 14px 0;
+  border-radius: var(--radius-lille);
+  background: var(--bund);
+}
+
+.trofaedetalje .skjult {
+  display: grid;
+  place-items: center;
+  height: 120px;
+  margin: 14px 0;
+  border-radius: var(--radius-lille);
+  background: var(--bund);
+  font-size: 34px;
+  opacity: 0.5;
+}
+
+.trofaedetalje p {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+
+.trofaedetalje .hjaelp {
+  color: var(--tekst-svag);
 }

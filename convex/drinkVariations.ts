@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 import { DRINK_CATEGORIES } from "./constants";
+import { STANDARD_KATALOG } from "./drikkekatalog";
 import { requireAdmin, requireCurrentUser } from "./identity";
 
 /**
@@ -99,6 +100,59 @@ export const opretVariant = mutation({
       kategori: args.categoryId,
     });
     return variationId;
+  },
+});
+
+/**
+ * Lægger standardkataloget ind. Kun admins.
+ *
+ * Den findes, fordi et deployment uden varianter er en app, man ikke kan
+ * logge noget i: ( + )-arket har bogstavelig talt ingenting at vise. Før
+ * skulle de 63 varianter tastes ind én ad gangen eller køres ind med
+ * scripts/katalog.ts, som kræver en terminal og et Firebase-kodeord.
+ *
+ * IDEMPOTENT: en variant, der allerede findes i samme kategori, springes
+ * over. Beskrivelser på eksisterende varianter røres ikke — har nogen rettet
+ * en i appen, skal et tryk her ikke skrive den tilbage. Og der SLETTES
+ * aldrig noget.
+ */
+export const indlaesStandardkatalog = mutation({
+  args: {},
+  handler: async (ctx): Promise<{ oprettet: number; sprunget: number }> => {
+    await requireAdmin(ctx);
+
+    const now = Date.now();
+    let oprettet = 0;
+    let sprunget = 0;
+
+    for (const variant of STANDARD_KATALOG) {
+      const findes = await ctx.db
+        .query("drinkVariations")
+        .withIndex("by_category_and_name", (q) =>
+          q.eq("categoryId", variant.categoryId).eq("name", variant.name),
+        )
+        .unique();
+
+      if (findes !== null) {
+        sprunget++;
+        continue;
+      }
+
+      await ctx.db.insert("drinkVariations", {
+        name: variant.name,
+        description: variant.description,
+        categoryId: variant.categoryId,
+        createdAt: now,
+        updatedAt: now,
+      });
+      oprettet++;
+    }
+
+    console.log("[DrinkVariation] standardkatalog indlaest", {
+      oprettet,
+      sprunget,
+    });
+    return { oprettet, sprunget };
   },
 });
 

@@ -1,7 +1,7 @@
 /**
  * Kataloget over drikkevarianter → Convex.
  *
- * Lægger varianterne fra scripts/lib/katalog.ts ind i tabellen
+ * Lægger varianterne fra convex/drikkekatalog.ts ind i tabellen
  * `drinkVariations`, så ( + )-arket har noget at vise. Kørslen er idempotent:
  * en variant, der allerede findes i samme kategori, springes over, og
  * scriptet SLETTER aldrig noget — varianter, der kun findes i deploymentet,
@@ -35,8 +35,8 @@
 
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
-import { STANDARD_KATALOG, katalogNoegle } from "./lib/katalog.ts";
-import type { Katalogvariant } from "./lib/katalog.ts";
+import { STANDARD_KATALOG, katalogNoegle } from "../convex/drikkekatalog.ts";
+import type { Katalogvariant } from "../convex/drikkekatalog.ts";
 
 const skriv = process.argv.includes("--skriv");
 const opdater = process.argv.includes("--opdater");
@@ -146,7 +146,7 @@ async function main(): Promise<void> {
     console.log("\n[Katalog] findes kun i deploymentet — røres ikke:");
     for (const v of kunIDeployment) console.log(`  ${v.categoryId}: ${v.name}`);
     console.log(
-      "  Skal de blive, hører de hjemme i scripts/lib/katalog.ts. Skal de væk,\n" +
+      "  Skal de blive, hører de hjemme i convex/drikkekatalog.ts. Skal de væk,\n" +
         "  slettes de i hånden — dette script sletter aldrig noget.",
     );
   }

@@ -191,9 +191,23 @@ Overview, DevTools, Users, Channels, Drinks, Broadcasts, Donors.
 Broadcasts og Donors ❌ (4.7).
 
 > Adgang styres i dag af `isAdminEmail` — en **hårdkodet liste i klientkoden**.
-> Convex bruger `users.isAdmin` og `requireAdmin` på serveren. Det er en reel
-> forbedring, men det betyder, at nogen skal sætte `isAdmin` på de rigtige
-> brugere i produktionsdatabasen inden cutover.
+> Convex bruger `users.isAdmin` og `requireAdmin` på serveren.
+>
+> **Sådan blev det:** begge dele, som et ELLER. `ADMIN_EMAILS` i
+> `convex/constants.ts` er den skrevne liste, og `users.isAdmin` sættes
+> stadig i hånden i dashboardet. Forskellen fra den gamle app er, hvor
+> listen læses: på SERVEREN, i `requireAdmin`. En hårdkodet liste i
+> klientkoden skjulte kun knapperne — den holdt ingen ude.
+>
+> Grunden til at listen overhovedet er der: uden den starter et nyt
+> deployment — et frisk dev-miljø, en gendannelse — uden en eneste admin,
+> og så er der ingen, der kan komme til admin-siden og rette op på det.
+
+> **Bygget (Mig → Admin):** kataloget over drikkevarianter — indlæs
+> standardkataloget fra `convex/drikkekatalog.ts`, tilføj og slet varianter.
+> De øvrige underskærme er bevidst ikke bygget: brugere og Kanaler styrer sig
+> selv, og de få indgreb, der kan blive brug for, hører hjemme i
+> Convex-dashboardet.
 
 #### `/support` — Support, 173 linjer
 

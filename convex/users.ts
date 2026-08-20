@@ -6,6 +6,7 @@ import {
   EMOJI_MAX,
   FULDT_NAVN_MAX,
   NAVN_MAX,
+  erAdminEmail,
   getDrinkDayStart,
   isAvatarColor,
 } from "./constants";
@@ -130,7 +131,12 @@ export const createUser = mutation({
       sladeshReceived: 0,
       sladeshCompletedCount: 0,
       sladeshFailedCount: 0,
-      // isAdmin sættes bevidst IKKE her — kun manuelt via dashboardet.
+      // Admin af to veje: flaget her sættes for de emails, der står i
+      // ADMIN_EMAILS, saa en ny profil paa et frisk deployment kan komme til
+      // admin-siden. Alle andre faar det aldrig af sig selv — det saettes i
+      // haanden i Convex-dashboardet. `requireAdmin` tjekker begge dele, saa
+      // en profil oprettet FOER emailen kom paa listen ogsaa slipper ind.
+      isAdmin: erAdminEmail(email) ? true : undefined,
       createdAt: now,
       updatedAt: now,
     });

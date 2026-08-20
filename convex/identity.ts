@@ -1,6 +1,7 @@
 import { ConvexError } from "convex/values";
 import type { QueryCtx, MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
+import { erAdminEmail } from "./constants";
 
 /**
  * Identitet og adgangskontrol.
@@ -70,10 +71,21 @@ export async function requireCurrentUser(ctx: Ctx): Promise<Doc<"users">> {
   return user;
 }
 
-/** Kræver admin. `isAdmin` sættes kun manuelt — aldrig af brugeren selv. */
+/**
+ * Kræver admin.
+ *
+ * To veje ind, og de gælder begge:
+ *   - `isAdmin` på brugerdokumentet. Sættes manuelt i Convex-dashboardet —
+ *     aldrig af brugeren selv.
+ *   - Emailen står i ADMIN_EMAILS (convex/constants.ts). Den vej er skrevet
+ *     ned i koden, så et nyt deployment ikke starter helt uden en admin.
+ *
+ * Emailen kommer fra brugerdokumentet, som blev fyldt ud fra det verificerede
+ * Firebase-token ved oprettelsen — den kan altså ikke sættes af klienten.
+ */
 export async function requireAdmin(ctx: Ctx): Promise<Doc<"users">> {
   const user = await requireCurrentUser(ctx);
-  if (user.isAdmin !== true) {
+  if (user.isAdmin !== true && !erAdminEmail(user.email)) {
     console.log("[Auth] admin-adgang nægtet", { userId: user._id });
     throw new ConvexError({
       code: "NOT_ADMIN",
