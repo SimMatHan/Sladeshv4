@@ -4,6 +4,8 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAuth } from "../contexts/AuthContext";
 import { fejltekst, genstande, promille } from "../lib/visning";
+import { Achievements } from "./Achievements";
+import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
 import { Indstillinger } from "./Indstillinger";
 
@@ -15,8 +17,12 @@ import { Indstillinger } from "./Indstillinger";
  * for resten af dagen, og det er ikke til at fortryde. Det er den ene
  * handling i appen, der spørger.
  *
- * SENERE: achievements i fuld form, admin og støt-appen. De hører alle til
- * her, jf. docs/brugerrejser.md.
+ * Trofæhylden og admin åbner som ark herfra — det er dét, `/achievements` og
+ * `/admin` blev til, jf. rutekortet i docs/skaermkortlaegning.md. Admin-
+ * knappen vises kun til admins, men det er `requireAdmin` på serveren, der
+ * beskytter handlingerne; her skjules den blot.
+ *
+ * SENERE: støt-appen. Den hører også til her, jf. docs/brugerrejser.md.
  */
 export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
   const mig = useQuery(api.users.getMe, {});
@@ -27,6 +33,8 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
 
   const [spoerger, setSpoerger] = useState(false);
   const [indstillingerAabne, setIndstillingerAabne] = useState(false);
+  const [hyldeAaben, setHyldeAaben] = useState(false);
+  const [adminAabent, setAdminAabent] = useState(false);
   const [arbejder, setArbejder] = useState(false);
   const [fejl, setFejl] = useState<string | undefined>();
 
@@ -100,8 +108,15 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
         )}
       </div>
 
+      {/* Emoji-stribens opgave er at LOKKE — de rigtige badges med billeder,
+          fremdrift og historik ligger i arket bagved. Derfor er hele kortet
+          knappen, ikke et "se alle"-link i hjørnet. */}
       {achievements !== undefined && (
-        <div className="kort" style={{ marginTop: 12 }}>
+        <button
+          className="kort medaljekort"
+          style={{ marginTop: 12 }}
+          onClick={() => setHyldeAaben(true)}
+        >
           <h3 style={{ margin: "0 0 9px", fontSize: 13, color: "var(--tekst-svag)" }}>
             ACHIEVEMENTS · {oplaaste.length} AF {achievements.length}
           </h3>
@@ -120,13 +135,19 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
               </span>
             ))}
           </div>
-        </div>
+        </button>
       )}
 
       <div style={{ marginTop: 22 }}>
         <button className="knap" onClick={() => setIndstillingerAabne(true)}>
           Indstillinger
         </button>
+
+        {mig.isAdmin === true && (
+          <button className="knap" onClick={() => setAdminAabent(true)}>
+            Admin
+          </button>
+        )}
 
         {spoerger ? (
           <div className="kort">
@@ -155,6 +176,12 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
 
       {indstillingerAabne && (
         <Indstillinger mig={mig} onLuk={() => setIndstillingerAabne(false)} />
+      )}
+
+      {hyldeAaben && <Achievements onLuk={() => setHyldeAaben(false)} />}
+
+      {adminAabent && (
+        <Admin channelId={channelId} onLuk={() => setAdminAabent(false)} />
       )}
     </>
   );

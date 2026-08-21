@@ -7,6 +7,7 @@ import { useCachetQuery } from "./lib/oejebliksbillede";
 import { udenGenstand } from "./lib/optimistisk";
 import { fejltekst, formatUr } from "./lib/visning";
 import { Chat } from "./ui/Chat";
+import { Faner } from "./ui/Faner";
 import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
 import { KanalVaelger } from "./ui/KanalVaelger";
@@ -232,32 +233,22 @@ function Appen() {
             </div>
           ) : (
             <>
-              <div className="segmenter" role="tablist">
-                {(
-                  [
-                    ["stilling", "Stilling"],
-                    ["chat", "Chat"],
-                    ["kort", "Kort"],
-                    ["historik", "Historik"],
-                  ] as const
-                ).map(([id, etiket]) => (
-                  <button
-                    key={id}
-                    role="tab"
-                    className="segment"
-                    aria-selected={visning === id}
-                    onClick={() => setVisning(id)}
-                  >
-                    {etiket}
-                    {/* Prikken siger "der er sket noget", ikke hvor meget.
-                        Et tal ville invitere til at tælle ulæste beskeder i
-                        en chat, der alligevel tømmer sig selv hvert døgn. */}
-                    {id === "chat" &&
+              <Faner
+                valg={[
+                  { id: "stilling", etiket: "Stilling" },
+                  {
+                    id: "chat",
+                    etiket: "Chat",
+                    prik:
                       ulaeste?.find((k) => k.channelId === channelId)?.ulaest ===
-                        true && <span className="prik" />}
-                  </button>
-                ))}
-              </div>
+                      true,
+                  },
+                  { id: "kort", etiket: "Kort" },
+                  { id: "historik", etiket: "Historik" },
+                ]}
+                aktiv={visning}
+                onVaelg={setVisning}
+              />
 
               {visning === "stilling" ? (
                 <Stilling
