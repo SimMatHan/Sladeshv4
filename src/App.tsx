@@ -6,6 +6,7 @@ import { useAuth } from "./contexts/AuthContext";
 import { useCachetQuery } from "./lib/oejebliksbillede";
 import { udenGenstand } from "./lib/optimistisk";
 import { fejltekst, formatUr } from "./lib/visning";
+import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
 import { Faner } from "./ui/Faner";
 import { Forbindelse } from "./ui/Forbindelse";
@@ -200,6 +201,7 @@ function Appen() {
 
       <main className="indhold">
         <Forbindelse />
+        <Broadcastbjaelke />
 
         {jegErModtager && (
           <button className="sladeshbjaelke" onClick={() => setMinimeret(false)}>

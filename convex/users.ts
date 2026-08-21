@@ -13,6 +13,7 @@ import { erUdeIDag } from "./drinkRules";
 import {
   getAuthId,
   getCurrentUser,
+  requireAdmin,
   requireCanViewUser,
   requireCurrentUser,
 } from "./identity";
@@ -405,3 +406,61 @@ function kraeverLaengde(vaerdi: string, max: number, etiket: string): string {
   }
   return vaerdi;
 }
+
+/**
+ * Søger blandt ALLE brugere. Kun admins.
+ *
+ * Den gamle app havde en `searchUsers`, alle kunne kalde, som hentede hele
+ * brugerlisten ned i klienten og filtrerede der. Denne kræver `requireAdmin`,
+ * og filtreringen sker på serveren, så listen aldrig forlader den.
+ *
+ * Der er ingen tekst-index i Convex, så søgningen er et scan. Det er
+ * acceptabelt her og kun her: tabellen er på nogle få hundrede rækker, og
+ * kaldet sker kun, når en admin står og skriver i et søgefelt. Skulle den
+ * vokse, hører den hjemme i et `searchIndex` — ikke i et større scan.
+ */
+export const searchUsers = query({
+  args: {
+    /** Fritekst mod visningsnavn, fulde navn og email. Tom giver de første. */
+    soegning: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const soegning = (args.soegning ?? "").trim().toLocaleLowerCase("da-DK");
+    const limit = Math.min(Math.max(args.limit ?? 25, 1), 100);
+
+    const alle = await ctx.db.query("users").collect();
+
+    const fundne =
+      soegning.length === 0
+        ? alle
+        : alle.filter((bruger) => {
+            const felter = [
+              bruger.displayName,
+              bruger.fullName ?? "",
+              bruger.email,
+            ];
+            return felter.some((felt) =>
+              felt.toLocaleLowerCase("da-DK").includes(soegning),
+            );
+          });
+
+    // Nyeste først, så en netop oprettet bruger er nem at finde.
+    fundne.sort((a, b) => b.createdAt - a.createdAt);
+
+    console.log("[Admin] soegte efter brugere", {
+      soegning,
+      fundet: fundne.length,
+    });
+
+    // Emailen er MED her, i modsætning til `getUser`. En admin skal kunne
+    // skelne to personer med samme visningsnavn, og det er netop det, emailen
+    // kan. `authId` udelades stadig — den hører kun til i auth-laget.
+    return fundne.slice(0, limit).map((bruger) => {
+      const { authId: _authId, ...resten } = bruger;
+      return resten;
+    });
+  },
+});
