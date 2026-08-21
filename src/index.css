@@ -1323,3 +1323,303 @@ p.dagliste {
   font-size: 52px;
   margin-bottom: 14px;
 }
+
+/* ------------------------------------------------------------ hjælpetekst */
+
+/*
+ * `.hjaelp` fandtes hidtil kun scopet under `.tom`, men blev allerede brugt
+ * bart i Mig. Reglen står nu på egne ben, så den dæmpede forklaringstekst ser
+ * ens ud overalt — også i achievements og admin, som bruger den flittigt.
+ */
+.hjaelp {
+  font-size: 14px;
+  color: var(--tekst-svag);
+}
+
+/* ------------------------------------------------------- fremdriftsringen */
+
+.ring {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ringindhold {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+/* En vandret bjælke, hvor ringen er for stor. Samme betydning, mindre plads. */
+.bjaelke {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--kant);
+  overflow: hidden;
+}
+
+.bjaelke .fyld {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent-mork), var(--accent));
+  transition: width 0.5s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bjaelke .fyld {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------- trofæhylden */
+
+.hylde {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.hyldetal {
+  font-size: 17px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hyldetitel {
+  font-weight: 650;
+}
+
+.taettest {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--kant));
+}
+
+.taettest:active {
+  transform: scale(0.99);
+}
+
+.taettestmidt {
+  flex: 1;
+  min-width: 0;
+}
+
+.taettestmidt .etiket {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.taettestmidt .bjaelke {
+  margin-top: 7px;
+}
+
+.taettesttal {
+  flex-shrink: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tekst-daempet);
+}
+
+.badgegitter {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px;
+  text-align: center;
+  font: inherit;
+  color: var(--tekst);
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.badge:active {
+  transform: scale(0.98);
+}
+
+.badge.laast {
+  color: var(--tekst-daempet);
+}
+
+.badgebillede {
+  position: relative;
+  display: block;
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--flade-hvaelvet);
+}
+
+.badgebillede img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Låst: stadig synlig, men tydeligt ikke optjent endnu. */
+.badge.laast .badgebillede img,
+.badgebillede.laast img {
+  filter: grayscale(1);
+  opacity: 0.45;
+}
+
+.badgebillede.lille {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radius-lille);
+}
+
+.badgebillede.stor {
+  width: 128px;
+  height: 128px;
+}
+
+.badgebillede .antal {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  font-weight: 800;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--accent-tekst);
+}
+
+.badgetitel {
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.maerkat {
+  padding: 2px 9px;
+  font-size: 11px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  border-radius: 999px;
+  background: var(--flade-hvaelvet);
+  color: var(--tekst-daempet);
+}
+
+.maerkat.optjent {
+  background: var(--accent);
+  color: var(--accent-tekst);
+}
+
+.detaljetop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0 16px;
+}
+
+/* ------------------------------------------------------------------ admin */
+
+.adminliste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.adminraekke {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius-lille);
+}
+
+/* Knapperne i en række er kompakte — der er tre af dem på en telefonbredde. */
+.adminraekke .knap {
+  width: auto;
+  flex-shrink: 0;
+  margin: 0;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.adminraekke .felt {
+  margin: 0;
+}
+
+.adminraekke.vaelgbar {
+  cursor: pointer;
+}
+
+.adminraekke.vaelgbar[aria-pressed="true"] {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--flade));
+}
+
+.adminnavn {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.adminnavn .emoji {
+  font-size: 17px;
+}
+
+/* Kvitteringen på en gennemført admin-handling. Grøn, fordi den står side om
+   side med `.fejl` og skal kunne skelnes på et blik. */
+.kvitteringstekst {
+  margin-top: 14px;
+  padding: 10px 12px;
+  font-size: 14px;
+  border-radius: var(--radius-lille);
+  background: color-mix(in srgb, var(--medgang) 12%, var(--flade));
+  color: var(--medgang);
+}
+
+/*
+ * Medaljekortet i Mig er en knap, ikke et kort. Uden dette ville browserens
+ * standardknap trække sin egen baggrund, centrering og skriftstørrelse med
+ * ind i `.kort`.
+ */
+.medaljekort {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.medaljekort:active {
+  transform: scale(0.99);
+}

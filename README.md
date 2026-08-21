@@ -164,5 +164,5 @@ Hele udrulningen, inklusive cutover og tilbagerulning, står i
   `joinedChannelIds`, `createdAt`, `timestamp`), så migreringen i en senere fase
   bliver en 1:1-mapping.
 - **Console-logs bruger bracket-prefiks:** `[Setup]`, `[Convex]`, `[Schema]`,
-  `[Scoreboard]`.
+  `[Scoreboard]`, `[UI]`, `[Admin]`.
 - **Alle tidsfelter er epoch ms** (`v.number()`).
