@@ -1,7 +1,7 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
-import { requireCurrentUser, requireKanalMedlem } from "./identity";
+import { requireAdmin, requireCurrentUser, requireKanalMedlem } from "./identity";
 
 /**
  * Kanal-mutations og -queries.
@@ -95,6 +95,17 @@ export const joinKanal = mutation({
       });
     }
 
+    // En arkiveret Kanal er ude af drift. Koden virker stadig som opslag —
+    // rækken findes jo — så uden dette tjek kunne man melde sig ind i noget,
+    // en admin lige har lukket, og stå alene i den.
+    if (kanal.archived === true) {
+      console.log("[Kanal] joinKanal afvist — arkiveret", { kanal: kanal.name });
+      throw new ConvexError({
+        code: "KANAL_ARCHIVED",
+        message: `Kanalen "${kanal.name}" er lukket.`,
+      });
+    }
+
     if (user.joinedChannelIds.includes(kanal._id)) {
       console.log("[Kanal] allerede medlem — ingen ændring", {
         userId: user._id,
@@ -162,7 +173,10 @@ export const getKanalByCode = query({
       .withIndex("by_code", (q) => q.eq("code", normalizeCode(args.code)))
       .unique();
 
-    if (kanal === null) return null;
+    // Samme svar for en arkiveret Kanal som for en kode, der ikke findes.
+    // Forhåndsvisningen står lige før "Meld mig ind", og at vise en Kanal man
+    // ikke kan komme ind i ville kun føre til et afvist tryk.
+    if (kanal === null || kanal.archived === true) return null;
 
     return {
       _id: kanal._id,
@@ -180,3 +194,145 @@ export const getKanalByCode = query({
 function normalizeCode(code: string): string {
   return code.trim().toUpperCase();
 }
+
+/**
+ * Alle Kanaler, arkiverede med. Kun admins.
+ *
+ * `getMineKanaler` viser dem, man selv er medlem af; denne viser dem alle, så
+ * en admin kan rydde op i Kanaler, hun ikke er med i.
+ */
+export const getAlleKanaler = query({
+  args: { inkluderArkiverede: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+
+    const alle = await ctx.db.query("kanaler").collect();
+    const synlige =
+      args.inkluderArkiverede === true
+        ? alle
+        : alle.filter((kanal) => kanal.archived !== true);
+
+    // Nyeste først — samme rækkefølge som brugerlisten, så de to lister
+    // opfører sig ens.
+    synlige.sort((a, b) => b.createdAt - a.createdAt);
+    return synlige;
+  },
+});
+
+/**
+ * Arkiverer en Kanal og melder alle medlemmer ud af den.
+ *
+ * Der er BEVIDST ingen `sletKanal`. En Kanal er refereret af `messages`,
+ * `drinkLogs`, `checkIns` og `beacons`; en kaskade ville slette logninger,
+ * som brugernes livstidstal og achievements er beregnet ud fra. Oprydning i
+ * en liste må ikke ændre folks historik.
+ *
+ * Medlemmerne meldes ud, fordi en arkiveret Kanal ellers ville blive stående
+ * som nogens aktive Kanal — og så ville de se en stilling, ingen kan skrive i
+ * længere. Står den som aktiv, flyttes de til en anden af deres Kanaler, hvis
+ * de har en.
+ *
+ * Standard-Kanalen kan ikke arkiveres: nye brugere meldes automatisk ind i
+ * den, så en arkiveret standard ville give hver ny bruger en død Kanal.
+ */
+export const arkiverKanal = mutation({
+  args: { channelId: v.id("kanaler") },
+  handler: async (ctx, args): Promise<void> => {
+    await requireAdmin(ctx);
+
+    const kanal = await ctx.db.get(args.channelId);
+    if (kanal === null) {
+      throw new ConvexError({
+        code: "KANAL_NOT_FOUND",
+        message: "Kanalen findes ikke.",
+      });
+    }
+
+    // Idempotent: en allerede arkiveret Kanal er ikke en fejl.
+    if (kanal.archived === true) return;
+
+    if (kanal.isDefault) {
+      throw new ConvexError({
+        code: "KANAL_IS_DEFAULT",
+        message:
+          `"${kanal.name}" er standard-Kanalen, som nye brugere meldes ind i. ` +
+          `Gør en anden Kanal til standard først.`,
+      });
+    }
+
+    const now = Date.now();
+
+    // Medlemslisten på Kanalen og `joinedChannelIds` på brugeren er to sider
+    // af samme forhold, så begge skal ryddes — ellers ville brugeren stadig
+    // kunne læse Kanalens stilling gennem `requireKanalMedlem`.
+    for (const userId of kanal.members) {
+      const bruger = await ctx.db.get(userId);
+      if (bruger === null) continue;
+
+      const tilbage = bruger.joinedChannelIds.filter(
+        (id) => id !== args.channelId,
+      );
+
+      await ctx.db.patch(userId, {
+        joinedChannelIds: tilbage,
+        ...(bruger.activeChannelId === args.channelId
+          ? { activeChannelId: tilbage[0] }
+          : {}),
+        // Favoritten peger på en Kanal, man ikke er i længere. Ryd den, så
+        // den ikke bliver ved med at pege ind i noget arkiveret.
+        ...(bruger.favoriteChannelId === args.channelId
+          ? { favoriteChannelId: undefined }
+          : {}),
+        updatedAt: now,
+      });
+    }
+
+    await ctx.db.patch(args.channelId, {
+      archived: true,
+      archivedAt: now,
+      members: [],
+      updatedAt: now,
+    });
+
+    console.log("[Admin] kanal arkiveret", {
+      channelId: args.channelId,
+      navn: kanal.name,
+      medlemmerMeldtUd: kanal.members.length,
+    });
+  },
+});
+
+/**
+ * Fortryder en arkivering.
+ *
+ * Kanalen kommer tilbage tom — medlemmerne blev meldt ud ved arkiveringen, og
+ * at melde dem ind igen ville kræve, at vi huskede hvem der var med, og
+ * antage at de stadig vil være det. De kan melde sig ind med koden igen.
+ */
+export const genaktiverKanal = mutation({
+  args: { channelId: v.id("kanaler") },
+  handler: async (ctx, args): Promise<void> => {
+    await requireAdmin(ctx);
+
+    const kanal = await ctx.db.get(args.channelId);
+    if (kanal === null) {
+      throw new ConvexError({
+        code: "KANAL_NOT_FOUND",
+        message: "Kanalen findes ikke.",
+      });
+    }
+
+    if (kanal.archived !== true) return;
+
+    await ctx.db.patch(args.channelId, {
+      archived: false,
+      archivedAt: undefined,
+      updatedAt: Date.now(),
+    });
+
+    console.log("[Admin] kanal genaktiveret", {
+      channelId: args.channelId,
+      navn: kanal.name,
+    });
+  },
+});

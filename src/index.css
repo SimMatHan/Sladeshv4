@@ -1623,3 +1623,73 @@ p.dagliste {
 .medaljekort:active {
   transform: scale(0.99);
 }
+
+/* -------------------------------------------------------- broadcastbjælke */
+
+/*
+ * Admins besked til alle. Accentfarvet, så den skiller sig ud fra
+ * forbindelses- og Sladesh-bjælkerne, der begge melder om appens egen
+ * tilstand — denne kommer fra et menneske.
+ */
+.broadcast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  padding: 11px 12px;
+  border-radius: var(--radius-lille);
+  background: color-mix(in srgb, var(--accent) 14%, var(--flade));
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--kant));
+}
+
+.broadcastindhold {
+  flex: 1;
+  min-width: 0;
+}
+
+.broadcasttitel {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.broadcasttekst {
+  font-size: 14px;
+  color: var(--tekst-daempet);
+}
+
+.broadcastluk {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--tekst-daempet);
+  background: none;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.broadcastluk:active {
+  background: var(--flade-hvaelvet);
+}
+
+/*
+ * Admin har otte faner — for mange til at stå på én telefonbredde. Striben
+ * ruller vandret frem for at pakke om på to linjer, så indholdet under den
+ * ikke flytter sig, når man skifter fane.
+ */
+.ark .segmenter {
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ark .segmenter::-webkit-scrollbar {
+  display: none;
+}
+
+.ark .segment {
+  flex-shrink: 0;
+  white-space: nowrap;
+}

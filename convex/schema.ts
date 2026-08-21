@@ -188,6 +188,22 @@ export default defineSchema({
     // VALGFRI: to Kanaler i produktion er ældre end feltet. At tildele dem en
     // ejer ved migrering ville opfinde data der ikke findes.
     createdBy: v.optional(v.id("users")),
+
+    /**
+     * Arkiveret. En arkiveret Kanal er ude af drift, men IKKE slettet.
+     *
+     * Der findes bevidst ingen sletning. En Kanal er refereret af `messages`,
+     * `drinkLogs`, `checkIns` og `beacons`, og en kaskade ville fjerne
+     * logninger, som brugernes livstidstal og achievements er regnet ud fra —
+     * altså ændre folks historik for at rydde op i en liste. Arkivering
+     * melder medlemmerne ud og skjuler Kanalen, og rækkerne bliver stående.
+     *
+     * VALGFRI, fordi alle eksisterende Kanaler er fra før feltet. Fraværende
+     * betyder aktiv.
+     */
+    archived: v.optional(v.boolean()),
+    archivedAt: v.optional(v.number()),
+
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   })
@@ -443,4 +459,77 @@ export default defineSchema({
     // hukommelsen — korrekt kun så længe N var stort nok.
     .index("by_sender_and_status", ["senderId", "status"])
     .index("by_recipient_and_status", ["recipientId", "status"]),
+
+  /**
+   * Admin-beskeder til alle. Afløser /broadcasts/{broadcastId}.
+   *
+   * I det gamle repo var en broadcast en ORDRE til en Cloud Function: skriv
+   * et dokument med `status: "pending"`, og `onBroadcastCreated` faner den ud
+   * som push og sletter sig selv ud af historien. Push-kanalen findes ikke
+   * endnu i v4, så rækken er her i stedet en TILSTAND: broadcasten er aktiv,
+   * indtil den udløber eller slås fra, og appen viser den som en bjælke.
+   *
+   * Derfor er der intet `status`-felt. Der er ingen kø at være i.
+   */
+  broadcasts: defineTable({
+    title: v.string(),
+    body: v.string(),
+
+    /**
+     * Målgruppen. Uden `channelId` gælder broadcasten alle; med den kun
+     * Kanalens medlemmer — samme to muligheder som `targetAudience` gav i det
+     * gamle repo, men udledt af feltet frem for gentaget i et andet.
+     */
+    channelId: v.optional(v.id("kanaler")),
+
+    active: v.boolean(),
+    /** Valgfri udløbstid. Uden den står broadcasten, til den slås fra. */
+    expiresAt: v.optional(v.number()),
+
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+    deactivatedAt: v.optional(v.number()),
+  })
+    .index("by_active", ["active"])
+    .index("by_kanal_and_active", ["channelId", "active"])
+    .index("by_created_at", ["createdAt"]),
+
+  /**
+   * Donationer. Afløser /donations/{donationId}.
+   *
+   * Beløbet er i hele kroner. Donorens navn og avatar blev i det gamle repo
+   * kopieret ned i rækken (`userName`, `userInitials`, `userAvatarGradient`)
+   * — en denormalisering, der gik i stykker, så snart nogen skiftede navn.
+   * Her står kun `userId`, og visningen slår brugeren op.
+   */
+  donations: defineTable({
+    userId: v.id("users"),
+    /** Beløb i DKK. Altid positivt — se `opretDonation`. */
+    amount: v.number(),
+    message: v.optional(v.string()),
+    /** Hvornår der blev doneret. Kan ligge før `createdAt`, hvis den er efterregistreret. */
+    date: v.number(),
+
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_date", ["date"]),
+
+  /**
+   * Globale indstillinger, som en admin styrer for alle. Afløser
+   * /settings/themes.
+   *
+   * Én række per nøgle frem for ét dokument med et felt per indstilling. Det
+   * gamle `settings/themes`-dokument voksede et boolean ad gangen
+   * (`copenhellBallade`, så `odaysBallade`), og hver ny gav en schemaændring.
+   */
+  indstillinger: defineTable({
+    /** Fx "balladeTema". */
+    noegle: v.string(),
+    /** Værdien som tekst. Tomt betyder "slået fra". */
+    vaerdi: v.string(),
+    opdateretAf: v.optional(v.id("users")),
+    updatedAt: v.number(),
+  }).index("by_noegle", ["noegle"]),
 });
