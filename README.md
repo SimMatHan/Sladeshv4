@@ -20,6 +20,7 @@ Domænet `sladeshapp.dk` peger stadig på det gamle site og skifter først, når
 appen kan det, brugerne bruger den til.
 
 - Udrulning og cutover: **[`docs/produktion.md`](docs/produktion.md)**
+- Beskeden til brugerne ved skiftet: **[`docs/besked-til-brugerne.md`](docs/besked-til-brugerne.md)**
 - Appen på dårligt net: **[`docs/offline.md`](docs/offline.md)**
 - Hvad UI'et skal dække: **[`docs/skaermkortlaegning.md`](docs/skaermkortlaegning.md)**
 - Hvordan det skal hænge sammen: **[`docs/brugerrejser.md`](docs/brugerrejser.md)**
@@ -64,6 +65,7 @@ bundlingen fejler bagefter med:
 | `npm run smoke-test` | Fuld vej mod dev-deploymentet, autentificeret. Opretter selv sine testkonti |
 | `npm run migrer` | Firestore → Convex. Tørkørsel som default |
 | `npm run datarevision` | Læser produktions-Firestore og rapporterer afvigelser |
+| `npm run katalog` | Drikkekataloget fra den skrevne liste. Tørkørsel som default |
 | `npm run lint` | oxlint |
 
 ## Struktur
@@ -101,6 +103,7 @@ docs/
   skaermkortlaegning.md        Alle 20 skaerme i den gamle app, og hvad backenden mangler
   brugerrejser.md              Ny informationsarkitektur og brugerrejser
   offline.md                   PWA, cache og optimistiske opdateringer
+  besked-til-brugerne.md       Udkast til det, brugerne skal have at vide ved cutover
 scripts/
   logic-test.ts    Forretningsregler, kører lokalt
   smoke-test.ts    Ende-til-ende mod dev-deploymentet

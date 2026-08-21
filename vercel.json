@@ -19,6 +19,10 @@
         {
           "key": "Permissions-Policy",
           "value": "geolocation=(self), camera=(self), microphone=()"
+        },
+        {
+          "key": "Content-Security-Policy-Report-Only",
+          "value": "default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob: https://*.convex.cloud https://tile.openstreetmap.org; connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://www.googleapis.com; frame-src https://*.firebaseapp.com https://accounts.google.com; worker-src 'self'; manifest-src 'self'"
         }
       ]
     },
