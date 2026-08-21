@@ -267,12 +267,25 @@ JSON kan ikke bære kommentarer, så valgene står her:
 - **`Permissions-Policy`** åbner `geolocation` og `camera` for appen selv
   (Check In, kort og Sladesh-bevisbilleder bruger dem) og lukker `microphone`
   helt.
-- **Ingen CSP endnu.** En Content-Security-Policy skal kende Firebase Auth'
-  og Convex' endpoints, og de sidste varierer med deploymentet. En forkert
-  CSP slår login ud på en måde der er svær at gennemskue. Den hører til, når
-  UI'et er på plads og kan afprøves — noteret i afsnit 7. Bemærk at kortet
-  henter baggrundsfliser fra `https://tile.openstreetmap.org`, så en CSP skal
-  også åbne for den.
+- **CSP kører som `Report-Only`.** En forkert Content-Security-Policy slår
+  login ud på en måde, der er svær at gennemskue — den skal kende både
+  Firebase Auth' og Convex' endpoints, og de sidste varierer med deploymentet.
+  `Content-Security-Policy-Report-Only` **blokerer ingenting**; den skriver i
+  stedet en linje i browserkonsollen, hver gang noget ville være blevet
+  blokeret. Sådan kan politikken justeres på levende brug uden risiko.
+
+  Politikken åbner for det, appen faktisk bruger: Convex over både HTTPS og
+  websocket, Firebases token-endpoints, Google-login i en frame,
+  `https://tile.openstreetmap.org` til kortets fliser, og `blob:`/`data:` til
+  bevisbilleder undervejs. `style-src` har `'unsafe-inline'`, fordi både
+  Leaflet og Reacts `style`-attributter skriver stil direkte på elementer.
+
+  **Sådan strammes den til sidst:** brug appen igennem — log ind med både
+  adgangskode og Google, log en genstand, skriv i chatten, åbn kortet,
+  gennemfør en Sladesh med billede — og hold øje med konsollen. Er der ingen
+  `Report Only`-linjer, omdøbes nøglen i `vercel.json` til
+  `Content-Security-Policy`, og så håndhæver den. Er der linjer, siger de
+  præcis hvilket direktiv der mangler hvad.
 - **`Cache-Control: immutable`** på `/assets/` er sikkert, fordi Vite giver
   hver fil et indholds-hash i navnet. `index.html` får det bevidst ikke.
 
@@ -295,13 +308,66 @@ unauthorized-domain`) dukker først op når nogen prøver at logge ind.
 
 ## 6. Cutover
 
-1. Verificér på `<projekt>.vercel.app`, **før** domænet peger derhen: log ind
-   med en rigtig konto, kontrollér at profilen kender sin historik, og at
-   scoreboardet viser noget.
-2. Peg `sladeshapp.dk` mod Vercel (Vercel → Domains giver de nødvendige
+### 6a. Gennemgang på `<projekt>.vercel.app` — FØR domænet peger derhen
+
+Alt herunder skal gøres på en **telefon**, ikke en computer. Appen er en
+telefonapp, og halvdelen af punkterne findes ikke på et skrivebord.
+
+**Virker den overhovedet**
+
+- [ ] Log ind med en rigtig konto — både adgangskode og Google.
+- [ ] Profilen kender sin historik, og stillingen viser noget.
+- [ ] Log en genstand. Stillingen flytter sig **med det samme**, ikke efter et
+      øjebliks venten.
+- [ ] Fortryd den igen. Den forsvinder ligeså hurtigt.
+- [ ] Skriv i chatten, åbn kortet, gennemfør en Sladesh med billede.
+
+**Er den en app**
+
+- [ ] Chrome/Android: menuen tilbyder "Installer app" eller "Føj til
+      startskærm". Safari/iOS: Del → Føj til hjemmeskærm.
+- [ ] Ikonet på hjemmeskærmen er den hvide shaka på koral — ikke et
+      skærmbillede af siden.
+- [ ] Åbnet fra hjemmeskærmen er der **ingen adresselinje**.
+
+**Holder den uden net**
+
+- [ ] Åbn appen, slå flytilstand til, genindlæs. Der skal komme en app frem —
+      ikke en hvid skærm og ikke dinosauren.
+- [ ] Stillingen står der stadig, med sidste kendte tal.
+- [ ] Efter et par sekunder står der *"Ingen forbindelse · det du logger,
+      sendes når der er dækning"*.
+- [ ] Log en genstand i flytilstand. Den lægger sig på stillingen.
+- [ ] Slå flytilstand fra igen. Genstanden bliver **liggende** — den er nu
+      sendt for alvor. Tjek den er der efter en genindlæsning.
+
+**CSP**
+
+- [ ] Gør alt ovenstående med browserkonsollen åben og noter eventuelle
+      `Content Security Policy ... Report Only`-linjer. Se afsnit 4.
+
+Går et af punkterne galt, så **stop her**. Alt kan rettes, mens domænet stadig
+peger det gamle sted hen; bagefter retter man det med brugerne kiggende på.
+
+### 6b. Sig det til brugerne, før du skifter
+
+Migreringen genberegnede `totalDrinks` fra logrækkerne, fordi 20 af 32 brugere
+havde et tal, der ikke stemte med deres egen historik (største afvigelse: 76).
+Tallene er rigtige nu — men de **har ændret sig**, og det opdager folk selv,
+hvis de ikke får det at vide. Udkast til beskeden ligger i
+[`docs/besked-til-brugerne.md`](besked-til-brugerne.md).
+
+Seks brugere har `promille.gender = null` og ser ingen promille, før de vælger
+et køn under Mig → Indstillinger. Det står også i udkastet.
+
+### 6c. Selve skiftet
+
+1. Peg `sladeshapp.dk` mod Vercel (Vercel → Domains giver de nødvendige
    DNS-poster).
-3. Tilføj domænet til Firebases authorized domains, hvis det ikke allerede er
-   gjort.
+2. Tilføj domænet til Firebases authorized domains, hvis det ikke allerede er
+   gjort. **Uden dette fejler alt login** med `auth/unauthorized-domain`.
+3. Åbn `sladeshapp.dk` på din egen telefon. Ser du den **gamle** app, er det
+   ikke DNS — det er den gamle service worker. Se afsnittet nedenfor.
 4. Hold det gamle site kørende et par dage. Det læser Firestore, som er
    uændret — de to kan sameksistere.
 
@@ -376,13 +442,18 @@ npx convex env list --prod
 
 Der skal stå **én** variabel: `VITE_FIREBASE_PROJECT_ID`.
 
-**Åbne punkter, som hører til UI-fasen:**
+**Åbne punkter:**
 
-- Content-Security-Policy (se afsnit 4).
-- Levering af push-varslinger. Udvælgelsen er bygget og testet
+- **Stram CSP'en.** Den kører som `Report-Only` og blokerer derfor ingenting.
+  Når appen har været brugt igennem uden violations i konsollen, omdøbes
+  nøglen i `vercel.json` til `Content-Security-Policy`. Se afsnit 4.
+- **Levering af push-varslinger.** Udvælgelsen er bygget og testet
   (`docs/beskeder-og-beacons.md`, afsnit 3); selve kanalen mangler.
-- PWA/service worker. Det gamle site var installérbart; det er dette ikke
-  endnu.
+- **Holdbar skrivekø.** Convex' kø ligger i hukommelsen. Lukkes appen, mens en
+  logning stadig venter på dækning, er den væk. Se `docs/offline.md`, afsnit 3.
+
+**Lukket siden fase 9:** PWA og service worker — appen er installérbar og
+åbner uden dækning. Se `docs/offline.md`.
 
 ---
 
@@ -401,3 +472,6 @@ Der skal stå **én** variabel: `VITE_FIREBASE_PROJECT_ID`.
 | `MIGRATION_SECRET er ikke sat` | Fjernet efter migreringen, som den skal være. Sæt den igen hvis du skal køre om |
 | Vercel-buildet deployer ikke Convex | `CONVEX_DEPLOY_KEY` mangler på miljøet Production |
 | Preview-build fejler på manglende `VITE_CONVEX_URL` | Sæt den på miljøet Preview, pegende på dev |
+| Efter DNS-skiftet vises stadig den GAMLE app | Den gamle service worker. Luk appen helt og åbn igen — se afsnit 6 |
+| Appen kan ikke installeres på hjemmeskærmen | `/manifest.webmanifest` eller ikonerne når ikke frem. Åbn dem direkte i browseren |
+| `Content Security Policy ... Report Only` i konsollen | Forventet, og hele pointen med Report-Only. Noter direktivet og udvid politikken |
