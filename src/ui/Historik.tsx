@@ -94,8 +94,8 @@ export function Historik({
                       : `${dag.deltagere} med`}
                 </span>
               </span>
-              <span className="tal">
-                <span className="stort">{genstande(dag.genstande)}</span>
+              <span className="talblok">
+                <span className="tal">{genstande(dag.genstande)}</span>
               </span>
             </button>
 
