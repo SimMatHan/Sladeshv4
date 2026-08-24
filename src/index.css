@@ -1642,6 +1642,19 @@ p.dagliste {
   border-color: color-mix(in srgb, var(--medgang) 40%, var(--kant));
 }
 
+/* Afstanden fra statuslinjen ovenover, delt af Check In-formularen og
+   Meld-dig-ud-knappen, så de to tilstande sidder ens uanset hvilken der
+   vises. */
+.kortaktion {
+  margin-top: var(--luft-3);
+}
+
+.checkindform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+}
+
 /* ------------------------------------------------- profilfelter og onboarding */
 
 .emojigitter {
