@@ -16,12 +16,26 @@ export function Fremdriftsring({
   andel,
   stoerrelse = 80,
   tykkelse = 6,
+  /**
+   * Buens farve. Default er accentfarven, som Achievements-hylden bruger.
+   * Mig-fanens promillering sender en status-farve i stedet (grøn/gul/rød) —
+   * se `beruselsesniveau` i convex/promilleRules.ts.
+   */
+  farve = "var(--accent)",
+  /**
+   * Overstyrer skærmlæserens tekst. Default er procenten, som er rigtig for
+   * en fremdriftsbue, men forkert for en promillering — der er "2,5 ‰
+   * loftet", ikke en andel af noget, brugeren tænker på i procent.
+   */
+  srLabel,
   children,
 }: {
   /** 0–1. Klippes, så et tal uden for intervallet ikke tegner en vrøvlebue. */
   andel: number;
   stoerrelse?: number;
   tykkelse?: number;
+  farve?: string;
+  srLabel?: string;
   children?: ReactNode;
 }) {
   const radius = (stoerrelse - tykkelse) / 2;
@@ -33,7 +47,7 @@ export function Fremdriftsring({
       className="ring"
       style={{ width: stoerrelse, height: stoerrelse }}
       role="img"
-      aria-label={`${Math.round(klippet * 100)} procent`}
+      aria-label={srLabel ?? `${Math.round(klippet * 100)} procent`}
     >
       <svg width={stoerrelse} height={stoerrelse} aria-hidden="true">
         <circle
@@ -49,7 +63,7 @@ export function Fremdriftsring({
           cy={stoerrelse / 2}
           r={radius}
           fill="none"
-          stroke="var(--accent)"
+          stroke={farve}
           strokeWidth={tykkelse}
           strokeLinecap="round"
           strokeDasharray={omkreds}
