@@ -62,7 +62,7 @@ export function Stilling({
 
           <span className="midt">
             <span className="navn">{raekke.name}</span>
-            <span className="under">
+            <span className="under hjaelp">
               {raekke.streak > 0 && <span>🔥 {raekke.streak}</span>}
               {/* Promillen er kun med for dem der selv har slået den til og
                   udfyldt vægt og køn. Resten får ingen kolonne — et opdigtet
@@ -73,10 +73,10 @@ export function Stilling({
             </span>
           </span>
 
-          <span className="tal">
-            <span className="stort">{genstande(raekke.drinksToday)}</span>
+          <span className="talblok">
+            <span className="tal">{genstande(raekke.drinksToday)}</span>
             <br />
-            <span className="enhed">genstande</span>
+            <span className="etiket">genstande</span>
           </span>
         </button>
       ))}
