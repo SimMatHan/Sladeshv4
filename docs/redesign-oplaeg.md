@@ -134,14 +134,21 @@ rigtige billeder i `public/assets/achievements/`.
 Lettere hånd. Chatten har en fast skriver i bunden, som tastaturet ikke må
 dække.
 
-### 6. Check In
+### 6. Check In — ✅ bygget
 
-**Har komplet backend og ingen skærm i dag** — `checkIns.checkIn`,
-`checkOut`, `getCheckInsForUser`. Det er ikke en detalje: `checkInStatus`
-styrer, om ens position deles på Kortet, og om beacon-varslingen ser en.
+**Havde komplet backend og ingen skærm** — `checkIns.checkIn`, `checkOut`,
+`getCheckInsForUser`. Det var ikke en detalje: `checkInStatus` styrer, om
+ens position deles på Kortet, og om beacon-varslingen ser en.
 
-Byg den enkleste ting, der virker: et sted at melde sig ind på et sted, og
-et sted at melde sig ud igen.
+Landede i Kort.tsx, ikke som egen skærm: det er dér, fraværet af en prik
+allerede blev forklaret ("din position deles ikke, fordi …"), og Check In
+er netop den handling, der retter den ene af de to grunde. Formularen (kun
+et stednavn) og Meld-dig-ud-knappen står lige under statuslinjen. `venue`s
+position sendes ikke særskilt — Kortets egen GPS-loop overtager, i det
+øjeblik `checkInStatus` bliver sand.
+
+`getCheckInsForUser` (historikken) er stadig uden UI — ingen skærm har bedt
+om den, og at bygge én uden en efterspørgsel ville være at gætte.
 
 ### 7. Admin
 

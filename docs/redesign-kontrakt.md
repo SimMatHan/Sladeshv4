@@ -196,8 +196,8 @@ allerede skrevet på dansk til et menneske.
 
 | Funktion | Type | Argumenter | Note |
 |---|---|---|---|
-| `checkIn` | mutation | `venue: v.string(), channelId: v.optional(v.id("kanaler")), location: v.optional(v.object({ lat: v.number(), lng: v.number() }))` |  ⚠️ INGEN UI I DAG |
-| `checkOut` | mutation | `—` |  ⚠️ INGEN UI I DAG |
+| `checkIn` | mutation | `venue: v.string(), channelId: v.optional(v.id("kanaler")), location: v.optional(v.object({ lat: v.number(), lng: v.number() }))` | UI i Kort.tsx (kun `venue`+`channelId` bruges — `location` sendes af Kortets egen GPS-loop) |
+| `checkOut` | mutation | `—` | UI i Kort.tsx |
 | `getCheckInsForUser` | query | `userId: v.optional(v.id("users")), limit: v.optional(v.number())` |  ⚠️ INGEN UI I DAG |
 
 ### `donations`
