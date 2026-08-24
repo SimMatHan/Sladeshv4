@@ -32,7 +32,19 @@ import { Indstillinger } from "./Indstillinger";
  *
  * SENERE: støt-appen. Den hører også til her, jf. docs/brugerrejser.md.
  */
-export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
+export function Mig({
+  channelId,
+  onOplaasninger,
+}: {
+  channelId: Id<"kanaler"> | undefined;
+  /**
+   * Melder achievements op til skallen, som ejer fejringskøen.
+   *
+   * `resetRun` kan låse op — "Are you sure about that?" tæller netop
+   * nulstillinger — så en nulstilling herfra skal fejres som en logning.
+   */
+  onOplaasninger: (ider: string[]) => void;
+}) {
   const mig = useQuery(api.users.getMe, {});
   const minPromille = useQuery(api.promille.getMinPromille, {});
   const naesteMilepael = useQuery(api.achievements.getNaesteMilepael, {});
@@ -58,8 +70,11 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
     setArbejder(true);
     setFejl(undefined);
     try {
-      await resetRun({ channelId });
+      const resultat = await resetRun({ channelId });
       setSpoerger(false);
+      if (resultat.nyeAchievements.length > 0) {
+        onOplaasninger(resultat.nyeAchievements);
+      }
     } catch (error) {
       setFejl(fejltekst(error));
     } finally {

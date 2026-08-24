@@ -2047,6 +2047,104 @@ p.dagliste {
   transform: scale(0.99);
 }
 
+/* --------------------------------------------------- achievement låst op */
+
+/*
+ * Fejringen efter en oplåsning. Ligger over dugen som et ark, men er
+ * centreret frem for hængt op i bunden: den er en besked, ikke noget man
+ * skal betjene.
+ */
+.oplaasning {
+  position: fixed;
+  left: var(--luft-4);
+  right: var(--luft-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--lag-ark);
+  max-width: calc(var(--bredde) - var(--luft-4) * 2);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-3);
+  padding: var(--luft-6) var(--luft-5);
+  text-align: center;
+  background: var(--flade);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
+  border-radius: var(--radius-stor);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  animation: op var(--fart-lang) var(--kurve);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oplaasning {
+    animation: none;
+  }
+}
+
+.oplaasningsetiket {
+  color: var(--accent);
+}
+
+.oplaasningstitel {
+  margin: 0;
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+}
+
+/* ------------------------------------------------------------ kanaltemaer */
+
+/*
+ * Festivaltemaer på Kanalen Ballade. Sættes af `Kanaltema.tsx` som
+ * `data-tema` på <html>; se docs/kanaltemaer.md for opskriften på at
+ * tilføje et nyt.
+ *
+ * KUN de tokens der bærer temaets identitet overskrives — flade, tekst og
+ * accent. `--fare`, `--medgang` og medaljefarverne bliver stående: de
+ * betyder noget bestemt (fejl, medgang, guld/sølv/bronze) og skal betyde
+ * det samme uanset tema.
+ *
+ * Attributtet har højere specificitet end `:root` alene og vinder derfor
+ * også over det lyse tema — festivaltemaerne er mørke i sig selv.
+ *
+ * Farverne er de hex-værdier, det gamle repos ChannelThemeContext selv
+ * angav i sine kommentarer, frem for HSL-triplerne omregnet på ny: de var
+ * designerens tal, og en omregning ville kun kunne indføre afvigelser.
+ */
+
+/* Copenhell — dyb sort og blodrød. */
+:root[data-tema="copenhell"] {
+  --bund: #0a0a0a;
+  --flade: #1a1a1a;
+  --flade-hvaelvet: #242424;
+  --kant: #2e2e2e;
+
+  --tekst: #f5f5f5;
+  --tekst-daempet: #9a9a9a;
+  --tekst-svag: #6e6e6e;
+
+  --accent: #c41e1e;
+  --accent-mork: #8f1616;
+  --accent-tekst: #f5f5f5;
+}
+
+/* O Days — næsten sort med cremehvid tekst og logoets turkis. */
+:root[data-tema="odays"] {
+  --bund: #121212;
+  --flade: #1c1c1c;
+  --flade-hvaelvet: #262626;
+  --kant: #383838;
+
+  --tekst: #f4f0ea;
+  --tekst-daempet: #8a8a8a;
+  --tekst-svag: #6a6a6a;
+
+  --accent: #3aa7b3;
+  --accent-mork: #2a7f8a;
+  --accent-tekst: #121212;
+}
+
 /* -------------------------------------------------------- broadcastbjælke */
 
 /*

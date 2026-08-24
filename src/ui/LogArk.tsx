@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import type { LogDrinkResultat } from "../../convex/drinkLogs";
 import {
   DRINK_CATEGORIES,
   DRINK_SIZES,
@@ -48,7 +49,11 @@ export function LogArk({
   onLogget: (
     navn: string,
     vaegt: number,
-    svar: Promise<Id<"drinkLogs">>,
+    /**
+     * Hele serverens svar, ikke kun logId'et. `nyeAchievements` fortæller
+     * hvad præcis DENNE logning låste op, og skallen fejrer det.
+     */
+    svar: Promise<LogDrinkResultat>,
   ) => void;
 }) {
   // Kataloget skifter næsten aldrig og er det, arket ikke kan vise noget uden.
@@ -95,9 +100,7 @@ export function LogArk({
    * den, når der er hul igennem. Den optimistiske +1 bliver stående så længe.
    */
   const log = (categoryId: string, variationName: string, sizeId: string) => {
-    const svar = logDrink({ channelId, categoryId, variationName, sizeId }).then(
-      (resultat) => resultat.logId,
-    );
+    const svar = logDrink({ channelId, categoryId, variationName, sizeId });
 
     onLogget(variationName, vaegtForStoerrelse(categoryId, sizeId), svar);
     onLuk();
