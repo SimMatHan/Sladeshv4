@@ -136,6 +136,9 @@
   --avatar: 42px;
   --avatar-stor: 68px;
   --logknap: 58px;
+  /* Pladstallets bredde i Stilling. Fast, så tocifrede placeringer (10+)
+     ikke skubber navnet, når rækken renderer om. */
+  --plads: 24px;
 
   /* Sikker afstand til telefonens hjemmebjælke og hak. */
   --bund-sikker: env(safe-area-inset-bottom, 0px);
@@ -785,40 +788,52 @@ input {
 
 /* ------------------------------------------------------------- stilling */
 
+/*
+ * Stillingen, redesignet efter docs/redesign-oplaeg.md, afsnit 2:
+ * "Navnet og tallet bærer rækken, alt andet dæmpes."
+ *
+ * Tallet og etiketten under det er ikke bespoke regler her — de ER
+ * systemets `.tal`- og `.etiket`-utilities, genbrugt direkte på spans i
+ * Stilling.tsx. Det er selve pointen med "én af hver ting": rækkens
+ * hovedtal skal se ud som ALLE andre store tal i appen, ikke som sit eget.
+ */
 .raekker {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--luft-2);
 }
 
 .raekke {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--luft-3);
   width: 100%;
-  padding: 12px 14px;
+  padding: var(--luft-3) var(--luft-4);
   text-align: left;
   background: var(--flade);
   border: 1px solid var(--kant);
   border-radius: var(--radius);
-  transition: transform 100ms ease;
+  transition: transform var(--fart-hurtig) ease;
 }
 
 .raekke:active {
-  transform: scale(0.985);
+  transform: scale(0.99);
 }
 
+/* Egen række skal kunne findes med et blik, sent på en aften i en bar —
+   derfor både kant OG en meget svag baggrundstone, ikke kun det ene. */
 .raekke.mig {
+  background: color-mix(in srgb, var(--accent) 6%, var(--flade));
   border-color: color-mix(in srgb, var(--accent) 50%, var(--kant));
 }
 
 .plads {
-  width: 22px;
+  width: var(--plads);
   flex: 0 0 auto;
   text-align: center;
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  font-size: 14px;
+  font-weight: var(--vaegt-fed);
+  font-size: var(--tekst-s);
   color: var(--tekst-svag);
 }
 
@@ -831,8 +846,10 @@ input {
   min-width: 0;
 }
 
+/* Navnet bærer rækken sammen med tallet — derfor systemets fedeste vægt,
+   ikke en mellemting. */
 .raekke .navn {
-  font-weight: 620;
+  font-weight: var(--vaegt-fed);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -840,26 +857,12 @@ input {
 
 .raekke .under {
   display: flex;
-  gap: 10px;
-  font-size: 12.5px;
-  color: var(--tekst-daempet);
+  gap: var(--luft-2);
 }
 
-.raekke .tal {
+.raekke .talblok {
   flex: 0 0 auto;
   text-align: right;
-}
-
-.raekke .tal .stort {
-  font-size: 21px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
-}
-
-.raekke .tal .enhed {
-  font-size: 11px;
-  color: var(--tekst-svag);
 }
 
 
