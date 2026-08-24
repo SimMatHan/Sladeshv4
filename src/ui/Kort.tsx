@@ -39,6 +39,25 @@ const HJERTESLAG_MS = 30_000;
 /** Zoom når der kun er ét punkt at vise. */
 const ENKELT_ZOOM = 16;
 
+/**
+ * Kortnålens diameter i pixels.
+ *
+ * Den ENE kilde til tallet. Leaflet skal kende det i JavaScript for at
+ * placere ikonet rigtigt (`iconSize`/`iconAnchor` nedenfor), og CSS'en
+ * (`.kortnaal` i index.css) kan ikke levere det til Leaflet — så i stedet
+ * for at have tallet stående to steder, sætter markørens egen inline style
+ * målet, og CSS-klassen holder sig til udseendet.
+ */
+const KORTNAAL_STOERRELSE = 38;
+
+/**
+ * Beacon-farven i cirklen på kortet.
+ *
+ * Leaflet tegner cirklen selv og forstår ikke CSS-variabler — værdien skal
+ * derfor stå som en literal streng. Skal MATCHE `--fare` i index.css.
+ */
+const BEACON_FARVE = "#ef4444";
+
 export default function Kort({
   channelId,
   onVaelgPerson,
@@ -132,9 +151,9 @@ export default function Kort({
 
       L.circle([beacon.lat, beacon.lng], {
         radius: beacon.radius ?? 50,
-        color: "#ef4444",
+        color: BEACON_FARVE,
         weight: 1,
-        fillColor: "#ef4444",
+        fillColor: BEACON_FARVE,
         fillOpacity: 0.18,
       })
         .bindPopup(`🚨 ${beacon.title ?? "Beacon"}`)
@@ -147,12 +166,12 @@ export default function Kort({
       const naal = L.divIcon({
         className: "",
         html: `<div class="kortnaal${person.erMig ? " mig" : ""}"
-                    style="background:${gradientFor(person.farve)}">${
+                    style="width:${KORTNAAL_STOERRELSE}px;height:${KORTNAAL_STOERRELSE}px;background:${gradientFor(person.farve)}">${
                       person.emoji ??
                       person.navn.charAt(0).toLocaleUpperCase("da-DK")
                     }</div>`,
-        iconSize: [38, 38],
-        iconAnchor: [19, 19],
+        iconSize: [KORTNAAL_STOERRELSE, KORTNAAL_STOERRELSE],
+        iconAnchor: [KORTNAAL_STOERRELSE / 2, KORTNAAL_STOERRELSE / 2],
       });
 
       L.marker([person.lat, person.lng], { icon: naal })

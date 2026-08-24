@@ -122,6 +122,9 @@
   /* ------------------------------------------------------------- lag */
 
   --lag-top: 20;
+  /* Chattens skriver sidder over hovedindholdet, men under navigationen og
+     bunden — mellem --lag-top og --lag-nav, samme rækkefølge som skærmen. */
+  --lag-skriver: 25;
   --lag-nav: 30;
   --lag-kvittering: 35;
   --lag-dug: 40;
@@ -144,6 +147,18 @@
   --badge: 64px;
   --badge-lille: 48px;
   --badge-stor: 128px;
+  /* Chattens lille afsenderavatar. */
+  --avatar-lille: 26px;
+  /* Historikkens søjlediagram — én chart, ét sted, men stadig et rigtigt
+     designmål, ikke en glemt værdi. */
+  --soejlehoejde: 92px;
+  /* Kortets egen højde. `dvh` er lovligt i en custom property. */
+  --kort-hoejde: 58dvh;
+  --kort-min-hoejde: 320px;
+  /* Chattens faste skriver — cirka sendknappens 44px plus dens egen
+     lodrette polstring. `.chat`s bundpolstring skal matche, så sidste
+     besked ikke gemmer sig bag den. */
+  --skriverhoejde: 66px;
 
   /* Sikker afstand til telefonens hjemmebjælke og hak. */
   --bund-sikker: env(safe-area-inset-bottom, 0px);
@@ -1252,15 +1267,21 @@ input {
  * (index.html) — ellers lægger tastaturet sig hen over den paa iOS.
  */
 
+/*
+ * Chat, redesignet efter docs/redesign-oplaeg.md, afsnit 5. Skriveren i
+ * bunden er BEVIDST urørt i sin positionering — `position: fixed` sammen
+ * med `interactive-widget=resizes-content` i index.html holder den over
+ * tastaturet. Kun tokenisering herunder, ingen ny logik.
+ */
 .chat {
   /* Plads til den faste skriver nederst. */
-  padding-bottom: 66px;
+  padding-bottom: var(--skriverhoejde);
 }
 
 .beskeder {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: var(--luft-1);
 }
 
 .besked {
@@ -1271,7 +1292,7 @@ input {
 }
 
 .besked + .besked:not(.samlet) {
-  margin-top: 12px;
+  margin-top: var(--luft-3);
 }
 
 .besked.min {
@@ -1282,30 +1303,34 @@ input {
 .afsender {
   display: flex;
   align-items: center;
-  gap: 7px;
-  margin-bottom: 5px;
+  gap: var(--luft-2);
+  margin-bottom: var(--luft-1);
   padding: 0;
-  font-size: 13px;
-  font-weight: 620;
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-fed);
   color: var(--tekst-daempet);
 }
 
 .afsender .avatar {
-  width: 26px;
-  height: 26px;
-  font-size: 13px;
+  width: var(--avatar-lille);
+  height: var(--avatar-lille);
+  font-size: var(--tekst-s);
 }
 
-/* Samlede beskeder rykkes ind under avataren, saa traaden staar lige. */
+/* Samlede beskeder rykkes ind under avataren, saa traaden staar lige —
+   afstanden er DERFOR afledt af avatarens bredde plus rækkens gap, ikke et
+   selvstændigt tal. */
 .besked.samlet:not(.min) .boble {
-  margin-left: 33px;
+  margin-left: calc(var(--avatar-lille) + var(--luft-2));
 }
 
 .boble {
   position: relative;
-  padding: 9px 13px 9px 13px;
+  padding: var(--luft-2) var(--luft-3);
   background: var(--flade);
   border: 1px solid var(--kant);
+  /* Boblens egen form — rundet med én spids side mod afsenderen — er
+     geometri, ikke systemets radius-skala. */
   border-radius: 16px;
   border-bottom-left-radius: 5px;
   line-height: 1.35;
@@ -1321,14 +1346,14 @@ input {
 }
 
 .boble .tid {
-  margin-left: 9px;
-  font-size: 11px;
+  margin-left: var(--luft-2);
+  font-size: var(--tekst-xs);
   color: var(--tekst-svag);
   /* Klokkeslaettet flyder med i sidste linje, saa korte beskeder ikke faar
      en tom raekke under sig. */
   float: right;
   position: relative;
-  top: 5px;
+  top: var(--luft-1);
 }
 
 .besked.min .boble .tid {
@@ -1340,12 +1365,12 @@ input {
   left: 0;
   right: 0;
   bottom: calc(var(--navhoejde) + var(--bund-sikker));
-  z-index: 25;
+  z-index: var(--lag-skriver);
   display: flex;
-  gap: 8px;
-  max-width: 560px;
+  gap: var(--luft-2);
+  max-width: var(--bredde);
   margin: 0 auto;
-  padding: 9px 16px;
+  padding: var(--luft-2) var(--luft-4);
   background: color-mix(in srgb, var(--bund) 94%, transparent);
   backdrop-filter: blur(14px);
   border-top: 1px solid var(--kant);
@@ -1353,18 +1378,18 @@ input {
 
 .skriver .felt {
   flex: 1;
-  border-radius: 999px;
+  border-radius: var(--radius-rund);
 }
 
 .sendknap {
   flex: 0 0 auto;
-  width: 44px;
-  height: 44px;
+  width: var(--tryk);
+  height: var(--tryk);
   border-radius: 50%;
   background: var(--accent);
   color: var(--accent-tekst);
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--ikon);
+  font-weight: var(--vaegt-fed);
 }
 
 .sendknap:disabled {
@@ -1383,14 +1408,17 @@ input {
   vertical-align: 1px;
 }
 
-/* -------------------------------------------------------------- historik */
-
+/*
+ * Historik, redesignet efter docs/redesign-oplaeg.md, afsnit 5: "Lettere
+ * hånd." Samme tokenisering og genbrug af `.tal`/`.etiket`, som Stilling
+ * fik i sin tur.
+ */
 .soejler {
   display: flex;
   align-items: flex-end;
-  gap: 4px;
-  height: 92px;
-  padding: 0 2px;
+  gap: var(--luft-1);
+  height: var(--soejlehoejde);
+  padding: 0 2px; /* Geometri: matcher søjleteksten under, se dér. */
 }
 
 .soejleplads {
@@ -1404,9 +1432,11 @@ input {
   width: 100%;
   /* En dag uden aktivitet skal stadig kunne ses som en dag. */
   min-height: 3px;
+  /* Rundet foroven, spids foroven — en søjles egen form, ikke systemets
+     radius-skala. */
   border-radius: 4px 4px 2px 2px;
   background: var(--kant);
-  transition: background 140ms ease;
+  transition: background var(--fart) ease;
 }
 
 .soejle.valgt {
@@ -1416,23 +1446,25 @@ input {
 .soejletekst {
   display: flex;
   justify-content: space-between;
-  margin: 6px 2px 18px;
-  font-size: 11.5px;
+  /* 2px sideværts, ikke et luft-trin: teksten skal flugte lodret med
+     søjlerne ovenover, som har samme sidepolstring. */
+  margin: var(--luft-2) 2px var(--luft-5);
+  font-size: var(--tekst-xs);
   color: var(--tekst-svag);
 }
 
 .dage {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--luft-2);
 }
 
 .dagraekke {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--luft-3);
   width: 100%;
-  padding: 12px 14px;
+  padding: var(--luft-3) var(--luft-4);
   text-align: left;
   background: var(--flade);
   border: 1px solid var(--kant);
@@ -1452,28 +1484,25 @@ input {
 
 .dagraekke .navn {
   display: block;
-  font-weight: 620;
+  font-weight: var(--vaegt-fed);
   /* Ugedag og maaned skrives med lille i dansk — men ikke naar de indleder. */
   text-transform: capitalize;
 }
 
 .dagraekke .under {
   display: block;
-  font-size: 12.5px;
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
 }
 
-.dagraekke .tal .stort {
-  font-size: 20px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+.dagraekke .talblok {
+  flex: 0 0 auto;
 }
 
 .dagliste {
   display: flex;
   flex-direction: column;
-  padding: 4px 0;
+  padding: var(--luft-1) 0;
   background: var(--bund);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
   border-top: none;
@@ -1482,7 +1511,7 @@ input {
 }
 
 p.dagliste {
-  padding: 14px;
+  padding: var(--luft-4);
   margin: 0;
   text-align: center;
 }
@@ -1490,14 +1519,14 @@ p.dagliste {
 .logning {
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: var(--luft-3);
   width: 100%;
-  padding: 9px 14px;
+  padding: var(--luft-2) var(--luft-4);
   text-align: left;
 }
 
 .logning .emoji {
-  font-size: 19px;
+  font-size: var(--ikon);
 }
 
 .logning .midt {
@@ -1507,18 +1536,18 @@ p.dagliste {
 
 .logning .navn {
   display: block;
-  font-size: 14.5px;
-  font-weight: 570;
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
 }
 
 .logning .under {
   display: block;
-  font-size: 12.5px;
+  font-size: var(--tekst-xs);
   color: var(--tekst-daempet);
 }
 
 .logning .tid {
-  font-size: 12px;
+  font-size: var(--tekst-xs);
   color: var(--tekst-svag);
   font-variant-numeric: tabular-nums;
 }
@@ -1536,20 +1565,27 @@ p.dagliste {
 
 /* ------------------------------------------------------------------ kort */
 
+/*
+ * Kort, redesignet efter docs/redesign-oplaeg.md, afsnit 5. Kun tokenisering
+ * — positionsdelingsreglen og Leaflet-opsætningen er urørt, se Kort.tsx.
+ */
 .kortvisning {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--luft-3);
 }
 
 .kortflade {
-  height: 58dvh;
-  min-height: 320px;
+  height: var(--kort-hoejde);
+  min-height: var(--kort-min-hoejde);
   border-radius: var(--radius);
   border: 1px solid var(--kant);
   overflow: hidden;
   /* Leaflets egen baggrund er lys; her er den maerkbar, mens fliser hentes. */
   background: var(--flade);
+  /* IKKE et af appens --lag-* niveauer: nulstiller Leaflets EGEN interne
+     lag-orden, så dens paneler ikke kan lægge sig oven på appens faste
+     navigation og skriver. */
   z-index: 0;
 }
 
@@ -1557,20 +1593,25 @@ p.dagliste {
 .kortflade .leaflet-control-attribution {
   background: color-mix(in srgb, var(--bund) 78%, transparent);
   color: var(--tekst-svag);
-  font-size: 10px;
+  font-size: var(--tekst-xs);
 }
 
 .kortflade .leaflet-control-attribution a {
   color: var(--tekst-daempet);
 }
 
+/*
+ * Nålens BREDDE og HØJDE sættes ikke her længere. Leaflet skal kende dem i
+ * JavaScript for at kunne placere ikonet rigtigt (`iconSize`/`iconAnchor` i
+ * Kort.tsx), og to kopier af samme tal — én i CSS, én i JS — er præcis den
+ * slags der kan komme ud af trit. `KORTNAAL_STOERRELSE` i Kort.tsx er nu
+ * den ENE kilde og skriver målet direkte i markørens inline style.
+ */
 .kortnaal {
   display: grid;
   place-items: center;
-  width: 38px;
-  height: 38px;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: var(--tekst-m);
   line-height: 1;
   color: var(--paa-farve);
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
@@ -1588,11 +1629,11 @@ p.dagliste {
 
 .kortstatus {
   margin: 0;
-  padding: 11px 14px;
+  padding: var(--luft-3) var(--luft-4);
   background: var(--flade);
   border: 1px solid var(--kant);
   border-radius: var(--radius);
-  font-size: 14px;
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
 }
 
