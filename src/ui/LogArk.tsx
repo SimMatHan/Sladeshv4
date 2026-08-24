@@ -149,7 +149,10 @@ export function LogArk({
       </div>
 
       {katalog === undefined ? (
-        <p className="tom">Henter kataloget …</p>
+        // `.midtstillet`, ikke `.tom`: det ene er appens hentetilstand — se
+        // Achievements.tsx for samme mønster i et andet ark — det andet er
+        // reserveret til et ÆGTE tomt resultat, som kataloget nedenfor.
+        <p className="midtstillet">Henter kataloget …</p>
       ) : (
         DRINK_CATEGORIES.map((kategori) => {
           const varianter = efterKategori.get(kategori.id) ?? [];

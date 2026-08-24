@@ -270,6 +270,20 @@ input {
   color: var(--tekst-svag);
 }
 
+/*
+ * Klassenavnet er brugt bart i KanalVaelger.tsx og LogArk.tsx (en
+ * størrelses-annotation på en chip, en volumen under et størrelsesvalg) —
+ * men har ALDRIG haft en regel, helt tilbage til det allerførste commit.
+ * Begge steder har det derfor stået usynligt: ingen skrifttype, ingen farve,
+ * bare hvad der end arves fra forælderen. Rettet her som en delt
+ * systemklasse, i stedet for at skrive to bespoke kopier — samme princip
+ * som `.hjaelp` og `.etiket` ovenfor.
+ */
+.enhed {
+  font-size: var(--tekst-xs);
+  color: var(--tekst-svag);
+}
+
 /* Alle tal i appen er ensbrede. Et tal der hopper i bredden, mens det
    tæller op, ser i stykker ud. */
 .tal-stort,
