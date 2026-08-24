@@ -922,6 +922,86 @@ input {
   filter: grayscale(1);
 }
 
+/*
+ * De tre ringrækker — Mig-fanens hero, redesignet efter
+ * docs/redesign-oplaeg.md, afsnit 1.
+ *
+ * ÉN fælles kortbaggrund, rækkerne adskilt af en linje frem for hver sin
+ * boks: tre bokse ved siden af hinanden ville veje tungere end tre tal, der
+ * hører sammen. "Fjern før du tilføjer" — se docs/redesign-prompt.md.
+ */
+.ringraekker {
+  display: flex;
+  flex-direction: column;
+  margin: var(--luft-5) 0;
+}
+
+.ringraekke {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-4);
+  width: 100%;
+  padding: var(--luft-2) 0;
+  text-align: left;
+}
+
+.ringraekke + .ringraekke {
+  margin-top: var(--luft-3);
+  padding-top: var(--luft-4);
+  border-top: 1px solid var(--kant);
+}
+
+/* Kun promille- uden konfiguration og achievement-rækken er trykbare — den
+   ene åbner Indstillinger, den anden trofæhylden. */
+.ringraekke--knap {
+  cursor: pointer;
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.ringraekke--knap:active {
+  transform: scale(0.99);
+}
+
+.ringtekst {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+}
+
+/* Tallet i selve ringen. `.ringtekst .titel` og `.hjaelp` er allerede
+   systemets egne utility-klasser og genbruges direkte — se toppen af filen. */
+.ringtal {
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Promillen er et decimaltal og fylder mere end de andre ringes hele tal —
+   den får derfor systemets næste trin ned, ikke en opfundet størrelse. */
+.ringtal--kompakt {
+  font-size: var(--tekst-m);
+}
+
+/* Hverken henter eller kender et tal endnu — "?" eller "–", ikke et 0. */
+.ringtal--tomt {
+  color: var(--tekst-svag);
+}
+
+.livstidstal {
+  margin: 0 0 var(--luft-5);
+}
+
+.knapraekke {
+  margin-top: var(--luft-5);
+}
+
+.nulstilbekraeft p {
+  margin: 0 0 var(--luft-3);
+}
+
 /* ------------------------------------------------------------------ login */
 
 .login {
