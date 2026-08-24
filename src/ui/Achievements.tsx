@@ -96,18 +96,18 @@ export function Achievements({
 
   return (
     <Ark titel="Achievements" onLuk={onLuk}>
-      <p className="hjaelp" style={{ marginTop: 0 }}>
+      <p className="hjaelp hyldeintro">
         Hver badge har sin egen udfordring — og flere af dem kan optjenes igen.
       </p>
 
       <div className="kort hylde">
         <Fremdriftsring andel={andel}>
-          <span className="hyldetal">
+          <span className="ringtal ringtal--kompakt">
             {oplaaste}/{achievements.length}
           </span>
         </Fremdriftsring>
         <div>
-          <div className="hyldetitel">
+          <div className="titel">
             {oplaaste === 0
               ? "Kom i gang!"
               : oplaaste === achievements.length
@@ -128,7 +128,7 @@ export function Achievements({
           <Badgebillede achievement={taettestPaa} lille />
           <div className="taettestmidt">
             <span className="etiket">Tættest på</span>
-            <div className="hyldetitel">{taettestPaa.title}</div>
+            <div className="titel">{taettestPaa.title}</div>
             <div className="bjaelke">
               <div
                 className="fyld"
@@ -136,7 +136,7 @@ export function Achievements({
               />
             </div>
           </div>
-          <span className="taettesttal">
+          <span className="hjaelp taettesttal">
             {taettestPaa.current}/{taettestPaa.threshold}
           </span>
         </button>
@@ -154,7 +154,7 @@ export function Achievements({
             onClick={() => setValgt(achievement.achievementId)}
           >
             <Badgebillede achievement={achievement} />
-            <span className="badgetitel">{achievement.title}</span>
+            <span className="titel">{achievement.title}</span>
             {achievement.unlocked ? (
               <span className="maerkat optjent">Optjent</span>
             ) : achievement.manual ? (
@@ -232,7 +232,7 @@ function Detalje({
 
       <div className="arkgruppe">
         <h3>Sådan får du den</h3>
-        <p style={{ margin: 0 }}>{achievement.howToGet}</p>
+        <p className="uden-luft">{achievement.howToGet}</p>
       </div>
 
       {/* Manuelle achievements har ingen målbar betingelse — det er netop
@@ -249,7 +249,7 @@ function Detalje({
                 style={{ width: `${achievement.percentage ?? 0}%` }}
               />
             </div>
-            <p className="hjaelp" style={{ marginTop: 6 }}>
+            <p className="hjaelp fremdriftnote">
               {achievement.current} af {achievement.threshold}
               {achievement.repeatable && " · kan optjenes igen"}
             </p>
@@ -259,7 +259,7 @@ function Detalje({
       {achievement.firstUnlockedAt !== undefined && (
         <div className="arkgruppe">
           <h3>Historik</h3>
-          <p className="hjaelp" style={{ margin: 0 }}>
+          <p className="hjaelp uden-luft">
             Første gang {dato(achievement.firstUnlockedAt)}
             {achievement.lastUnlockedAt !== undefined &&
               achievement.lastUnlockedAt !== achievement.firstUnlockedAt &&
@@ -268,7 +268,7 @@ function Detalje({
         </div>
       )}
 
-      <button className="knap" style={{ marginTop: 22 }} onClick={onTilbage}>
+      <button className="knap knapraekke" onClick={onTilbage}>
         Tilbage til hylden
       </button>
     </>
