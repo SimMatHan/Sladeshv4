@@ -72,8 +72,17 @@ og bevægelse.
 10. **Hentetilstande ligner ikke data.** `useQuery` giver `undefined`, mens
     den henter. Vis det, frem for et skelet man kan nå at aflæse forkert.
 
-**Skrifttype:** Inter fra Google Fonts, indlæst i `index.html`. Ingen
-npm-pakke. Systemskriften som reserve.
+**Skrifttype:** systemskriften. Ikke Inter.
+
+Oplægget bad oprindeligt om Inter fra Google Fonts, og det var forkert:
+`vercel.json` sætter `font-src 'self'` og `style-src 'self'`, så et eksternt
+skriftkald afvises, så snart CSP'en går fra Report-Only til håndhævet.
+Selvhostning ville kræve en woff2 i `public/` og en ændring i
+`vite.config.ts` — uden for afgrænsningen.
+
+Løftet i typografien kommer fra skalaen, vægtene og `tabular-nums`, ikke fra
+skriftsnittet. SF Pro og Roboto har begge ensbrede cifre og koster ingen
+hentning.
 
 ---
 

@@ -1,18 +1,39 @@
 /*
- * Designtokens og grundstil.
+ * DESIGNSYSTEMET
+ * ==============
+ *
+ * Alt herunder til "SKÆRME" er systemet. Skærmene arver det; de definerer
+ * det ikke. Rører du en skærm og får brug for en værdi, der ikke findes her,
+ * så tilføj den HER frem for at skrive den ind i skærmen.
+ *
+ * Fem regler, som resten af filen skal kunne holdes op mod:
+ *
+ *   1. INGEN hex-farve, INGEN rå skriftstørrelse og INGEN rå afstand uden
+ *      for `:root`. Kun `var(--…)`.
+ *      Undtaget er GEOMETRI, som ikke er designbeslutninger og ikke deles:
+ *      kanttykkelse (`1px`), skyggeforskydning, `blur()`. De hører til den
+ *      form, de tegner, ikke i en skala.
+ *   2. Typografien har FEM trin: 40 / 28 / 17 / 13 / 11. Ikke flere. Bruger
+ *      du 15px ét sted, er systemet brudt.
+ *   3. Afstande kommer fra skalaen: 4 / 8 / 12 / 16 / 20 / 32. Ikke 14, 18.
+ *   4. Én af hver ting. Ét kort, én knap med varianter, ét ark, én liste, én
+ *      tom tilstand, én hentetilstand. Findes den, så genbrug den.
+ *   5. Alt man kan trykke på er mindst `--tryk` (44px) højt. Ingen
+ *      undtagelser — appen bruges i en bar, på en telefon, af nogen der har
+ *      fået et par stykker.
+ *
+ * Mørk som udgangspunkt, af samme grund: den bruges om aftenen.
  *
  * Bevidst uden CSS-framework. Den gamle app brugte Tailwind, og dens
- * `profileGradient`-felt indeholder ligefrem Tailwind-klassenavne — men det er
- * et redesign, og at arve klassestrenge fra den gamle app ville binde
- * udtrykket til beslutninger, vi netop er ved at lave om. Farver og mål ligger
- * derfor som variabler her, ét sted, så hele appen kan omtemaes uden at røre
- * en komponent.
- *
- * Mørk som udgangspunkt: appen bruges om aftenen, i en bar, på en telefon.
+ * `profileGradient`-felt indeholder ligefrem Tailwind-klassenavne — men det
+ * er et redesign, og at arve klassestrenge fra den gamle app ville binde
+ * udtrykket til beslutninger, vi netop er ved at lave om.
  */
 
 :root {
   color-scheme: dark light;
+
+  /* ---------------------------------------------------------- farver */
 
   --bund: #0e0f13;
   --flade: #17191f;
@@ -34,14 +55,91 @@
   --soelv: #cbd5e1;
   --bronze: #d08c60;
 
+  /* ------------------------------------------------------ typografi */
+
+  /*
+   * Fem trin med store spring. Det er KONTRASTEN der laver hierarkiet,
+   * ikke antallet af trin — derfor er der ingen 15 eller 19 imellem.
+   * Havde vi dem, ville de blive brugt, og så ville hierarkiet blive
+   * til en glidebane.
+   */
+  --tekst-xxl: 40px;  /* det ene store tal på skærmen */
+  --tekst-xl: 28px;   /* sekundært tal, arkoverskrift */
+  --tekst-m: 17px;    /* brødtekst, knapper, felter */
+  --tekst-s: 13px;    /* understøttende tekst */
+  --tekst-xs: 11px;   /* etiketter, versaler */
+
+  --vaegt-normal: 400;
+  --vaegt-medium: 550;
+  --vaegt-fed: 700;
+
+  /* Store tal skal trækkes sammen, ellers falder de fra hinanden. */
+  --spor-tal: -0.03em;
+  --spor-titel: -0.01em;
+  --spor-etiket: 0.07em;
+
+  /* --------------------------------------------------------- afstand */
+
+  --luft-1: 4px;
+  --luft-2: 8px;
+  --luft-3: 12px;
+  --luft-4: 16px;
+  --luft-5: 20px;
+  --luft-6: 32px;
+
+  /* ----------------------------------------------------------- former */
+
   --radius: 14px;
   --radius-lille: 9px;
+  --radius-stor: 22px;
+  --radius-rund: 999px;
+
+  /* Mindste trykflade. Se regel 5. */
+  --tryk: 44px;
+
+  /* Ikonmål. Ikke typografi — emoji og glyffer i navigationen. */
+  --ikon: 20px;
+  --ikon-stor: 30px;
+
+  /*
+   * Tekst oven på en farvet flade — avatarens forbogstav på sin gradient,
+   * kortnålen på sin. Hvid i BEGGE temaer, fordi fladen under den er farvet
+   * og ikke skifter med temaet.
+   */
+  --paa-farve: #ffffff;
+
+  /* -------------------------------------------------------- bevægelse */
+
+  /*
+   * Kort og målrettet. Bevægelse må aldrig forsinke et tryk — den må
+   * kvittere for det.
+   */
+  --fart-hurtig: 110ms;
+  --fart: 160ms;
+  --fart-lang: 220ms;
+  --kurve: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ------------------------------------------------------------- lag */
+
+  --lag-top: 20;
+  --lag-nav: 30;
+  --lag-kvittering: 35;
+  --lag-dug: 40;
+  --lag-ark: 41;
+
+  /* ----------------------------------------------------------- mål */
+
+  --bredde: 560px;
+  --navhoejde: 64px;
+
+  /* Komponentmål. Ikke afstand — det er tingenes egen størrelse. */
+  --avatar: 42px;
+  --avatar-stor: 68px;
+  --logknap: 58px;
 
   /* Sikker afstand til telefonens hjemmebjælke og hak. */
   --bund-sikker: env(safe-area-inset-bottom, 0px);
   --top-sikker: env(safe-area-inset-top, 0px);
-
-  --navhoejde: 64px;
 }
 
 @media (prefers-color-scheme: light) {
@@ -59,6 +157,8 @@
   }
 }
 
+/* --------------------------------------------------------------- grundlag */
+
 * {
   box-sizing: border-box;
 }
@@ -73,10 +173,26 @@ body {
 body {
   background: var(--bund);
   color: var(--tekst);
+  /*
+   * SYSTEMSKRIFTEN, og det er et valg.
+   *
+   * Oplægget bad om Inter fra Google Fonts. Det kan ikke lade sig gøre:
+   * `vercel.json` sætter `font-src 'self'` og `style-src 'self'`, så et
+   * eksternt skriftkald ville blive afvist i det øjeblik, CSP'en går fra
+   * Report-Only til håndhævet — se docs/produktion.md.
+   *
+   * At selvhoste Inter ville kræve en woff2 i `public/` OG en tilføjelse til
+   * precache-listen i `vite.config.ts`, og den fil er uden for redesignets
+   * afgrænsning. Det er noteret som en selvstændig opgave.
+   *
+   * Tabet er mindre, end det lyder. Løftet i typografien kommer fra skalaen,
+   * vægtene og `tabular-nums` — ikke fra Inter selv. SF Pro og Roboto er
+   * begge fortrinlige og har ensbrede cifre, og de koster ingen hentning.
+   */
   font-family:
     ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
     "Helvetica Neue", sans-serif;
-  font-size: 16px;
+  font-size: var(--tekst-m);
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
   /* Ingen gummi-scroll bag arkene. */
@@ -106,10 +222,63 @@ input {
   color: inherit;
 }
 
+/* ------------------------------------------------------------- typografi */
+
+/*
+ * De fem trin som klasser. En skærm skal kunne skrive `.tal` frem for at
+ * gentage tre linjer om størrelse, vægt og sporing hver gang et tal vises.
+ */
+.tal-stort {
+  font-size: var(--tekst-xxl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
+}
+
+.tal {
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.titel {
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  letter-spacing: var(--spor-titel);
+}
+
+/*
+ * Etiketten hvisker, mens tallet råber. Versaler og sporing gør den læsbar
+ * ved 11px uden at den konkurrerer om opmærksomheden.
+ */
+.etiket {
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-etiket);
+  text-transform: uppercase;
+  color: var(--tekst-svag);
+}
+
+.hjaelp {
+  font-size: var(--tekst-s);
+  color: var(--tekst-svag);
+}
+
+/* Alle tal i appen er ensbrede. Et tal der hopper i bredden, mens det
+   tæller op, ser i stykker ud. */
+.tal-stort,
+.tal,
+.tabel {
+  font-variant-numeric: tabular-nums;
+}
+
 /* ------------------------------------------------------------------ skal */
 
 .skal {
-  max-width: 560px;
+  max-width: var(--bredde);
   margin: 0 auto;
   min-height: 100dvh;
   display: flex;
@@ -120,12 +289,12 @@ input {
 .top {
   position: sticky;
   top: 0;
-  z-index: 20;
+  z-index: var(--lag-top);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
+  gap: var(--luft-3);
+  padding: var(--luft-3) var(--luft-4);
   background: color-mix(in srgb, var(--bund) 88%, transparent);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--kant);
@@ -134,14 +303,15 @@ input {
 .kanalknap {
   display: flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 12px 7px 13px;
-  border-radius: 999px;
+  gap: var(--luft-2);
+  min-height: var(--tryk);
+  padding: var(--luft-2) var(--luft-3);
+  border-radius: var(--radius-rund);
   background: var(--flade);
   border: 1px solid var(--kant);
-  font-weight: 650;
-  font-size: 16px;
-  letter-spacing: -0.01em;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  letter-spacing: var(--spor-titel);
 }
 
 .kanalknap:active {
@@ -150,35 +320,38 @@ input {
 
 .kanalknap .pil {
   color: var(--tekst-svag);
-  font-size: 11px;
+  font-size: var(--tekst-xs);
 }
 
 .indhold {
   flex: 1;
-  padding: 0 16px;
-  padding-bottom: calc(var(--navhoejde) + var(--bund-sikker) + 28px);
+  padding: 0 var(--luft-4);
+  padding-bottom: calc(var(--navhoejde) + var(--bund-sikker) + var(--luft-6));
 }
 
 /* --------------------------------------------------------- segmentvælger */
 
 .segmenter {
   display: flex;
-  gap: 4px;
-  padding: 4px;
-  margin: 14px 0 18px;
+  gap: var(--luft-1);
+  padding: var(--luft-1);
+  margin: var(--luft-4) 0 var(--luft-5);
   background: var(--flade);
   border: 1px solid var(--kant);
-  border-radius: 999px;
+  border-radius: var(--radius-rund);
 }
 
 .segment {
   flex: 1;
-  padding: 8px 4px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  min-height: var(--tryk);
+  padding: var(--luft-2) var(--luft-1);
+  border-radius: var(--radius-rund);
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
   color: var(--tekst-daempet);
-  transition: background 120ms ease, color 120ms ease;
+  transition:
+    background var(--fart) ease,
+    color var(--fart) ease;
 }
 
 .segment[aria-selected="true"] {
@@ -194,11 +367,11 @@ input {
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 30;
+  z-index: var(--lag-nav);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  max-width: 560px;
+  max-width: var(--bredde);
   margin: 0 auto;
   height: var(--navhoejde);
   padding-bottom: var(--bund-sikker);
@@ -212,10 +385,10 @@ input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
-  padding: 8px 0;
-  font-size: 11px;
-  font-weight: 600;
+  gap: var(--luft-1);
+  padding: var(--luft-2) 0;
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-medium);
   color: var(--tekst-svag);
 }
 
@@ -224,7 +397,7 @@ input {
 }
 
 .navknap .ikon {
-  font-size: 20px;
+  font-size: var(--ikon);
   line-height: 1;
 }
 
@@ -233,17 +406,17 @@ input {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 58px;
-  height: 58px;
-  margin-top: -22px;
+  width: var(--logknap);
+  height: var(--logknap);
+  margin-top: calc(var(--logknap) / -2 - var(--luft-2) / 2);
   border-radius: 50%;
   background: linear-gradient(160deg, var(--accent), var(--accent-mork));
   color: var(--accent-tekst);
-  font-size: 30px;
-  font-weight: 300;
+  font-size: var(--ikon-stor);
+  font-weight: var(--vaegt-normal);
   line-height: 1;
   box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 40%, transparent);
-  transition: transform 110ms ease;
+  transition: transform var(--fart-hurtig) ease;
 }
 
 .logknap:active {
@@ -256,28 +429,359 @@ input {
   background: var(--flade);
   border: 1px solid var(--kant);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: var(--luft-5);
 }
 
 .tom {
-  padding: 40px 20px;
+  padding: var(--luft-6) var(--luft-5);
   text-align: center;
   color: var(--tekst-daempet);
 }
 
 .tom .stort {
-  font-size: 34px;
-  margin-bottom: 10px;
+  font-size: var(--tekst-xl);
+  margin-bottom: var(--luft-3);
 }
 
 .tom p {
-  margin: 0 0 4px;
+  margin: 0 0 var(--luft-1);
 }
 
-.tom .hjaelp {
-  font-size: 14px;
+/* ------------------------------------------------------------------- ark */
+
+.dug {
+  position: fixed;
+  inset: 0;
+  z-index: var(--lag-dug);
+  background: rgb(0 0 0 / 0.55);
+  backdrop-filter: blur(2px);
+  animation: ton-ind var(--fart) ease;
+}
+
+.ark {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--lag-ark);
+  max-width: 560px;
+  margin: 0 auto;
+  max-height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--flade);
+  border-top-left-radius: var(--radius-stor);
+  border-top-right-radius: var(--radius-stor);
+  border-top: 1px solid var(--kant);
+  padding-bottom: var(--bund-sikker);
+  animation: op var(--fart-lang) var(--kurve);
+}
+
+@keyframes op {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes ton-ind {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ark, .dug, .kvittering { animation: none; }
+}
+
+.greb {
+  width: 40px;
+  height: 4px;
+  margin: var(--luft-3) auto var(--luft-1);
+  border-radius: var(--radius-rund);
+  background: var(--kant);
+}
+
+.ark h2 {
+  margin: var(--luft-2) var(--luft-5) var(--luft-1);
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+}
+
+.ark .arkindhold {
+  overflow-y: auto;
+  padding: var(--luft-2) var(--luft-5) var(--luft-5);
+  -webkit-overflow-scrolling: touch;
+}
+
+.arkgruppe + .arkgruppe {
+  margin-top: var(--luft-6);
+}
+
+/* Gruppeoverskriften i et ark ER etiketten. Samme regel, ét sted. */
+.arkgruppe > h3 {
+  margin: 0 0 var(--luft-3);
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-etiket);
+  text-transform: uppercase;
   color: var(--tekst-svag);
 }
+
+/* ---------------------------------------------------------------- chips */
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--luft-2);
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-2);
+  min-height: var(--tryk);
+  padding: var(--luft-3) var(--luft-4);
+  border-radius: var(--radius-rund);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.chip:active {
+  transform: scale(0.95);
+}
+
+.chip.stor {
+  padding: var(--luft-3) var(--luft-5);
+  font-size: var(--tekst-m);
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-tekst);
+}
+
+.chip .emoji {
+  font-size: var(--tekst-m);
+}
+
+/* --------------------------------------------------------------- knapper */
+
+.knap {
+  display: block;
+  width: 100%;
+  min-height: var(--tryk);
+  padding: var(--luft-3) var(--luft-4);
+  border-radius: var(--radius);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  text-align: center;
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.knap:active {
+  transform: scale(0.99);
+}
+
+.knap.primaer {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-tekst);
+}
+
+.knap.fare {
+  color: var(--fare);
+  border-color: color-mix(in srgb, var(--fare) 35%, var(--kant));
+}
+
+.knap:disabled {
+  opacity: 0.45;
+}
+
+.knap:disabled:active {
+  transform: none;
+}
+
+.knap + .knap {
+  margin-top: var(--luft-2);
+}
+
+.felt {
+  width: 100%;
+  min-height: var(--tryk);
+  padding: var(--luft-3) var(--luft-4);
+  border-radius: var(--radius);
+  background: var(--bund);
+  border: 1px solid var(--kant);
+  font-size: var(--tekst-m);
+  outline: none;
+}
+
+.felt:focus {
+  border-color: var(--accent);
+}
+
+/* ------------------------------------------------------------ kvittering */
+
+.kvittering {
+  position: fixed;
+  left: var(--luft-4);
+  right: var(--luft-4);
+  bottom: calc(var(--navhoejde) + var(--bund-sikker) + var(--luft-4));
+  z-index: var(--lag-kvittering);
+  max-width: calc(var(--bredde) - var(--luft-4) * 2);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--luft-3);
+  padding: var(--luft-3) var(--luft-4);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  animation: op var(--fart) var(--kurve);
+}
+
+.kvittering .tekst {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--tekst-s);
+}
+
+/* Fortryd er en trykflade som alle andre. Se regel 5 — og den skal kunne
+   rammes hurtigt, for den står kun i seks sekunder. */
+.kvittering button {
+  flex: 0 0 auto;
+  min-height: var(--tryk);
+  padding: var(--luft-2) var(--luft-4);
+  border-radius: var(--radius-rund);
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
+}
+
+.fejl {
+  margin: var(--luft-3) 0 0;
+  padding: var(--luft-3) var(--luft-4);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--fare) 12%, var(--flade));
+  border: 1px solid color-mix(in srgb, var(--fare) 35%, var(--kant));
+  font-size: var(--tekst-s);
+}
+
+/* -------------------------------------------------------------- avataren */
+
+.avatar {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: 50%;
+  font-size: var(--tekst-xl);
+  line-height: 1;
+  color: var(--paa-farve);
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+}
+
+.avatar.stor {
+  width: var(--avatar-stor);
+  height: var(--avatar-stor);
+  font-size: var(--tekst-xxl);
+}
+
+/* --------------------------------------------------------------- mærkatet */
+
+/* Den lille etiket på en række: Admin, Arkiveret, Optjent, 3/5. */
+.maerkat {
+  padding: var(--luft-1) var(--luft-2);
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-rund);
+  background: var(--flade-hvaelvet);
+  color: var(--tekst-daempet);
+}
+
+.maerkat.optjent {
+  background: var(--accent);
+  color: var(--accent-tekst);
+}
+
+/* ------------------------------------------------------------ fremdriften */
+
+/*
+ * Ringen er appens ene bærende figur, fordi næsten alt i appen er "hvor
+ * langt er du af noget". Den skal ALTID kode en rigtig 0-100-værdi — aldrig
+ * pynt. Højst tre ad gangen.
+ *
+ * Bjælken er den samme betydning, hvor ringen er for stor.
+ */
+.ring {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.ringindhold {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.bjaelke {
+  height: 6px;
+  border-radius: var(--radius-rund);
+  background: var(--kant);
+  overflow: hidden;
+}
+
+.bjaelke .fyld {
+  height: 100%;
+  border-radius: var(--radius-rund);
+  background: linear-gradient(90deg, var(--accent-mork), var(--accent));
+  transition: width var(--fart-lang) ease;
+}
+
+/* ------------------------------------------------------- hentetilstanden */
+
+/*
+ * Én hentetilstand, og den må ikke kunne forveksles med data. `useQuery`
+ * giver `undefined`, mens den henter; et skelet i tallenes form ville kunne
+ * nå at blive aflæst som et resultat.
+ */
+.midtstillet {
+  display: grid;
+  place-items: center;
+  min-height: 60dvh;
+  color: var(--tekst-daempet);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bjaelke .fyld,
+  .knap,
+  .chip,
+  .segment {
+    transition: none;
+  }
+}
+
+/* ==========================================================================
+   SKÆRME
+   ==========================================================================
+
+   Herunder er skærmspecifik styling. Den ARVER systemet ovenfor og må ikke
+   indføre nye størrelser, afstande eller farver — findes værdien ikke som
+   token, hører den hjemme i `:root`, ikke her.
+
+   Skærmene er endnu ikke gennemgået i redesignet; de tages én ad gangen.
+   ========================================================================== */
 
 /* ------------------------------------------------------------- stilling */
 
@@ -358,235 +862,6 @@ input {
   color: var(--tekst-svag);
 }
 
-/* --------------------------------------------------------------- avatar */
-
-.avatar {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  font-size: 20px;
-  line-height: 1;
-  color: #fff;
-  text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
-}
-
-.avatar.stor {
-  width: 68px;
-  height: 68px;
-  font-size: 32px;
-}
-
-/* ------------------------------------------------------------------- ark */
-
-.dug {
-  position: fixed;
-  inset: 0;
-  z-index: 40;
-  background: rgb(0 0 0 / 0.55);
-  backdrop-filter: blur(2px);
-  animation: ton-ind 150ms ease;
-}
-
-.ark {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 41;
-  max-width: 560px;
-  margin: 0 auto;
-  max-height: 88dvh;
-  display: flex;
-  flex-direction: column;
-  background: var(--flade);
-  border-top-left-radius: 22px;
-  border-top-right-radius: 22px;
-  border-top: 1px solid var(--kant);
-  padding-bottom: var(--bund-sikker);
-  animation: op 210ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes op {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-
-@keyframes ton-ind {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ark, .dug, .kvittering { animation: none; }
-}
-
-.greb {
-  width: 40px;
-  height: 4px;
-  margin: 10px auto 2px;
-  border-radius: 999px;
-  background: var(--kant);
-}
-
-.ark h2 {
-  margin: 8px 20px 4px;
-  font-size: 19px;
-  letter-spacing: -0.01em;
-}
-
-.ark .arkindhold {
-  overflow-y: auto;
-  padding: 8px 20px 20px;
-  -webkit-overflow-scrolling: touch;
-}
-
-.arkgruppe + .arkgruppe {
-  margin-top: 22px;
-}
-
-.arkgruppe > h3 {
-  margin: 0 0 9px;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--tekst-svag);
-}
-
-/* ---------------------------------------------------------------- chips */
-
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.chip {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 11px 15px;
-  border-radius: 999px;
-  background: var(--flade-hvaelvet);
-  border: 1px solid var(--kant);
-  font-size: 15px;
-  font-weight: 550;
-  transition: transform 100ms ease;
-}
-
-.chip:active {
-  transform: scale(0.95);
-}
-
-.chip.stor {
-  padding: 14px 18px;
-  font-size: 16px;
-  font-weight: 620;
-}
-
-.chip[aria-pressed="true"] {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-tekst);
-}
-
-.chip .emoji {
-  font-size: 17px;
-}
-
-/* --------------------------------------------------------------- knapper */
-
-.knap {
-  display: block;
-  width: 100%;
-  padding: 14px;
-  border-radius: var(--radius);
-  background: var(--flade-hvaelvet);
-  border: 1px solid var(--kant);
-  font-weight: 620;
-  text-align: center;
-}
-
-.knap.primaer {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-tekst);
-}
-
-.knap.fare {
-  color: var(--fare);
-  border-color: color-mix(in srgb, var(--fare) 35%, var(--kant));
-}
-
-.knap:disabled {
-  opacity: 0.45;
-}
-
-.knap + .knap {
-  margin-top: 9px;
-}
-
-.felt {
-  width: 100%;
-  padding: 13px 14px;
-  border-radius: var(--radius);
-  background: var(--bund);
-  border: 1px solid var(--kant);
-  outline: none;
-}
-
-.felt:focus {
-  border-color: var(--accent);
-}
-
-/* ------------------------------------------------------------ kvittering */
-
-.kvittering {
-  position: fixed;
-  left: 16px;
-  right: 16px;
-  bottom: calc(var(--navhoejde) + var(--bund-sikker) + 14px);
-  z-index: 35;
-  max-width: 528px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 13px 15px;
-  background: var(--flade-hvaelvet);
-  border: 1px solid var(--kant);
-  border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
-  animation: op 190ms cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.kvittering .tekst {
-  flex: 1;
-  min-width: 0;
-  font-size: 14.5px;
-}
-
-.kvittering button {
-  flex: 0 0 auto;
-  padding: 7px 13px;
-  border-radius: 999px;
-  background: var(--flade);
-  border: 1px solid var(--kant);
-  font-size: 13.5px;
-  font-weight: 620;
-}
-
-.fejl {
-  margin: 12px 0 0;
-  padding: 12px 14px;
-  border-radius: var(--radius);
-  background: color-mix(in srgb, var(--fare) 12%, var(--flade));
-  border: 1px solid color-mix(in srgb, var(--fare) 35%, var(--kant));
-  font-size: 14px;
-}
 
 /* ------------------------------------------------------------------- mig */
 
@@ -678,13 +953,6 @@ input {
   font-size: 14px;
   color: var(--tekst-daempet);
   text-align: center;
-}
-
-.midtstillet {
-  display: grid;
-  place-items: center;
-  min-height: 60dvh;
-  color: var(--tekst-daempet);
 }
 
 /* ------------------------------------------------------------ overtagelse */
@@ -1202,7 +1470,7 @@ p.dagliste {
   border-radius: 50%;
   font-size: 18px;
   line-height: 1;
-  color: #fff;
+  color: var(--paa-farve);
   text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
   box-shadow: 0 2px 8px rgb(0 0 0 / 0.4);
   border: 2px solid var(--bund);
@@ -1322,54 +1590,6 @@ p.dagliste {
 .onboardingindhold .stortikon {
   font-size: 52px;
   margin-bottom: 14px;
-}
-
-/* ------------------------------------------------------------ hjælpetekst */
-
-/*
- * `.hjaelp` fandtes hidtil kun scopet under `.tom`, men blev allerede brugt
- * bart i Mig. Reglen står nu på egne ben, så den dæmpede forklaringstekst ser
- * ens ud overalt — også i achievements og admin, som bruger den flittigt.
- */
-.hjaelp {
-  font-size: 14px;
-  color: var(--tekst-svag);
-}
-
-/* ------------------------------------------------------- fremdriftsringen */
-
-.ring {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.ringindhold {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  text-align: center;
-}
-
-/* En vandret bjælke, hvor ringen er for stor. Samme betydning, mindre plads. */
-.bjaelke {
-  height: 6px;
-  border-radius: 999px;
-  background: var(--kant);
-  overflow: hidden;
-}
-
-.bjaelke .fyld {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, var(--accent-mork), var(--accent));
-  transition: width 0.5s ease;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bjaelke .fyld {
-    transition: none;
-  }
 }
 
 /* ---------------------------------------------------------- trofæhylden */
@@ -1513,21 +1733,6 @@ p.dagliste {
   font-size: 13px;
   font-weight: 650;
   line-height: 1.25;
-}
-
-.maerkat {
-  padding: 2px 9px;
-  font-size: 11px;
-  font-weight: 650;
-  font-variant-numeric: tabular-nums;
-  border-radius: 999px;
-  background: var(--flade-hvaelvet);
-  color: var(--tekst-daempet);
-}
-
-.maerkat.optjent {
-  background: var(--accent);
-  color: var(--accent-tekst);
 }
 
 .detaljetop {
