@@ -139,6 +139,11 @@
   /* Pladstallets bredde i Stilling. Fast, så tocifrede placeringer (10+)
      ikke skubber navnet, når rækken renderer om. */
   --plads: 24px;
+  /* Achievement-badgens billede, i dets tre størrelser: gitteret, den
+     lille i "tættest på"-kortet, og den store i detaljevisningen. */
+  --badge: 64px;
+  --badge-lille: 48px;
+  --badge-stor: 128px;
 
   /* Sikker afstand til telefonens hjemmebjælke og hak. */
   --bund-sikker: env(safe-area-inset-bottom, 0px);
@@ -1691,29 +1696,28 @@ p.dagliste {
 
 /* ---------------------------------------------------------- trofæhylden */
 
+/*
+ * Trofæhylden, redesignet efter docs/redesign-oplaeg.md, afsnit 4: "Har
+ * allerede ringen og et badge-gitter. Stram typografi og luft." Ingen ny
+ * struktur — kun tokenisering og genbrug af systemets egne utility-klasser
+ * (`.ringtal`, `.titel`, `.etiket`, `.hjaelp`), samme princip som Stilling.
+ */
+.hyldeintro {
+  margin: 0 0 var(--luft-4);
+}
+
 .hylde {
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 14px;
-}
-
-.hyldetal {
-  font-size: 17px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-.hyldetitel {
-  font-weight: 650;
+  gap: var(--luft-4);
 }
 
 .taettest {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--luft-3);
   width: 100%;
-  margin-top: 12px;
+  margin-top: var(--luft-3);
   text-align: left;
   font: inherit;
   color: inherit;
@@ -1730,38 +1734,34 @@ p.dagliste {
   min-width: 0;
 }
 
+/* Genbruger `.etiket`s størrelse/vægt/sporing, men i accentfarve — dette
+   kort skal skille sig ud fra resten, ikke dæmpes som enhver anden etiket. */
 .taettestmidt .etiket {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
   color: var(--accent);
 }
 
 .taettestmidt .bjaelke {
-  margin-top: 7px;
+  margin-top: var(--luft-2);
 }
 
 .taettesttal {
   flex-shrink: 0;
-  font-size: 13px;
   font-variant-numeric: tabular-nums;
-  color: var(--tekst-daempet);
 }
 
 .badgegitter {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  margin-top: 12px;
+  gap: var(--luft-3);
+  margin-top: var(--luft-3);
 }
 
 .badge {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  padding: 14px 10px;
+  gap: var(--luft-2);
+  padding: var(--luft-4) var(--luft-3);
   text-align: center;
   font: inherit;
   color: var(--tekst);
@@ -1782,8 +1782,8 @@ p.dagliste {
 .badgebillede {
   position: relative;
   display: block;
-  width: 64px;
-  height: 64px;
+  width: var(--badge);
+  height: var(--badge);
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--flade-hvaelvet);
@@ -1804,40 +1804,48 @@ p.dagliste {
 }
 
 .badgebillede.lille {
-  width: 48px;
-  height: 48px;
+  width: var(--badge-lille);
+  height: var(--badge-lille);
   border-radius: var(--radius-lille);
 }
 
 .badgebillede.stor {
-  width: 128px;
-  height: 128px;
+  width: var(--badge-stor);
+  height: var(--badge-stor);
 }
 
+/* Den lille "×3"-optæller. Paddingen er GEOMETRI, ikke en afstands-
+   beslutning: den skal hugge tæt om et par tegn i et hjørne, samme
+   begrundelse som kanttykkelser er undtaget regel 1 for. */
 .badgebillede .antal {
   position: absolute;
   right: 3px;
   bottom: 3px;
-  padding: 1px 6px;
-  font-size: 11px;
-  font-weight: 800;
-  border-radius: 999px;
+  padding: 1px var(--luft-2);
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-fed);
+  border-radius: var(--radius-rund);
   background: var(--accent);
   color: var(--accent-tekst);
-}
-
-.badgetitel {
-  font-size: 13px;
-  font-weight: 650;
-  line-height: 1.25;
 }
 
 .detaljetop {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  padding: 6px 0 16px;
+  gap: var(--luft-3);
+  padding: var(--luft-2) 0 var(--luft-4);
+}
+
+/* De to steder, en tekst i detaljevisningen skal sidde helt op ad
+   overskriften over den, uden det browserstandard-mellemrum en <p> ellers
+   selv medbringer. */
+.uden-luft {
+  margin: 0;
+}
+
+.fremdriftnote {
+  margin: var(--luft-2) 0 0;
 }
 
 /* ------------------------------------------------------------------ admin */
