@@ -563,6 +563,13 @@ input {
   color: var(--tekst-svag);
 }
 
+/* Overskriften har allerede sin afstand nedad. Et afsnit lige efter skal
+   ikke lægge sin egen browserstandard oveni — det stod som et
+   `marginTop: 0` fem forskellige steder, før reglen fandtes. */
+.arkgruppe > h3 + p {
+  margin-top: 0;
+}
+
 /* ---------------------------------------------------------------- chips */
 
 .chips {
@@ -1035,7 +1042,14 @@ input {
   margin-top: var(--luft-5);
 }
 
-.nulstilbekraeft p {
+/*
+ * Bekræftelseskortet: et spørgsmål og to knapper, brugt hvor en handling
+ * ikke kan fortrydes. Mig-fanens "Nulstil run" og Admins "Nulstil
+ * achievements" er samme mønster, så de deler klassen — den hed
+ * `.nulstilbekraeft`, indtil Admin viste at den ikke kun handler om
+ * nulstilling.
+ */
+.bekraeftkort p {
   margin: 0 0 var(--luft-3);
 }
 
@@ -1904,18 +1918,59 @@ p.dagliste {
 
 /* ------------------------------------------------------------------ admin */
 
+/*
+ * Admin, redesignet efter docs/redesign-oplaeg.md, afsnit 7: "Lav den
+ * læsbar, ikke smuk." Tokenisering — plus én rigtig fejl rettet, se
+ * `.adminform`.
+ */
+
+/*
+ * Admins formulargrupper.
+ *
+ * `.felt` har ingen egen margin, fordi den ligger i beholdere, der selv
+ * styrer afstanden. Det gjorde Admins formularer ikke: tre stablede inputs
+ * i "Ny Kanal" rørte hinanden kant mod kant, og de øvrige formularer
+ * lappede hullerne med `marginTop` sat direkte på hvert felt.
+ *
+ * Én beholder med `gap` i stedet — samme mønster som `.checkindform` i
+ * Kortet. Overskriftens egen bundmargin nulstilles, så afstanden kun kommer
+ * ét sted fra.
+ */
+.adminform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-3);
+}
+
+.adminform > h3 {
+  margin-bottom: 0;
+}
+
 .adminliste {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--luft-2);
+}
+
+/*
+ * En liste der følger direkte efter et søgefelt eller en filterknap skal
+ * have luft til den — står den under en overskrift, har den allerede.
+ *
+ * `:not(.adminform)`, fordi den beholder har `gap` og selv ejer AL afstand
+ * mellem sine børn. Uden undtagelsen ville listen i "Registrér donation"
+ * få både gap og margin, altså dobbelt luft.
+ */
+:not(.adminform) > .felt + .adminliste,
+:not(.adminform) > .chip + .adminliste {
+  margin-top: var(--luft-3);
 }
 
 .adminraekke {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--luft-2);
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--luft-3);
   text-align: left;
   font: inherit;
   color: inherit;
@@ -1924,13 +1979,17 @@ p.dagliste {
   border-radius: var(--radius-lille);
 }
 
-/* Knapperne i en række er kompakte — der er tre af dem på en telefonbredde. */
+/*
+ * Knapperne i en række er kompakte — der er tre af dem på en telefonbredde.
+ * `min-height` fra `.knap` arves med vilje: de er stadig `--tryk` høje, kun
+ * smallere.
+ */
 .adminraekke .knap {
   width: auto;
   flex-shrink: 0;
   margin: 0;
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: var(--luft-2) var(--luft-3);
+  font-size: var(--tekst-s);
 }
 
 .adminraekke .felt {
@@ -1951,20 +2010,20 @@ p.dagliste {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--luft-2);
   flex-wrap: wrap;
 }
 
 .adminnavn .emoji {
-  font-size: 17px;
+  font-size: var(--tekst-m);
 }
 
 /* Kvitteringen på en gennemført admin-handling. Grøn, fordi den står side om
    side med `.fejl` og skal kunne skelnes på et blik. */
 .kvitteringstekst {
-  margin-top: 14px;
-  padding: 10px 12px;
-  font-size: 14px;
+  margin-top: var(--luft-3);
+  padding: var(--luft-3);
+  font-size: var(--tekst-s);
   border-radius: var(--radius-lille);
   background: color-mix(in srgb, var(--medgang) 12%, var(--flade));
   color: var(--medgang);
@@ -1986,6 +2045,104 @@ p.dagliste {
 
 .medaljekort:active {
   transform: scale(0.99);
+}
+
+/* --------------------------------------------------- achievement låst op */
+
+/*
+ * Fejringen efter en oplåsning. Ligger over dugen som et ark, men er
+ * centreret frem for hængt op i bunden: den er en besked, ikke noget man
+ * skal betjene.
+ */
+.oplaasning {
+  position: fixed;
+  left: var(--luft-4);
+  right: var(--luft-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--lag-ark);
+  max-width: calc(var(--bredde) - var(--luft-4) * 2);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-3);
+  padding: var(--luft-6) var(--luft-5);
+  text-align: center;
+  background: var(--flade);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
+  border-radius: var(--radius-stor);
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  animation: op var(--fart-lang) var(--kurve);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oplaasning {
+    animation: none;
+  }
+}
+
+.oplaasningsetiket {
+  color: var(--accent);
+}
+
+.oplaasningstitel {
+  margin: 0;
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+}
+
+/* ------------------------------------------------------------ kanaltemaer */
+
+/*
+ * Festivaltemaer på Kanalen Ballade. Sættes af `Kanaltema.tsx` som
+ * `data-tema` på <html>; se docs/kanaltemaer.md for opskriften på at
+ * tilføje et nyt.
+ *
+ * KUN de tokens der bærer temaets identitet overskrives — flade, tekst og
+ * accent. `--fare`, `--medgang` og medaljefarverne bliver stående: de
+ * betyder noget bestemt (fejl, medgang, guld/sølv/bronze) og skal betyde
+ * det samme uanset tema.
+ *
+ * Attributtet har højere specificitet end `:root` alene og vinder derfor
+ * også over det lyse tema — festivaltemaerne er mørke i sig selv.
+ *
+ * Farverne er de hex-værdier, det gamle repos ChannelThemeContext selv
+ * angav i sine kommentarer, frem for HSL-triplerne omregnet på ny: de var
+ * designerens tal, og en omregning ville kun kunne indføre afvigelser.
+ */
+
+/* Copenhell — dyb sort og blodrød. */
+:root[data-tema="copenhell"] {
+  --bund: #0a0a0a;
+  --flade: #1a1a1a;
+  --flade-hvaelvet: #242424;
+  --kant: #2e2e2e;
+
+  --tekst: #f5f5f5;
+  --tekst-daempet: #9a9a9a;
+  --tekst-svag: #6e6e6e;
+
+  --accent: #c41e1e;
+  --accent-mork: #8f1616;
+  --accent-tekst: #f5f5f5;
+}
+
+/* O Days — næsten sort med cremehvid tekst og logoets turkis. */
+:root[data-tema="odays"] {
+  --bund: #121212;
+  --flade: #1c1c1c;
+  --flade-hvaelvet: #262626;
+  --kant: #383838;
+
+  --tekst: #f4f0ea;
+  --tekst-daempet: #8a8a8a;
+  --tekst-svag: #6a6a6a;
+
+  --accent: #3aa7b3;
+  --accent-mork: #2a7f8a;
+  --accent-tekst: #121212;
 }
 
 /* -------------------------------------------------------- broadcastbjælke */

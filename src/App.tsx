@@ -2,15 +2,18 @@ import { Suspense, lazy, useEffect, useRef, useState, type FormEvent } from "rea
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import type { LogDrinkResultat } from "../convex/drinkLogs";
 import { useAuth } from "./contexts/AuthContext";
 import { useCachetQuery } from "./lib/oejebliksbillede";
 import { udenGenstand } from "./lib/optimistisk";
 import { fejltekst, formatUr } from "./lib/visning";
+import { AchievementOplaasning } from "./ui/AchievementOplaasning";
 import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
 import { Faner } from "./ui/Faner";
 import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
+import { Kanaltema } from "./ui/Kanaltema";
 import { KanalVaelger } from "./ui/KanalVaelger";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
@@ -91,6 +94,14 @@ function Appen() {
     { id: number; tekst: string; logId?: Id<"drinkLogs">; vaegt?: number } | undefined
   >();
   const kvitteringNummer = useRef(0);
+  /**
+   * Achievements der venter på at blive fejret.
+   *
+   * En kø, ikke ét id: den 20. genstand kan låse både Full Bender og Obeerma
+   * op i samme kald, og to fejringer oven i hinanden ville betyde, at man kun
+   * så den ene.
+   */
+  const [oplaasninger, setOplaasninger] = useState<string[]>([]);
 
   /**
    * Tager imod en logning, FØR serveren har svaret.
@@ -106,16 +117,21 @@ function Appen() {
   const modtagLogning = (
     navn: string,
     vaegt: number,
-    svar: Promise<Id<"drinkLogs">>,
+    svar: Promise<LogDrinkResultat>,
   ) => {
     const nummer = ++kvitteringNummer.current;
     setKvittering({ id: nummer, tekst: `${navn} logget`, vaegt });
 
     svar.then(
-      (logId) =>
+      (resultat) => {
         setKvittering((forrige) =>
-          forrige?.id === nummer ? { ...forrige, logId } : forrige,
-        ),
+          forrige?.id === nummer ? { ...forrige, logId: resultat.logId } : forrige,
+        );
+        // Serveren siger selv hvad denne logning låste op — vi gætter ikke.
+        if (resultat.nyeAchievements.length > 0) {
+          setOplaasninger((koe) => [...koe, ...resultat.nyeAchievements]);
+        }
+      },
       (fejl: unknown) =>
         // Uden logId kommer Fortryd ikke frem — og der er heller ikke noget at
         // fortryde. Convex har allerede rullet den optimistiske +1 tilbage.
@@ -274,7 +290,12 @@ function Appen() {
             </>
           )
         ) : (
-          <Mig channelId={channelId} />
+          <Mig
+            channelId={channelId}
+            onOplaasninger={(ider) =>
+              setOplaasninger((koe) => [...koe, ...ider])
+            }
+          />
         )}
       </main>
 
@@ -322,6 +343,17 @@ function Appen() {
           channelId={channelId}
           onLuk={() => setLogAabent(false)}
           onLogget={modtagLogning}
+        />
+      )}
+
+      {/* Sætter `data-tema` på <html>, når Ballade har et festivaltema slået
+          til. Tegner intet selv — se docs/kanaltemaer.md. */}
+      <Kanaltema channelId={channelId} />
+
+      {oplaasninger.length > 0 && (
+        <AchievementOplaasning
+          achievementId={oplaasninger[0]}
+          onLuk={() => setOplaasninger((koe) => koe.slice(1))}
         />
       )}
 
