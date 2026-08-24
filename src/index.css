@@ -563,6 +563,13 @@ input {
   color: var(--tekst-svag);
 }
 
+/* Overskriften har allerede sin afstand nedad. Et afsnit lige efter skal
+   ikke lægge sin egen browserstandard oveni — det stod som et
+   `marginTop: 0` fem forskellige steder, før reglen fandtes. */
+.arkgruppe > h3 + p {
+  margin-top: 0;
+}
+
 /* ---------------------------------------------------------------- chips */
 
 .chips {
@@ -1035,7 +1042,14 @@ input {
   margin-top: var(--luft-5);
 }
 
-.nulstilbekraeft p {
+/*
+ * Bekræftelseskortet: et spørgsmål og to knapper, brugt hvor en handling
+ * ikke kan fortrydes. Mig-fanens "Nulstil run" og Admins "Nulstil
+ * achievements" er samme mønster, så de deler klassen — den hed
+ * `.nulstilbekraeft`, indtil Admin viste at den ikke kun handler om
+ * nulstilling.
+ */
+.bekraeftkort p {
   margin: 0 0 var(--luft-3);
 }
 
@@ -1904,18 +1918,59 @@ p.dagliste {
 
 /* ------------------------------------------------------------------ admin */
 
+/*
+ * Admin, redesignet efter docs/redesign-oplaeg.md, afsnit 7: "Lav den
+ * læsbar, ikke smuk." Tokenisering — plus én rigtig fejl rettet, se
+ * `.adminform`.
+ */
+
+/*
+ * Admins formulargrupper.
+ *
+ * `.felt` har ingen egen margin, fordi den ligger i beholdere, der selv
+ * styrer afstanden. Det gjorde Admins formularer ikke: tre stablede inputs
+ * i "Ny Kanal" rørte hinanden kant mod kant, og de øvrige formularer
+ * lappede hullerne med `marginTop` sat direkte på hvert felt.
+ *
+ * Én beholder med `gap` i stedet — samme mønster som `.checkindform` i
+ * Kortet. Overskriftens egen bundmargin nulstilles, så afstanden kun kommer
+ * ét sted fra.
+ */
+.adminform {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-3);
+}
+
+.adminform > h3 {
+  margin-bottom: 0;
+}
+
 .adminliste {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--luft-2);
+}
+
+/*
+ * En liste der følger direkte efter et søgefelt eller en filterknap skal
+ * have luft til den — står den under en overskrift, har den allerede.
+ *
+ * `:not(.adminform)`, fordi den beholder har `gap` og selv ejer AL afstand
+ * mellem sine børn. Uden undtagelsen ville listen i "Registrér donation"
+ * få både gap og margin, altså dobbelt luft.
+ */
+:not(.adminform) > .felt + .adminliste,
+:not(.adminform) > .chip + .adminliste {
+  margin-top: var(--luft-3);
 }
 
 .adminraekke {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: var(--luft-2);
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--luft-3);
   text-align: left;
   font: inherit;
   color: inherit;
@@ -1924,13 +1979,17 @@ p.dagliste {
   border-radius: var(--radius-lille);
 }
 
-/* Knapperne i en række er kompakte — der er tre af dem på en telefonbredde. */
+/*
+ * Knapperne i en række er kompakte — der er tre af dem på en telefonbredde.
+ * `min-height` fra `.knap` arves med vilje: de er stadig `--tryk` høje, kun
+ * smallere.
+ */
 .adminraekke .knap {
   width: auto;
   flex-shrink: 0;
   margin: 0;
-  padding: 6px 12px;
-  font-size: 13px;
+  padding: var(--luft-2) var(--luft-3);
+  font-size: var(--tekst-s);
 }
 
 .adminraekke .felt {
@@ -1951,20 +2010,20 @@ p.dagliste {
   min-width: 0;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: var(--luft-2);
   flex-wrap: wrap;
 }
 
 .adminnavn .emoji {
-  font-size: 17px;
+  font-size: var(--tekst-m);
 }
 
 /* Kvitteringen på en gennemført admin-handling. Grøn, fordi den står side om
    side med `.fejl` og skal kunne skelnes på et blik. */
 .kvitteringstekst {
-  margin-top: 14px;
-  padding: 10px 12px;
-  font-size: 14px;
+  margin-top: var(--luft-3);
+  padding: var(--luft-3);
+  font-size: var(--tekst-s);
   border-radius: var(--radius-lille);
   background: color-mix(in srgb, var(--medgang) 12%, var(--flade));
   color: var(--medgang);

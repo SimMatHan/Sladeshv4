@@ -106,7 +106,7 @@ export function Mig({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
         )}
 
         {spoerger ? (
-          <div className="kort nulstilbekraeft">
+          <div className="kort bekraeftkort">
             <p>Din stilling starter forfra. Historikken bliver stående.</p>
             <button className="knap fare" disabled={arbejder} onClick={() => void nulstil()}>
               Ja, nulstil mit run

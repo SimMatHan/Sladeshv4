@@ -65,7 +65,7 @@ export function Admin({
     <Ark titel="Admin" onLuk={onLuk}>
       <Faner valg={OMRAADER} aktiv={omraade} onVaelg={setOmraade} />
 
-      <div style={{ marginTop: 16 }}>
+      <div>
         {omraade === "oversigt" ? (
           <Oversigt />
         ) : omraade === "drikkevarer" ? (
@@ -153,7 +153,7 @@ function Drikkevarer() {
 
   return (
     <>
-      <div className="arkgruppe">
+      <div className="arkgruppe adminform">
         <h3>Ny drikkevare</h3>
         <input
           className="felt"
@@ -161,7 +161,7 @@ function Drikkevarer() {
           placeholder="Navn, fx Vermouth Tonic"
           onChange={(event) => setNavn(event.target.value)}
         />
-        <div className="chips" style={{ margin: "9px 0" }}>
+        <div className="chips">
           {DRINK_CATEGORIES.map((k) => (
             <button
               key={k.id}
@@ -346,7 +346,7 @@ function Brugere() {
       ) : brugere.length === 0 ? (
         <p className="hjaelp">Ingen brugere matcher søgningen.</p>
       ) : (
-        <div className="adminliste" style={{ marginTop: 12 }}>
+        <div className="adminliste">
           {brugere.map((bruger) => (
             <button
               key={bruger._id}
@@ -456,8 +456,8 @@ function Brugere() {
             {/* Den eneste handling her, der ikke kan fortrydes. Derfor er den
                 den eneste, der spørger. */}
             {bekraefter === "achievements" ? (
-              <div className="kort">
-                <p style={{ marginTop: 0 }}>
+              <div className="kort bekraeftkort">
+                <p>
                   Alle {valgtBruger.displayName}s achievements slettes — også
                   dem, der er tildelt i hånden. Det kan ikke fortrydes.
                 </p>
@@ -556,7 +556,7 @@ function Kanaler() {
 
   return (
     <>
-      <div className="arkgruppe">
+      <div className="arkgruppe adminform">
         <h3>Ny Kanal</h3>
         <input
           className="felt"
@@ -615,7 +615,7 @@ function Kanaler() {
         {kanaler === undefined ? (
           <p className="midtstillet">Henter …</p>
         ) : (
-          <div className="adminliste" style={{ marginTop: 10 }}>
+          <div className="adminliste">
             {kanaler.map((kanal) => (
               <div key={kanal._id} className="adminraekke">
                 {bekraeftArkiv === kanal._id ? (
@@ -735,9 +735,9 @@ function Beacons({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
 
   return (
     <>
-      <div className="arkgruppe">
+      <div className="arkgruppe adminform">
         <h3>Ny beacon her</h3>
-        <p className="hjaelp" style={{ marginTop: 0 }}>
+        <p className="hjaelp">
           Beaconen placeres på din nuværende position.
         </p>
         <input
@@ -915,7 +915,7 @@ function Broadcast() {
 
   return (
     <>
-      <div className="arkgruppe">
+      <div className="arkgruppe adminform">
         <h3>Ny broadcast</h3>
         <input
           className="felt"
@@ -930,7 +930,7 @@ function Broadcast() {
           onChange={(event) => setTekst(event.target.value)}
         />
 
-        <h3 style={{ marginTop: 14 }}>Hvem skal se den?</h3>
+        <h3>Hvem skal se den?</h3>
         <div className="chips">
           <button
             className="chip"
@@ -953,7 +953,6 @@ function Broadcast() {
 
         <input
           className="felt"
-          style={{ marginTop: 12 }}
           value={timer}
           inputMode="numeric"
           placeholder="Timer den skal stå (tom = til du slukker den)"
@@ -1061,7 +1060,7 @@ function Donorer() {
 
   return (
     <>
-      <div className="arkgruppe">
+      <div className="arkgruppe adminform">
         <h3>Registrér donation</h3>
 
         <input
@@ -1075,7 +1074,7 @@ function Donorer() {
         />
 
         {brugere !== undefined && (
-          <div className="adminliste" style={{ marginTop: 10 }}>
+          <div className="adminliste">
             {brugere.slice(0, 8).map((bruger) => (
               <button
                 key={bruger._id}
@@ -1096,7 +1095,6 @@ function Donorer() {
 
         <input
           className="felt"
-          style={{ marginTop: 12 }}
           value={beloeb}
           inputMode="numeric"
           placeholder="Beløb i kroner"
@@ -1233,7 +1231,7 @@ function Tema() {
     <>
       <div className="arkgruppe">
         <h3>Tema på Ballade</h3>
-        <p className="hjaelp" style={{ marginTop: 0 }}>
+        <p className="hjaelp">
           Gælder alle brugere i Kanalen Ballade. Kun ét tema ad gangen.
         </p>
         <div className="chips">
