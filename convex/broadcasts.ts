@@ -1,5 +1,6 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { requireAdmin, requireCurrentUser } from "./identity";
 
@@ -14,11 +15,12 @@ import { requireAdmin, requireCurrentUser } from "./identity";
  * stemplede resultatet tilbage på dokumentet. Rækken var et jobkort, og når
  * jobbet var kørt, var beskeden væk fra appen.
  *
- * Push-kanalen findes ikke i v4 endnu — fase 7 byggede udvælgelsen af
- * modtagere, ikke leveringen. En broadcast er derfor en TILSTAND her: den er
- * aktiv, indtil den udløber eller slås fra, og appen viser den som en bjælke,
- * brugeren kan lukke. Det virker uden push, og rækkerne ligger klar til at
- * blive fanet ud den dag kanalen findes.
+ * Fase 7 byggede kun udvælgelsen af modtagere; leveringen (convex/push.ts)
+ * kom først senere. En broadcast er derfor fortsat en TILSTAND her, ikke en
+ * kø: den er aktiv, indtil den udløber eller slås fra, og appen viser den som
+ * en bjælke, brugeren kan lukke — uafhængigt af om push lykkes, er sat op,
+ * eller nogen har givet tilladelse til det. Push er en SIDEEFFEKT af at
+ * oprette broadcasten, ikke den eneste vej den kan nå nogen.
  *
  * Derfor er der intet `status`-felt og ingen idempotens-vagt. Der er ingen kø
  * at være i, og ingen funktion der kan komme til at køre den samme række to
@@ -47,8 +49,9 @@ export const opretBroadcast = mutation({
     const title = kraeverTekst(args.title, "Overskriften", TITEL_MAX);
     const body = kraeverTekst(args.body, "Beskeden", BROEDTEKST_MAX);
 
+    let kanal: Doc<"kanaler"> | null = null;
     if (args.channelId !== undefined) {
-      const kanal = await ctx.db.get(args.channelId);
+      kanal = await ctx.db.get(args.channelId);
       if (kanal === null) {
         throw new ConvexError({
           code: "KANAL_NOT_FOUND",
@@ -89,6 +92,21 @@ export const opretBroadcast = mutation({
       broadcastId,
       global: args.channelId === undefined,
     });
+
+    // Push til modtagerne — planlagt frem for afventet: broadcasten er
+    // allerede oprettet og synlig i bjælken, uanset om push lykkes.
+    const modtagere =
+      kanal === null
+        ? (await ctx.db.query("users").collect()).map((bruger) => bruger._id)
+        : kanal.members;
+    if (modtagere.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+        userIds: modtagere,
+        title,
+        body,
+        tag: "broadcast",
+      });
+    }
 
     return broadcastId;
   },

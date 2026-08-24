@@ -21,6 +21,11 @@
  * - **Alt andet fremmed** — Convex og Firebase — røres ikke. Data skal
  *   ALDRIG serveres fra en cache her; Convex har sin egen, som forstår
  *   hvad der er forældet. Se src/lib/oejebliksbillede.ts.
+ *
+ * En fjerde ting, der ikke er trafik: `push`. Worker'en er den eneste,
+ * der kan modtage en push-besked, selv når ingen fane er åben — derfor
+ * bor visningen af den her og ikke i UI-koden. Se convex/push.ts for
+ * afsendelsen og src/lib/push.ts for abonnementet.
  */
 
 /* global self, caches, fetch, Response */
@@ -96,6 +101,48 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(skalSvar(request));
+});
+
+/*
+ * Push. Nyttelasten er JSON sat af convex/push.ts: { title, body, tag }.
+ * `tag` grupperer beskeder fra samme kilde (fx "chat-<kanalId>"), så en
+ * telefon der har været væk længe ikke ender med ét pip per besked — en ny
+ * notifikation med samme tag erstatter den forrige i stedet for at lægge sig
+ * oveni.
+ */
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
+
+  let data;
+  try {
+    data = event.data.json();
+  } catch {
+    // Ikke JSON — vis rå tekst frem for at fejle stille.
+    data = { title: "Sladesh", body: event.data.text() };
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Sladesh", {
+      body: data.body,
+      tag: data.tag,
+      icon: "/ikon-192.png",
+      badge: "/ikon-192.png",
+    }),
+  );
+});
+
+/* Klik på notifikationen: fokusér en åben fane, eller åbn en ny. */
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow("/");
+      return undefined;
+    }),
+  );
 });
 
 async function skalSvar(request) {

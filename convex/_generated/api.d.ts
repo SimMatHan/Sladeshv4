@@ -31,6 +31,8 @@ import type * as messages from "../messages.js";
 import type * as migrering from "../migrering.js";
 import type * as promille from "../promille.js";
 import type * as promilleRules from "../promilleRules.js";
+import type * as push from "../push.js";
+import type * as pushAbonnementer from "../pushAbonnementer.js";
 import type * as scoreboard from "../scoreboard.js";
 import type * as sladesh from "../sladesh.js";
 import type * as sladeshRules from "../sladeshRules.js";
@@ -69,6 +71,8 @@ declare const fullApi: ApiFromModules<{
   migrering: typeof migrering;
   promille: typeof promille;
   promilleRules: typeof promilleRules;
+  push: typeof push;
+  pushAbonnementer: typeof pushAbonnementer;
   scoreboard: typeof scoreboard;
   sladesh: typeof sladesh;
   sladeshRules: typeof sladeshRules;
