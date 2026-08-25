@@ -10,6 +10,7 @@ import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
 import { Fremdriftsring } from "./Fremdriftsring";
 import { Indstillinger } from "./Indstillinger";
+import { Stimestribe } from "./Stimestribe";
 
 /**
  * Mig — den anden af de to faner.
@@ -21,9 +22,12 @@ import { Indstillinger } from "./Indstillinger";
  *
  * Skærmens hero er TRE rækker, hver med en ring og et rigtigt tal: promille,
  * dagens genstande, og den achievement man er tættest på. Se
- * docs/redesign-oplaeg.md, afsnit 1. De to gamle tal — livstidspoint og
- * længste stræk — er ikke droppet, kun nedtonet til én linje under ringene;
- * de er ægte information, men ikke skærmens hovedsag.
+ * docs/redesign-oplaeg.md, afsnit 1.
+ *
+ * Under ringene står stimen som en stribe over ugen (Stimestribe.tsx).
+ * Ringene er I AFTEN; striben er de syv dage, der førte hertil. Livstidspoint
+ * og længste stræk er ægte information, men ikke skærmens hovedsag, og står
+ * som én dæmpet linje til sidst.
  *
  * Trofæhylden og admin åbner som ark herfra — det er dét, `/achievements` og
  * `/admin` blev til, jf. rutekortet i docs/skaermkortlaegning.md. Admin-
@@ -102,8 +106,13 @@ export function Mig({
         />
       </div>
 
-      {/* De to gamle talkort — livstidspoint og længste stræk. Ægte tal, men
-          ikke skærmens hovedsag længere, så de står som én dæmpet linje. */}
+      {/* Stimen som stribe frem for et tal i en fodnote — se Stimestribe.tsx.
+          Den står UNDER ringene: ringene er i aften, striben er ugen. */}
+      <Stimestribe stime={mig.currentDayStreak ?? 0} />
+
+      {/* Livstidspoint og længste stræk. Ægte tal, men ikke skærmens
+          hovedsag, så de står som én dæmpet linje. Den nuværende stime er
+          flyttet op i striben og gentages ikke her. */}
       <p className="hjaelp livstidstal">
         {genstande(mig.totalPoints ?? 0)} point i alt · længste stræk{" "}
         {mig.longestStreak ?? 0} dage

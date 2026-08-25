@@ -187,6 +187,9 @@
   --badge-stor: 128px;
   /* Chattens lille afsenderavatar. */
   --avatar-lille: 26px;
+  /* Stimestribens dagprik. Syv af dem plus luft skal kunne stå på den
+     smalleste telefon uden at bryde om. */
+  --stimeprik: 30px;
   /* Historikkens søjlediagram — én chart, ét sted, men stadig et rigtigt
      designmål, ikke en glemt værdi. */
   --soejlehoejde: 92px;
@@ -1186,6 +1189,101 @@ input {
 
 .livstidstal {
   margin: 0 0 var(--luft-5);
+}
+
+/* --------------------------------------------------------------- stimen */
+
+/*
+ * De seneste syv drikkedage. Se Stimestribe.tsx for hvorfor tallet ikke
+ * kan stå alene.
+ */
+.stime {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-4);
+  margin-bottom: var(--luft-3);
+}
+
+.stimetal {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-1);
+}
+
+/* Tallet står OVEN I flammen, ikke ved siden af — den er en flade, det
+   er et tal, og to ting side om side ville blive to ting at læse. */
+.stimeflamme {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--tryk);
+  height: var(--tryk);
+  color: var(--accent);
+}
+
+.stimeflamme svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0.16;
+}
+
+.stimeantal {
+  position: absolute;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+}
+
+.stimedage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--luft-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stimedag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-2);
+}
+
+.stimeidag {
+  color: var(--tekst);
+}
+
+.stimeprik {
+  display: grid;
+  place-items: center;
+  width: var(--stimeprik);
+  height: var(--stimeprik);
+  border-radius: var(--radius-rund);
+  background: var(--flade-hvaelvet);
+  color: var(--tekst-svag);
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.stimeprik.fyldt {
+  background: var(--accent);
+  color: var(--accent-tekst);
+  font-weight: var(--vaegt-fed);
+}
+
+/* I dag uden logning endnu: en ring der kan fyldes, ikke et hul. */
+.stimeprik.idag {
+  background: var(--bund);
+  border: 2px solid var(--accent);
+  color: var(--tekst);
+  font-weight: var(--vaegt-fed);
 }
 
 .knapraekke {
