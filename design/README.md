@@ -17,13 +17,13 @@ Oura, Strava og Syd for Solen.
 | `--kant` | `#E3DDD0` |
 | `--tekst` | `#1A1C19` |
 | `--tekst-daempet` | `#5F6660` |
-| `--tekst-svag` | `#6E7269` |
+| `--tekst-svag` | `#676B63` |
 | `--accent` | `#1B4D3E` |
 | `--accent-mork` | `#123528` |
 | `--accent-tekst` | `#F4F1E9` |
 | `--accent-blod` (ny) | `#DCE8E0` |
 | `--fare` | `#B33A28` |
-| `--guld` / `--soelv` / `--bronze` | `#B08400` / `#8E949A` / `#A9714B` |
+| `--guld` / `--soelv` / `--bronze` | `#856300` / `#656B71` / `#8F5D3D` |
 
 ## De fem strukturelle greb
 
@@ -37,21 +37,30 @@ Uafhængige af farve, gælder begge temaer — se `System.dc.html`:
 4. **Ét nyt typografisk trin**, `--tekst-hero: 56px`, til skærmens hovedtal.
 5. **Bjælker frem for ringe i lister** — ringen bliver hero-figuren alene.
 
-## Skal afklares, før paletten skrives ind i index.css
+## Afklaret undervejs
 
-- **`--accent` er delt mellem temaerne.** Lysmode overskriver i dag kun
-  `--bund`, `--flade`, `--kant`, `--tekst` og `--accent-tekst`. Skifter
-  accenten, skifter den i *begge* temaer. Skal mørk beholde ravgul, skal
-  `--accent` flyttes ind i begge temablokke.
-- **Grøn betyder allerede "medgang".** `--medgang` og `--accent` bliver samme
-  familie. Enten slås rollerne sammen, eller `--medgang` flyttes.
-- **`--tekst-svag` er for lys på creme.** `#8b909b` falder under 4,5:1 mod
-  `#F2EEE4`. På lys skal den være mindst `#6E7269`, ellers er de 11px
-  versaletiketter ikke læsbare.
-- **Appikonet er koral** ("den hvide shaka på koral",
-  `docs/produktion.md` afsnit 6a). Med grøn accent ligner appen ikke sit eget
-  ikon på hjemmeskærmen — enten tegnes ikonet om, eller uoverensstemmelsen
-  accepteres bevidst.
+- **`--accent` har nu en farve per tema.** Det var det ene token, der skulle
+  flyttes: mørk beholder ravgul, kun lys bliver grøn. Alle accenttonede flader
+  er `color-mix(in srgb, var(--accent) N%, var(--flade))` og fulgte med af sig
+  selv — ingen komponent skulle røres.
+- **`--medgang` og accenten er samme familie i lys, og det er i orden.** De
+  står aldrig ved siden af hinanden; kravet er, at `--medgang` kan skelnes fra
+  `--fare`, fordi `.kvitteringstekst` og `.fejl` deler plads.
+- **Kontrasten er målt, ikke skønnet.** Første udkast til paletten havde fire
+  farver under WCAG AA mod cremen — heriblandt `--tekst-svag`, som bærer de
+  11px versaletiketter, på 2,7:1. Tallene i tabellen ovenfor er de rettede,
+  og alle 16 målte par ligger over 4,5:1. Medaljerne er patineret metal frem
+  for neon af samme grund: `.plads` er 13px fed, altså almindelig tekst efter
+  WCAG.
+
+## Stadig åbent
+
+- **Appikonet er koral** ("den hvide shaka på koral", `docs/produktion.md`
+  afsnit 6a). Med grøn accent i lysmode ligner appen ikke sit eget ikon på
+  hjemmeskærmen — enten tegnes ikonet om, eller uoverensstemmelsen accepteres
+  bevidst.
+- **De fem strukturelle greb er ikke bygget endnu.** Kun paletten er kørt ud
+  i koden.
 
 ## Bevidst udeladt
 
