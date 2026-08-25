@@ -25,17 +25,18 @@ Oura, Strava og Syd for Solen.
 | `--fare` | `#B33A28` |
 | `--guld` / `--soelv` / `--bronze` | `#856300` / `#656B71` / `#8F5D3D` |
 
-## De fem strukturelle greb
+## De strukturelle greb
 
-Uafhængige af farve, gælder begge temaer — se `System.dc.html`:
+Uafhængige af farve, gælder begge temaer — se `System.dc.html`. Fire er
+bygget; det femte blev droppet, se nedenfor.
 
-1. **Dybere bund** i mørk (`#0e0f13` → `#08090c`).
-2. **Flydende bundnavigation** med `( + )` som midterknap, streg-SVG i stedet
-   for emoji.
-3. **Stimen som ugestribe** på appens egne data (`currentDayStreak` plus
+1. ✅ **Dybere bund** i mørk (`#0e0f13` → `#08090c`).
+2. ✅ **Flydende bundnavigation** med `( + )` som midterknap, streg-SVG i
+   stedet for emoji. **To faner**, ikke fem — se afsnittet om navigationen.
+3. ✅ **Stimen som ugestribe** på appens egne data (`currentDayStreak` plus
    drikkedagene fra `historik`).
-4. **Ét nyt typografisk trin**, `--tekst-hero: 56px`, til skærmens hovedtal.
-5. **Bjælker frem for ringe i lister** — ringen bliver hero-figuren alene.
+4. ❌ **Ét nyt typografisk trin** (`--tekst-hero: 56px`) — **droppet**.
+5. ✅ **Bjælke frem for ring**, hvor det er fremdrift mod en tærskel.
 
 ## Afklaret undervejs
 
@@ -52,6 +53,18 @@ Uafhængige af farve, gælder begge temaer — se `System.dc.html`:
   og alle 16 målte par ligger over 4,5:1. Medaljerne er patineret metal frem
   for neon af samme grund: `.plads` er 13px fed, altså almindelig tekst efter
   WCAG.
+- **Greb 4 er droppet, og ringene bliver.** `--tekst-hero: 56px` forudsatte ét
+  stort, fritstående tal på Mig. Det findes ikke: tallene står inde i ringene,
+  hvor 56px ikke kan være — "0,82" ville være bredere end ringens 84px indre.
+  At få tallet ud betød at fjerne den figur, `docs/redesign-oplaeg.md` regel 6
+  kalder appens bærende, og et sjette trin ville samtidig bryde regel 2, som
+  står skrevet i `index.css` selv.
+
+  Valget faldt på at beholde ringene. **Begge regler står dermed uændret** —
+  typografien har fortsat fem trin, og ringen er fortsat hero-figuren. Idéen
+  bag greb 4, at ét sted på skærmen skal veje tungest, er i stedet leveret af
+  greb 3 og 5: striben og bjælken tog to figurer ud af ringkortet, så de to
+  ringe, der er tilbage, står alene.
 
 ## Stadig åbent
 
@@ -59,14 +72,11 @@ Uafhængige af farve, gælder begge temaer — se `System.dc.html`:
   afsnit 6a). Med grøn accent i lysmode ligner appen ikke sit eget ikon på
   hjemmeskærmen — enten tegnes ikonet om, eller uoverensstemmelsen accepteres
   bevidst.
-- **Greb 4 — det sjette typografiske trin — er IKKE bygget.** `--tekst-hero:
-  56px` forudsætter ét stort, fritstående tal på Mig. Der er ikke noget: tallene
-  står inde i ringene, hvor 56px ikke kan være. At tegne skærmen om, så tallet
-  kommer ud af ringen, ville fjerne den figur, `docs/redesign-oplaeg.md` regel 6
-  kalder appens bærende, og et sjette trin bryder samtidig regel 2 — som står
-  skrevet i `index.css` selv. Det er en beslutning, ikke en detalje.
-
-  De øvrige fire er kørt ud i koden.
+- **Navigationen har to faner, ikke fem.** Lærredet tegnede først Kanal,
+  Stilling, `( + )`, Chat, Mig. Det er forkert: Stilling, Chat, Kort og
+  Historik er segmenter INDE i Kanal-fanen, og
+  `docs/redesign-kontrakt.md` afsnit 4 siger, at det skal blive ved med at
+  være sådan. Tegningen er rettet; pillens form er det nye, ikke strukturen.
 
 ## Bevidst udeladt
 

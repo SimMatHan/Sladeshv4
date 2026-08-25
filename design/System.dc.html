@@ -117,26 +117,14 @@
 
   <!-- 4. TAL -->
   <div style="display: flex; flex-direction: column; gap: 12px;">
-    <div class="sec">4 · Ét tal, der er stort nok</div>
-    <div class="note">Skalaen stopper ved 40px i dag, og hovedtallet står inde i en ring blandt to andre. Oura og Strava giver hovedtallet luft og en hvisket etiket. Ét nyt trin: <span style="color:#f2f3f5">--tekst-hero: 56px</span>.</div>
-    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 4px;">
-      <div style="background: #14161b; border: 1px solid #23262f; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 8px;">
-        <div class="lab">I aften</div>
-        <div style="display: flex; align-items: baseline; gap: 8px;">
-          <div class="num" style="font-size: 56px; font-weight: 700; line-height: 1;">7</div>
-          <div style="font-size: 17px; color: #9ba1ad;">genstande</div>
-        </div>
-      </div>
-      <div style="background: #14161b; border: 1px solid #23262f; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 12px; justify-content: center;">
-        <div style="display: flex; align-items: baseline; justify-content: space-between;">
-          <div style="font-size: 17px; font-weight: 550;">Obeerma</div>
-          <div class="num" style="font-size: 13px; color: #9ba1ad;">7 / 10</div>
-        </div>
-        <div style="height: 6px; border-radius: 999px; background: #23262f; position: relative; overflow: hidden;">
-          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 70%; border-radius: 999px; background: #34d399;"></div>
-        </div>
-        <div class="note" style="font-size: 11px;">Bjælken læses hurtigere end ringen i en liste — ringen bliver hero-figuren alene.</div>
-      </div>
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <div class="sec">4 · Ét tal, der er stort nok</div>
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #9ba1ad; background: #23262f; padding: 4px 10px; border-radius: 999px;">Droppet</div>
+    </div>
+    <div class="note">Forslaget var et sjette typografisk trin, <span style="color:#f2f3f5">--tekst-hero: 56px</span>, til ét stort fritstående tal. Det forudsatte en skærm, appen ikke har: tallene står INDE i ringene, hvor 56px ikke kan være — &#34;0,82&#34; ville være bredere end ringens 84px indre.</div>
+    <div class="note">At få tallet ud betød at fjerne ringen, som oplæggets regel 6 kalder appens bærende figur, og et sjette trin ville bryde regel 2 — fem trin, skrevet i index.css selv. Valget faldt på at beholde ringene, så <span style="color:#f2f3f5">begge regler står uændret</span>.</div>
+    <div style="background: #14161b; border: 1px solid #23262f; border-radius: 22px; padding: 20px; margin-top: 4px;">
+      <div class="note">Idéen bag greb 4 — at ét sted på skærmen skal veje tungest — er i stedet leveret af greb 3 og 5. Striben og bjælken tog to figurer ud af ringkortet, så de to ringe, der er tilbage, står alene med luft omkring sig. Tallet blev ikke større; der kom færre ting ved siden af det.</div>
     </div>
   </div>
 

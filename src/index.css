@@ -49,6 +49,16 @@
   --bund: #08090c;
   --flade: #14161b;
   --flade-hvaelvet: #1f222a;
+  /*
+   * SÆNKET flade — sporet bag en kontrol, der glider: segmentvælgeren.
+   *
+   * Den findes, fordi "hævet = lysere" kun holder i mørke. I lys er
+   * `--flade` og `--flade-hvaelvet` #fcfaf5 og #ffffff — tre trin ud af
+   * 255 — så det valgte segment var i praksis usynligt på creme. Et spor
+   * skal være MØRKERE end siden i lys og lysere end den i mørke, og det
+   * er to forskellige retninger. Derfor et token og ikke en genbrug.
+   */
+  --flade-saenket: #14161b;
   --kant: #23262f;
 
   --tekst: #f2f3f5;
@@ -121,6 +131,10 @@
   /* Ikonmål. Ikke typografi — emoji og glyffer i navigationen. */
   --ikon: 20px;
   --ikon-stor: 30px;
+  /* Det store emoji øverst på en helskærm: onboarding og Sladesh-
+     overtagelsen. De havde 64px og 52px for SAMME klasse `.stortikon` —
+     to størrelser af én ting, uden at nogen af dem var begrundet. */
+  --ikon-hero: 64px;
 
   /*
    * Tekst oven på en farvet flade — avatarens forbogstav på sin gradient,
@@ -165,13 +179,27 @@
    */
   --navplads: calc(var(--navhoejde) + var(--luft-4));
 
+  /* ----------------------------------------------------------- højde */
+
   /*
-   * Pillens skygge. Den ENESTE skygge med et token, fordi den er det
-   * eneste sted, hvor en skygge skal bære en flade fri af indholdet bag
-   * den — og fordi den skal have vidt forskellig styrke i de to temaer:
-   * på nærsort må den være tung, på creme ville det samme se snavset ud.
+   * TRE trin, og de betyder noget bestemt hver især:
+   *
+   *   lav     en hævet kontrol INDE i en flade — det valgte segment
+   *   svaev   en flade der ligger OVER indholdet — navigationen, kvitteringen
+   *   hoej    en flade over DUGEN — arkene, fejringen
+   *
+   * De skal være tokens, fordi skyggens farve er en temabeslutning, ikke
+   * geometri: på nærsort må den være tung, på creme ville den samme sorte
+   * skygge se snavset ud. Appen havde før seks hårdkodede `rgb(0 0 0 / …)`
+   * i forskellige styrker, og de så alle forkerte ud i lysmode.
+   *
+   * Undtagelsen er `.kortnaal`, som ligger på KORTFLISER og ikke på en af
+   * appens flader. Fliserne er lyse i begge temaer, så nålens skygge skal
+   * være sort begge steder — den bliver derfor stående som en literal.
    */
-  --skygge-nav: 0 12px 32px rgb(0 0 0 / 0.5);
+  --skygge-lav: 0 1px 2px rgb(0 0 0 / 0.2);
+  --skygge-svaev: 0 12px 32px rgb(0 0 0 / 0.5);
+  --skygge-hoej: 0 20px 60px rgb(0 0 0 / 0.5);
 
   /* Komponentmål. Ikke afstand — det er tingenes egen størrelse. */
   --avatar: 42px;
@@ -238,6 +266,8 @@
     --bund: #f2eee4;
     --flade: #fcfaf5;
     --flade-hvaelvet: #ffffff;
+    /* MØRKERE end siden her — modsat i mørke. Se `--flade-saenket`. */
+    --flade-saenket: #e9e4d8;
     --kant: #e3ddd0;
 
     --tekst: #1a1c19;
@@ -277,8 +307,14 @@
      * cremen. Sølv er værst — det er en lys grå i sagens natur og skal helt
      * ned i tin, før tallet kan læses. Alle tre ligger nu over 4,5:1.
      */
-    /* På creme ville den mørke skygge se snavset ud. Se `--skygge-nav`. */
-    --skygge-nav: 0 8px 24px rgb(26 28 25 / 0.1);
+    /*
+     * Skyggerne er BLØDERE og bygget på tekstfarven frem for ren sort. En
+     * sort skygge på creme bliver grå og ser snavset ud; den skal have
+     * samme varme som fladen, den falder på.
+     */
+    --skygge-lav: 0 1px 2px rgb(26 28 25 / 0.06);
+    --skygge-svaev: 0 8px 24px rgb(26 28 25 / 0.1);
+    --skygge-hoej: 0 16px 48px rgb(26 28 25 / 0.16);
 
     --guld: #856300;
     --soelv: #656b71;
@@ -440,30 +476,63 @@ input {
   padding: var(--luft-3) var(--luft-4);
   background: color-mix(in srgb, var(--bund) 88%, transparent);
   backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--kant);
+  /*
+   * INGEN streg under. Sløringen skiller allerede bjælken fra det, der
+   * ruller under den, og en 1px kant oven i det blev til en søm — mest
+   * synlig på creme, hvor kanten i forvejen er svag og linjen derfor var
+   * det eneste, øjet fangede.
+   */
 }
 
+/*
+ * Kanalens navn er skærmens TITEL, ikke en kontrol i en værktøjslinje.
+ *
+ * Den var en pille med flade, kant og 17px tekst — en knap blandt knapper.
+ * Men den er det eneste i toppen, og den siger, hvor man er. Nu bærer den
+ * som en overskrift, og ▾ er den lille del, der røber, at man kan skifte.
+ */
+/*
+ * Titlen og dens undertekst. Underteksten hentes af skærmen selv — se
+ * Sideundertekst.tsx — og kan mangle, mens den henter, eller når der ikke er
+ * noget at sige. `gap` frem for margin på underteksten: så flytter titlen sig
+ * ikke, når linjen kommer og går.
+ */
+.sidetitel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+  min-width: 0;
+}
+
+/*
+ * Underteksten er IKKE en trykflade — man trykker på NAVNET for at skifte
+ * Kanal. Knappen bærer derfor selv de 44px, uanset om linjen er der: ved
+ * 28px er dens egen linjeboks kun ~41px, og regel 5 gælder også for en
+ * overskrift, der er en knap.
+ */
 .kanalknap {
   display: flex;
   align-items: center;
   gap: var(--luft-2);
   min-height: var(--tryk);
-  padding: var(--luft-2) var(--luft-3);
-  border-radius: var(--radius-rund);
-  background: var(--flade);
-  border: 1px solid var(--kant);
-  font-size: var(--tekst-m);
-  font-weight: var(--vaegt-medium);
-  letter-spacing: var(--spor-titel);
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+}
+
+.undertekst {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kanalknap:active {
-  background: var(--flade-hvaelvet);
+  opacity: 0.7;
 }
 
 .kanalknap .pil {
   color: var(--tekst-svag);
-  font-size: var(--tekst-xs);
+  font-size: var(--tekst-s);
 }
 
 .indhold {
@@ -474,13 +543,18 @@ input {
 
 /* --------------------------------------------------------- segmentvælger */
 
+/*
+ * Sporet er SÆNKET, og kun det valgte segment er hævet. Før var sporet
+ * `--flade` og knappen `--flade-hvaelvet`, hvilket virker i mørke, men i
+ * lys er de to #fcfaf5 og #ffffff — det valgte segment kunne ikke ses.
+ * Kanten er væk med det samme: den sænkede flade skiller allerede.
+ */
 .segmenter {
   display: flex;
   gap: var(--luft-1);
   padding: var(--luft-1);
   margin: var(--luft-4) 0 var(--luft-5);
-  background: var(--flade);
-  border: 1px solid var(--kant);
+  background: var(--flade-saenket);
   border-radius: var(--radius-rund);
 }
 
@@ -500,7 +574,7 @@ input {
 .segment[aria-selected="true"] {
   background: var(--flade-hvaelvet);
   color: var(--tekst);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  box-shadow: var(--skygge-lav);
 }
 
 /* ------------------------------------------------------------ navigation */
@@ -539,7 +613,7 @@ input {
   background: color-mix(in srgb, var(--flade) 92%, transparent);
   backdrop-filter: blur(14px);
   border: 1px solid var(--kant);
-  box-shadow: var(--skygge-nav);
+  box-shadow: var(--skygge-svaev);
 }
 
 .navknap {
@@ -654,7 +728,7 @@ input {
   right: 0;
   bottom: 0;
   z-index: var(--lag-ark);
-  max-width: 560px;
+  max-width: var(--bredde);
   margin: 0 auto;
   max-height: 88dvh;
   display: flex;
@@ -663,6 +737,13 @@ input {
   border-top-left-radius: var(--radius-stor);
   border-top-right-radius: var(--radius-stor);
   border-top: 1px solid var(--kant);
+  /*
+   * Arket er appens MEST hævede flade — det ligger over dugen — men havde
+   * som det eneste ingen skygge og kun en kant foroven. På creme, hvor
+   * kanten er svag, gjorde det at arket så ud som om det sad fast i
+   * skærmen frem for at ligge oven på den.
+   */
+  box-shadow: var(--skygge-hoej);
   padding-bottom: var(--bund-sikker);
   animation: op var(--fart-lang) var(--kurve);
 }
@@ -839,7 +920,7 @@ input {
   background: var(--flade-hvaelvet);
   border: 1px solid var(--kant);
   border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  box-shadow: var(--skygge-svaev);
   animation: op var(--fart) var(--kurve);
 }
 
@@ -902,6 +983,9 @@ input {
   font-variant-numeric: tabular-nums;
   border-radius: var(--radius-rund);
   background: var(--flade-hvaelvet);
+  /* Kant, som .chip og .knap har. Uden den forsvinder mærkatet i lys:
+     `--flade-hvaelvet` er #ffffff og kortet under den #fcfaf5. */
+  border: 1px solid var(--kant);
   color: var(--tekst-daempet);
 }
 
@@ -1062,33 +1146,68 @@ input {
 
 /* ------------------------------------------------------------------- mig */
 
+/*
+ * DISSE REGLER LÅ UDEN FOR SYSTEMET.
+ *
+ * `.profiltop`, `.talgitter` og `.medaljer` er ældre end designsystemet og
+ * blev aldrig flyttet med: 22px, 13.5px, 23px, 11.5px, 15px, 9px, 7px og
+ * `-0.02em` findes ingen af dem i skalaen. Det er ikke en skønhedsfejl —
+ * det er derfor Mig, Admin og personkortet føltes som en anden app end
+ * resten: de brugte bogstavelig talt en anden typografisk skala.
+ *
+ * Skriftstørrelserne er rundet til det NÆRMESTE af de fem trin, ikke til
+ * det, der lignede mest. 23px og 22px blev begge til 28 eller 17 — der er
+ * ingen 22'er, og det er hele pointen med regel 2.
+ */
 .profiltop {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 20px 0 6px;
+  gap: var(--luft-4);
+  padding: var(--luft-5) 0 var(--luft-2);
+}
+
+.profiltop .navnblok {
+  flex: 1;
+  min-width: 0;
 }
 
 .profiltop .navn {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  letter-spacing: var(--spor-titel);
 }
 
-.profiltop .email {
-  font-size: 13.5px;
-  color: var(--tekst-svag);
+/* Tandhjulet. Indstillinger var en knap i bunken forneden; nu er den dér,
+   hvor man kigger efter sig selv. */
+.profilhandling {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--tryk);
+  height: var(--tryk);
+  border-radius: var(--radius-rund);
+  color: var(--tekst-daempet);
+}
+
+.profilhandling:active {
+  background: var(--flade);
+}
+
+.profilhandling svg {
+  width: var(--ikon);
+  height: var(--ikon);
+  display: block;
 }
 
 .talgitter {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 9px;
-  margin: 16px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--luft-2);
+  margin: var(--luft-4) 0;
 }
 
 .talkort {
-  padding: 14px 10px;
+  padding: var(--luft-3) var(--luft-2);
   text-align: center;
   background: var(--flade);
   border: 1px solid var(--kant);
@@ -1096,22 +1215,23 @@ input {
 }
 
 .talkort .vaerdi {
-  font-size: 23px;
-  font-weight: 700;
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--spor-tal);
 }
 
+/* Genbruger `.etiket`s egen regel frem for at gentage den med andre tal. */
 .talkort .etiket {
-  font-size: 11.5px;
-  color: var(--tekst-svag);
+  display: block;
+  margin-top: var(--luft-1);
 }
 
 .medaljer {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  font-size: 22px;
+  gap: var(--luft-1);
+  font-size: var(--tekst-m);
 }
 
 .medaljer .laast {
@@ -1185,10 +1305,6 @@ input {
 /* Hverken henter eller kender et tal endnu — "?" eller "–", ikke et 0. */
 .ringtal--tomt {
   color: var(--tekst-svag);
-}
-
-.livstidstal {
-  margin: 0 0 var(--luft-5);
 }
 
 /* --------------------------------------------------------------- stimen */
@@ -1266,6 +1382,8 @@ input {
   height: var(--stimeprik);
   border-radius: var(--radius-rund);
   background: var(--flade-hvaelvet);
+  /* Samme grund som .maerkat: uden kant er en tom dag usynlig i lys. */
+  border: 1px solid var(--kant);
   color: var(--tekst-svag);
   font-size: var(--tekst-s);
   font-weight: var(--vaegt-medium);
@@ -1274,6 +1392,7 @@ input {
 
 .stimeprik.fyldt {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--accent-tekst);
   font-weight: var(--vaegt-fed);
 }
@@ -1306,30 +1425,30 @@ input {
 .login {
   max-width: 380px;
   margin: 0 auto;
-  padding: 15dvh 22px 40px;
+  padding: 15dvh var(--luft-5) var(--luft-6);
 }
 
 .login h1 {
-  margin: 0 0 6px;
-  font-size: 32px;
-  letter-spacing: -0.03em;
+  margin: 0 0 var(--luft-2);
+  font-size: var(--tekst-xl);
+  letter-spacing: var(--spor-tal);
 }
 
 .login p.under {
-  margin: 0 0 26px;
+  margin: 0 0 var(--luft-6);
   color: var(--tekst-daempet);
 }
 
 .login .felt {
-  margin-bottom: 10px;
+  margin-bottom: var(--luft-3);
 }
 
 .login .skift {
   display: block;
   width: 100%;
-  margin-top: 16px;
-  padding: 4px;
-  font-size: 14px;
+  margin-top: var(--luft-4);
+  padding: var(--luft-1);
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
   text-align: center;
 }
@@ -1346,9 +1465,9 @@ input {
   z-index: 50;
   display: flex;
   flex-direction: column;
-  max-width: 560px;
+  max-width: var(--bredde);
   margin: 0 auto;
-  padding: var(--top-sikker) 20px calc(var(--bund-sikker) + 20px);
+  padding: var(--top-sikker) var(--luft-5) calc(var(--bund-sikker) + var(--luft-5));
   background:
     radial-gradient(
       120% 70% at 50% 0%,
@@ -1362,7 +1481,7 @@ input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: var(--luft-3) 0;
 }
 
 .minimer {
@@ -1371,14 +1490,16 @@ input {
   border-radius: 50%;
   background: var(--flade);
   border: 1px solid var(--kant);
-  font-size: 16px;
+  /* Glyf, ikke tekst — derfor ikonskalaen. */
+  font-size: var(--ikon);
 }
 
 .ur {
-  font-size: 34px;
+  /* Overtagelsens hero: ét stort tal på skærmen, jf. regel 1 i oplægget. */
+  font-size: var(--tekst-xxl);
   font-weight: 750;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--spor-tal);
 }
 
 .ur.udloebet {
@@ -1392,18 +1513,18 @@ input {
   align-items: center;
   justify-content: center;
   text-align: center;
-  gap: 6px;
+  gap: var(--luft-2);
 }
 
 .overtagelsesindhold h1 {
   margin: 0;
-  font-size: 27px;
-  letter-spacing: -0.03em;
+  font-size: var(--tekst-xl);
+  letter-spacing: var(--spor-tal);
   line-height: 1.2;
 }
 
 .overtagelsesindhold .under {
-  margin: 2px 0 18px;
+  margin: var(--luft-1) 0 var(--luft-5);
   color: var(--tekst-daempet);
 }
 
@@ -1412,19 +1533,20 @@ input {
 }
 
 .stortikon {
-  font-size: 64px;
+  font-size: var(--ikon-hero);
   line-height: 1;
-  margin-bottom: 10px;
+  margin-bottom: var(--luft-3);
 }
 
 .overtagelsesbund {
-  padding-top: 12px;
+  padding-top: var(--luft-3);
 }
 
 .overtagelsesbund .hjaelp {
-  margin: 0 0 9px;
+  margin: 0 0 var(--luft-2);
   text-align: center;
-  font-size: 14px;
+  /* Ingen font-size: `.hjaelp` er allerede --tekst-s. Overskrivningen
+     her kæmpede mod den delte klasse for 1px. */
   color: var(--tekst-daempet);
 }
 
@@ -1438,10 +1560,10 @@ input {
   z-index: 19;
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--luft-3);
   width: 100%;
-  margin: 12px 0 4px;
-  padding: 12px 15px;
+  margin: var(--luft-3) 0 var(--luft-1);
+  padding: var(--luft-3) var(--luft-4);
   background: linear-gradient(160deg, var(--accent), var(--accent-mork));
   color: var(--accent-tekst);
   border-radius: var(--radius);
@@ -1450,25 +1572,25 @@ input {
 }
 
 .sladeshbjaelke .ur {
-  font-size: 19px;
+  font-size: var(--tekst-m);
   margin-left: auto;
 }
 
 .venterbjaelke {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 12px 0 4px;
-  padding: 11px 14px;
+  gap: var(--luft-3);
+  margin: var(--luft-3) 0 var(--luft-1);
+  padding: var(--luft-3) var(--luft-4);
   background: var(--flade);
   border: 1px solid var(--kant);
   border-radius: var(--radius);
-  font-size: 14.5px;
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
 }
 
 .venterbjaelke .ur {
-  font-size: 16px;
+  font-size: var(--tekst-m);
   margin-left: auto;
   color: var(--tekst);
 }
@@ -1484,11 +1606,11 @@ input {
 .forbindelse {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 12px 0 4px;
-  padding: 10px 14px;
+  gap: var(--luft-3);
+  margin: var(--luft-3) 0 var(--luft-1);
+  padding: var(--luft-3) var(--luft-4);
   border-radius: var(--radius);
-  font-size: 13.5px;
+  font-size: var(--tekst-s);
   line-height: 1.35;
 }
 
@@ -1500,7 +1622,7 @@ input {
 
 .forbindelse.gemmer {
   background: transparent;
-  padding: 6px 2px;
+  padding: var(--luft-2) var(--luft-1);
   color: var(--tekst-svag);
 }
 
@@ -1512,7 +1634,7 @@ input {
 
 .forbindelse.ny button {
   margin-left: auto;
-  padding: 6px 12px;
+  padding: var(--luft-2) var(--luft-3);
   background: var(--accent);
   color: var(--accent-tekst);
   border: none;
@@ -1664,7 +1786,7 @@ input {
   display: inline-block;
   width: 7px;
   height: 7px;
-  margin-left: 5px;
+  margin-left: var(--luft-1);
   border-radius: 50%;
   background: var(--accent);
   vertical-align: 1px;
@@ -1680,7 +1802,12 @@ input {
   align-items: flex-end;
   gap: var(--luft-1);
   height: var(--soejlehoejde);
-  padding: 0 2px; /* Geometri: matcher søjleteksten under, se dér. */
+  /*
+   * INGEN sidepolstring. De 2px matchede `.soejletekst`, som havde samme
+   * indrykning — men den er erstattet af `.soejledage`, et gitter med
+   * `gap`. Beholdt man de 2px, ville hver søjle stå forskudt fra sit eget
+   * ugedagsbogstav.
+   */
 }
 
 .soejleplads {
@@ -1705,14 +1832,76 @@ input {
   background: var(--accent);
 }
 
-.soejletekst {
+/*
+ * Søjlerne bor i et KORT, ikke løst på siden.
+ *
+ * De stod før bart på bunden med to små datoer under. Det gjorde dem
+ * svære at se som én figur — især på creme, hvor en bleg søjle på en
+ * bleg bund næsten forsvinder — og det var det eneste sted i appen, hvor
+ * indhold ikke lå på en flade.
+ */
+.soejlekort {
+  padding: var(--luft-5);
+  margin-bottom: var(--luft-4);
+}
+
+/*
+ * Ugedagen under hver søjle. Erstatter de to datoer i enderne: man læser
+ * "torsdag" hurtigere end "12. aug.", og det er tættere på, hvordan man
+ * husker sidste uge.
+ */
+.soejledage {
+  display: grid;
+  gap: var(--luft-1);
+  margin-top: var(--luft-2);
+  text-align: center;
+}
+
+.soejledage .idag {
+  color: var(--tekst);
+}
+
+/* Opsummeringen under søjlerne. Tre tal, der ikke fandtes før: man kunne
+   se formen, men ikke hvad den lagde op til. */
+.soejlesum {
   display: flex;
   justify-content: space-between;
-  /* 2px sideværts, ikke et luft-trin: teksten skal flugte lodret med
-     søjlerne ovenover, som har samme sidepolstring. */
-  margin: var(--luft-2) 2px var(--luft-5);
-  font-size: var(--tekst-xs);
-  color: var(--tekst-svag);
+  gap: var(--luft-4);
+  margin-top: var(--luft-5);
+  padding-top: var(--luft-5);
+  border-top: 1px solid var(--kant);
+}
+
+.soejlesum > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+}
+
+.soejlesum > div:last-child {
+  align-items: flex-end;
+}
+
+/* Datobrikken i venstre side af hver dagrække — samme rolle som avataren
+   i stillingen: noget fast at scanne ned ad. */
+.datobrik {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: var(--radius-lille);
+  background: var(--flade-saenket);
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  color: var(--tekst-daempet);
+}
+
+.dagraekke[aria-expanded="true"] .datobrik,
+.datobrik.idag {
+  background: var(--accent);
+  color: var(--accent-tekst);
 }
 
 .dage {
@@ -1759,6 +1948,9 @@ input {
 
 .dagraekke .talblok {
   flex: 0 0 auto;
+  /* Højrestillet som stillingens talblok — etiketten under tallet skal
+     flugte med det, ikke hænge til venstre. */
+  text-align: right;
 }
 
 .dagliste {
@@ -1922,7 +2114,7 @@ p.dagliste {
 .emojigitter {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
+  gap: var(--luft-2);
 }
 
 .emojiknap {
@@ -1932,7 +2124,8 @@ p.dagliste {
   border-radius: var(--radius-lille);
   background: var(--flade-hvaelvet);
   border: 1px solid var(--kant);
-  font-size: 22px;
+  /* Emoji som ikon, ikke som tekst. */
+  font-size: var(--ikon);
   line-height: 1;
   transition: transform 90ms ease;
 }
@@ -1949,7 +2142,7 @@ p.dagliste {
 .farver {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--luft-2);
 }
 
 .farve {
@@ -1978,7 +2171,7 @@ p.dagliste {
 
 .onboarding {
   min-height: 100dvh;
-  padding: var(--top-sikker) 0 calc(var(--bund-sikker) + 30px);
+  padding: var(--top-sikker) 0 calc(var(--bund-sikker) + var(--luft-6));
   background:
     radial-gradient(
       120% 60% at 50% 0%,
@@ -1990,24 +2183,26 @@ p.dagliste {
 .onboardingindhold {
   max-width: 440px;
   margin: 0 auto;
-  padding: 8dvh 20px 0;
+  padding: 8dvh var(--luft-5) 0;
 }
 
 .onboardingindhold h1 {
-  margin: 0 0 6px;
-  font-size: 28px;
-  letter-spacing: -0.03em;
+  margin: 0 0 var(--luft-2);
+  font-size: var(--tekst-xl);
+  letter-spacing: var(--spor-tal);
   line-height: 1.2;
 }
 
 .onboardingindhold > .under {
-  margin: 0 0 26px;
+  margin: 0 0 var(--luft-6);
   color: var(--tekst-daempet);
 }
 
+/* Ingen egen størrelse: `.stortikon` er ÉN ting. Den havde 52px her og
+   64px i overtagelsen — samme klasse, to størrelser, uden at nogen af dem
+   var begrundet. */
 .onboardingindhold .stortikon {
-  font-size: 52px;
-  margin-bottom: 14px;
+  margin-bottom: var(--luft-4);
 }
 
 /* ---------------------------------------------------------- trofæhylden */
@@ -2331,7 +2526,7 @@ p.dagliste {
   background: var(--flade);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
   border-radius: var(--radius-stor);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  box-shadow: var(--skygge-hoej);
   animation: op var(--fart-lang) var(--kurve);
 }
 
@@ -2414,9 +2609,9 @@ p.dagliste {
 .broadcast {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  margin-bottom: 10px;
-  padding: 11px 12px;
+  gap: var(--luft-3);
+  margin-bottom: var(--luft-3);
+  padding: var(--luft-3) var(--luft-4);
   border-radius: var(--radius-lille);
   background: color-mix(in srgb, var(--accent) 14%, var(--flade));
   border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--kant));
@@ -2429,11 +2624,11 @@ p.dagliste {
 
 .broadcasttitel {
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--tekst-s);
 }
 
 .broadcasttekst {
-  font-size: 14px;
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
 }
 
@@ -2442,7 +2637,8 @@ p.dagliste {
   width: 28px;
   height: 28px;
   padding: 0;
-  font-size: 20px;
+  /* Krydset er en glyf, ikke tekst. */
+  font-size: var(--ikon);
   line-height: 1;
   color: var(--tekst-daempet);
   background: none;

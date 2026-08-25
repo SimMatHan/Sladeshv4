@@ -55,21 +55,54 @@ export function Historik({
       {/* Søjlerne er ikke en knap: de er en oversigt, man læser på ét blik.
           Selve valget sker i listen nedenunder, hvor målene er store nok til
           en tommelfinger. */}
-      <div className="soejler" aria-hidden="true">
-        {dage.map((dag) => (
-          <div key={dag.dayStart} className="soejleplads">
-            <div
-              className={
-                dag.dayStart === udfoldet ? "soejle valgt" : "soejle"
-              }
-              style={{ height: `${Math.round((dag.genstande / maks) * 100)}%` }}
-            />
+      <div className="kort soejlekort">
+        <div className="soejler" aria-hidden="true">
+          {dage.map((dag) => (
+            <div key={dag.dayStart} className="soejleplads">
+              <div
+                className={
+                  dag.dayStart === udfoldet ? "soejle valgt" : "soejle"
+                }
+                style={{ height: `${Math.round((dag.genstande / maks) * 100)}%` }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Ugedagen under hver søjle frem for to datoer i enderne: man læser
+            "T" hurtigere end "12. aug.", og aksen bliver læsbar hele vejen
+            i stedet for kun i kanterne. */}
+        <div
+          className="soejledage"
+          aria-hidden="true"
+          style={{ gridTemplateColumns: `repeat(${dage.length}, minmax(0, 1fr))` }}
+        >
+          {dage.map((dag, nummer) => (
+            <span
+              key={dag.dayStart}
+              className={nummer === dage.length - 1 ? "etiket idag" : "etiket"}
+            >
+              {ugedagsbogstav(dag.dayStart)}
+            </span>
+          ))}
+        </div>
+
+        {/* Tre tal, der ikke fandtes før: man kunne se formen, men ikke hvad
+            den lagde op til. Alle tre er regnet af de dage, der vises. */}
+        <div className="soejlesum">
+          <div>
+            <span className="etiket">I alt</span>
+            <span className="tal">{genstande(total)}</span>
           </div>
-        ))}
-      </div>
-      <div className="soejletekst">
-        <span>{datoKort(dage[0].dayStart)}</span>
-        <span>i dag</span>
+          <div>
+            <span className="etiket">Snit pr. dag</span>
+            <span className="tal">{genstande(total / dage.length)}</span>
+          </div>
+          <div>
+            <span className="etiket">Bedste dag</span>
+            <span className="tal">{genstande(maks)}</span>
+          </div>
+        </div>
       </div>
 
       <div className="dage">
@@ -84,6 +117,18 @@ export function Historik({
                 setUdfoldet(dag.dayStart === udfoldet ? undefined : dag.dayStart)
               }
             >
+              {/* Datobrikken giver listen noget fast at scanne ned ad —
+                  samme rolle som avataren i stillingen. */}
+              <span
+                className={
+                  dag.dayStart === dage[dage.length - 1].dayStart
+                    ? "datobrik idag"
+                    : "datobrik"
+                }
+                aria-hidden="true"
+              >
+                {new Date(dag.dayStart).getDate()}
+              </span>
               <span className="midt">
                 <span className="navn">{datoLang(dag.dayStart)}</span>
                 <span className="under">
@@ -96,6 +141,7 @@ export function Historik({
               </span>
               <span className="talblok">
                 <span className="tal">{genstande(dag.genstande)}</span>
+                <span className="etiket">Genstande</span>
               </span>
             </button>
 
@@ -162,11 +208,9 @@ function emojiFor(categoryId: string): string {
 }
 
 /** "ons. 13. aug." — kort nok til en akse. */
-function datoKort(dayStart: number): string {
-  return new Date(dayStart).toLocaleDateString("da-DK", {
-    day: "numeric",
-    month: "short",
-  });
+/** Dansk ugedagsforbogstav. Samme tabel som Stimestribe.tsx. */
+function ugedagsbogstav(dayStart: number): string {
+  return ["S", "M", "T", "O", "T", "F", "L"][new Date(dayStart).getDay()];
 }
 
 /**

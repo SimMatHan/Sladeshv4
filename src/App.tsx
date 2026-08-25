@@ -12,6 +12,7 @@ import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
 import { Faner } from "./ui/Faner";
 import { KanalIkon, MigIkon, PlusIkon } from "./ui/Ikoner";
+import { Sideundertekst } from "./ui/Sideundertekst";
 import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
 import { Kanaltema } from "./ui/Kanaltema";
@@ -210,10 +211,21 @@ function Appen() {
   return (
     <div className="skal">
       <header className="top">
-        <button className="kanalknap" onClick={() => setKanalAabent(true)}>
-          {harKanal ? <KanalNavn channelId={channelId} /> : "Vælg Kanal"}
-          <span className="pil">▾</span>
-        </button>
+        <div className="sidetitel">
+          <button className="kanalknap" onClick={() => setKanalAabent(true)}>
+            {harKanal ? <KanalNavn channelId={channelId} /> : "Vælg Kanal"}
+            <span className="pil">▾</span>
+          </button>
+
+          {/* Skallen VÆLGER kun hvilken undertekst der monteres; hver af dem
+              henter sit eget tal. Se Sideundertekst.tsx. */}
+          {channelId !== undefined && (
+            <Sideundertekst
+              skaerm={fane === "mig" ? "mig" : visning}
+              channelId={channelId}
+            />
+          )}
+        </div>
       </header>
 
       <main className="indhold">
