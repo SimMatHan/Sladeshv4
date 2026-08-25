@@ -35,14 +35,35 @@
 
   /* ---------------------------------------------------------- farver */
 
-  --bund: #0e0f13;
-  --flade: #17191f;
+  /*
+   * Bunden er NÆRSORT, ikke mørkegrå.
+   *
+   * Den var #0e0f13, og kortene #17191f — ni trin fra hinanden. På en
+   * telefon i en bar var det ikke nok til, at et kort løftede sig fra
+   * siden; skærmen læste som én grå flade med tekst på.
+   *
+   * Nu er der tolv trin imellem, og bunden er tæt nok på sort til, at
+   * OLED-skærme faktisk slukker pixlerne. Det er også dét, alle tre
+   * referencer i design/README.md gør.
+   */
+  --bund: #08090c;
+  --flade: #14161b;
   --flade-hvaelvet: #1f222a;
-  --kant: #2a2e38;
+  --kant: #23262f;
 
   --tekst: #f2f3f5;
   --tekst-daempet: #9ba1ad;
-  --tekst-svag: #6b7280;
+  /*
+   * LYSERE end den var (#6b7280). Den lå på 3,6:1 mod kortfladen — under
+   * WCAG AA, og det gjorde den allerede før bunden blev gjort dybere. Det
+   * er den samme fejl, det lyse tema havde: `--tekst-svag` bærer de 11px
+   * versaletiketter, så netop den mindste tekst var den, der ikke kunne
+   * læses.
+   *
+   * Målt mod `--flade-hvaelvet`, den lyseste af de tre flader og dermed
+   * den bindende: 4,65:1.
+   */
+  --tekst-svag: #848b99;
 
   --accent: #f59e0b;
   --accent-mork: #d97706;
