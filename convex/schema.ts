@@ -532,4 +532,30 @@ export default defineSchema({
     opdateretAf: v.optional(v.id("users")),
     updatedAt: v.number(),
   }).index("by_noegle", ["noegle"]),
+
+  /**
+   * Web Push-abonnementer. Én række per ENHED en bruger har givet
+   * tilladelse fra — en bruger med både telefon og bærbar har to.
+   *
+   * `pushSubscriptions` var navngivet, men aldrig bygget, i det gamle repo
+   * (se docs/eksisterende-datamodel.md, afsnit 7.6) — der lå ingen kollektion
+   * bag, kun en note om at den skulle findes. Formen her er browserens egen:
+   * `endpoint` er URL'en, push-tjenesten (Chrome, Firefox, …) selv har
+   * tildelt abonnementet, og `p256dh`/`auth` er de to nøgler, serveren skal
+   * kryptere beskeden med — begge dele kommer direkte fra
+   * `PushSubscription.toJSON()` og gemmes uden at blive fortolket.
+   */
+  pushAbonnementer: defineTable({
+    userId: v.id("users"),
+    endpoint: v.string(),
+    p256dh: v.string(),
+    auth: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    // `endpoint` er unikt pr. enhed på tværs af ALLE brugere — to brugere
+    // kan aldrig dele ét. Indekset gør genabonnering (samme enhed, samme
+    // bruger) til et opslag i stedet for endnu en række.
+    .index("by_endpoint", ["endpoint"]),
 });

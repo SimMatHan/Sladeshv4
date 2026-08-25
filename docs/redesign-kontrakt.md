@@ -33,6 +33,13 @@ noget går i stykker — så længe reglerne herunder holdes.
 **Ændres en fil på forbudslisten, er leverancen forkert** — også selvom
 resultatet ser rigtigt ud i browseren.
 
+**Bevidst undtagelse:** rigtige push-notifikationer (2026) krævede at bryde
+denne grænse — en ny tabel i schemaet, nye Convex-funktioner, service
+workerens `push`-handler, og npm-pakken `web-push` (kun i en Convex
+"use node"-action, aldrig i klientbundlet). Det var et eksplicit,
+efterspurgt skifte i scope, ikke en glidning under et redesign — se
+docs/notifikationer.md. Grænserne herover gælder fortsat for alt andet.
+
 ---
 
 ## 2. Afhængigheder
@@ -276,6 +283,14 @@ allerede skrevet på dansk til et menneske.
 |---|---|---|---|
 | `getMinPromille` | query | `now: v.optional(v.number())` | |
 | `setPromilleIndstilling` | mutation | `enabled: v.boolean(), gender: v.optional(, weight: v.optional(v.union(v.number(), v.null())), height: v.optional(v.union(v.number(), v.null()))` | |
+
+### `pushAbonnementer`
+
+| Funktion | Type | Argumenter | Note |
+|---|---|---|---|
+| `getVapidPublicKey` | query | `—` | tom streng = ikke sat op på deploymentet endnu |
+| `gemAbonnement` | mutation | `endpoint: v.string(), p256dh: v.string(), auth: v.string()` | |
+| `sletAbonnement` | mutation | `endpoint: v.string()` | |
 
 ### `scoreboard`
 

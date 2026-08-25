@@ -2,6 +2,7 @@ import { ConvexError, v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import type { Ctx } from "./identity";
 import { requireCurrentUser, requireKanalMedlem } from "./identity";
 import {
   AFSENDER_STANDARD_EMOJI,
@@ -43,7 +44,7 @@ export const sendMessage = mutation({
     text: v.string(),
   },
   handler: async (ctx, args): Promise<Id<"messages">> => {
-    const { user } = await requireKanalMedlem(ctx, args.channelId);
+    const { user, kanal } = await requireKanalMedlem(ctx, args.channelId);
 
     const text = trimBesked(args.text);
     const fejl = beskedFejl(text);
@@ -87,9 +88,50 @@ export const sendMessage = mutation({
       laengde: text.length,
     });
 
+    // Push til dem der ikke selv sidder og læser med — se
+    // beregnModtagere for reglen. Planlagt frem for afventet: beskeden er
+    // sendt uanset om push lykkes.
+    const modtagere = await beregnModtagere(ctx, kanal.members, args.channelId, user._id);
+    if (modtagere.length > 0) {
+      await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+        userIds: modtagere,
+        title: kanal.name,
+        body: `${user.displayName.trim() || AFSENDER_STANDARD_NAVN}: ${text}`,
+        // Grupperer beskeder fra samme Kanal, så en telefon der har været
+        // væk et par timer ikke får ét pip per besked.
+        tag: `chat-${args.channelId}`,
+      });
+    }
+
     return messageId;
   },
 });
+
+/**
+ * Hvem skal varsles om en besked i denne Kanal?
+ *
+ * Kanalens medlemmer minus afsenderen, minus dem der har netop denne chat
+ * åben lige nu (`setAktivChat`) — de sidder og læser med, og skal ikke
+ * forstyrres af et pip om det, de allerede ser.
+ */
+async function beregnModtagere(
+  ctx: Ctx,
+  members: Id<"users">[],
+  channelId: Id<"kanaler">,
+  senderId: Id<"users">,
+): Promise<Id<"users">[]> {
+  const modtagere: Id<"users">[] = [];
+  for (const memberId of members) {
+    if (memberId === senderId) continue;
+
+    const medlem = await ctx.db.get(memberId);
+    if (medlem === null) continue;
+    if (medlem.activeChatChannelId === channelId) continue;
+
+    modtagere.push(memberId);
+  }
+  return modtagere;
+}
 
 /**
  * Beskederne i en Kanal, ældste først — den rækkefølge en chat vises i.
@@ -222,16 +264,13 @@ export const setAktivChat = mutation({
 });
 
 /**
- * Hvem skal varsles om en ny besked?
+ * Hvem ville blive varslet om denne besked?
  *
- * Kanalens medlemmer minus afsenderen, minus dem der har netop denne chat
- * åben. Selve LEVERINGEN findes ikke endnu: push gik gennem Web Push og
- * collectionen `pushSubscriptions`, som bevidst ligger uden for
- * migreringens afgrænsning (docs/eksisterende-datamodel.md, afsnit 7.6).
- *
- * Modtagerudvælgelsen er skilt ud og gjort kaldbar, så den kan afprøves nu,
- * og så den dag push-infrastrukturen kommer, er der ét sted at koble den på
- * frem for en regel der skal opfindes forfra.
+ * Bruges IKKE af `sendMessage` selv længere — den kender allerede sin
+ * Kanal og afsender og kalder `beregnModtagere` direkte. Denne query er den
+ * samme regel gjort kaldbar udefra: til fejlsøgning ("hvorfor fik X ikke et
+ * pip"), og fordi den fandtes før push gjorde, og intet i UI'et kalder den
+ * bort. Se convex/push.ts for selve afsendelsen.
  */
 export const getVarslingsmodtagere = query({
   args: { messageId: v.id("messages") },
@@ -247,18 +286,7 @@ export const getVarslingsmodtagere = query({
     // Kun medlemmer må se hvem der er i Kanalen.
     const { kanal } = await requireKanalMedlem(ctx, besked.channelId);
 
-    const modtagere: Id<"users">[] = [];
-    for (const memberId of kanal.members) {
-      if (memberId === besked.senderId) continue;
-
-      const medlem = await ctx.db.get(memberId);
-      if (medlem === null) continue;
-      if (medlem.activeChatChannelId === besked.channelId) continue;
-
-      modtagere.push(memberId);
-    }
-
-    return modtagere;
+    return await beregnModtagere(ctx, kanal.members, besked.channelId, besked.senderId);
   },
 });
 
