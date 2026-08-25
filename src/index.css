@@ -131,6 +131,10 @@
   /* Ikonmål. Ikke typografi — emoji og glyffer i navigationen. */
   --ikon: 20px;
   --ikon-stor: 30px;
+  /* Det store emoji øverst på en helskærm: onboarding og Sladesh-
+     overtagelsen. De havde 64px og 52px for SAMME klasse `.stortikon` —
+     to størrelser af én ting, uden at nogen af dem var begrundet. */
+  --ikon-hero: 64px;
 
   /*
    * Tekst oven på en farvet flade — avatarens forbogstav på sin gradient,
@@ -1425,9 +1429,9 @@ input {
 }
 
 .login h1 {
-  margin: 0 0 6px;
-  font-size: 32px;
-  letter-spacing: -0.03em;
+  margin: 0 0 var(--luft-2);
+  font-size: var(--tekst-xl);
+  letter-spacing: var(--spor-tal);
 }
 
 .login p.under {
@@ -1443,8 +1447,8 @@ input {
   display: block;
   width: 100%;
   margin-top: 16px;
-  padding: 4px;
-  font-size: 14px;
+  padding: var(--luft-1);
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
   text-align: center;
 }
@@ -1486,14 +1490,16 @@ input {
   border-radius: 50%;
   background: var(--flade);
   border: 1px solid var(--kant);
-  font-size: 16px;
+  /* Glyf, ikke tekst — derfor ikonskalaen. */
+  font-size: var(--ikon);
 }
 
 .ur {
-  font-size: 34px;
+  /* Overtagelsens hero: ét stort tal på skærmen, jf. regel 1 i oplægget. */
+  font-size: var(--tekst-xxl);
   font-weight: 750;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--spor-tal);
 }
 
 .ur.udloebet {
@@ -1512,8 +1518,8 @@ input {
 
 .overtagelsesindhold h1 {
   margin: 0;
-  font-size: 27px;
-  letter-spacing: -0.03em;
+  font-size: var(--tekst-xl);
+  letter-spacing: var(--spor-tal);
   line-height: 1.2;
 }
 
@@ -1527,9 +1533,9 @@ input {
 }
 
 .stortikon {
-  font-size: 64px;
+  font-size: var(--ikon-hero);
   line-height: 1;
-  margin-bottom: 10px;
+  margin-bottom: var(--luft-3);
 }
 
 .overtagelsesbund {
@@ -1537,9 +1543,10 @@ input {
 }
 
 .overtagelsesbund .hjaelp {
-  margin: 0 0 9px;
+  margin: 0 0 var(--luft-2);
   text-align: center;
-  font-size: 14px;
+  /* Ingen font-size: `.hjaelp` er allerede --tekst-s. Overskrivningen
+     her kæmpede mod den delte klasse for 1px. */
   color: var(--tekst-daempet);
 }
 
@@ -1565,7 +1572,7 @@ input {
 }
 
 .sladeshbjaelke .ur {
-  font-size: 19px;
+  font-size: var(--tekst-m);
   margin-left: auto;
 }
 
@@ -1578,12 +1585,12 @@ input {
   background: var(--flade);
   border: 1px solid var(--kant);
   border-radius: var(--radius);
-  font-size: 14.5px;
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
 }
 
 .venterbjaelke .ur {
-  font-size: 16px;
+  font-size: var(--tekst-m);
   margin-left: auto;
   color: var(--tekst);
 }
@@ -1603,7 +1610,7 @@ input {
   margin: 12px 0 4px;
   padding: 10px 14px;
   border-radius: var(--radius);
-  font-size: 13.5px;
+  font-size: var(--tekst-s);
   line-height: 1.35;
 }
 
@@ -2112,7 +2119,8 @@ p.dagliste {
   border-radius: var(--radius-lille);
   background: var(--flade-hvaelvet);
   border: 1px solid var(--kant);
-  font-size: 22px;
+  /* Emoji som ikon, ikke som tekst. */
+  font-size: var(--ikon);
   line-height: 1;
   transition: transform 90ms ease;
 }
@@ -2176,7 +2184,7 @@ p.dagliste {
 .onboardingindhold h1 {
   margin: 0 0 6px;
   font-size: 28px;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--spor-tal);
   line-height: 1.2;
 }
 
@@ -2185,9 +2193,11 @@ p.dagliste {
   color: var(--tekst-daempet);
 }
 
+/* Ingen egen størrelse: `.stortikon` er ÉN ting. Den havde 52px her og
+   64px i overtagelsen — samme klasse, to størrelser, uden at nogen af dem
+   var begrundet. */
 .onboardingindhold .stortikon {
-  font-size: 52px;
-  margin-bottom: 14px;
+  margin-bottom: var(--luft-4);
 }
 
 /* ---------------------------------------------------------- trofæhylden */
@@ -2609,11 +2619,11 @@ p.dagliste {
 
 .broadcasttitel {
   font-weight: 700;
-  font-size: 14px;
+  font-size: var(--tekst-s);
 }
 
 .broadcasttekst {
-  font-size: 14px;
+  font-size: var(--tekst-s);
   color: var(--tekst-daempet);
 }
 
@@ -2622,7 +2632,8 @@ p.dagliste {
   width: 28px;
   height: 28px;
   padding: 0;
-  font-size: 20px;
+  /* Krydset er en glyf, ikke tekst. */
+  font-size: var(--ikon);
   line-height: 1;
   color: var(--tekst-daempet);
   background: none;
