@@ -487,6 +487,25 @@ input {
  * Men den er det eneste i toppen, og den siger, hvor man er. Nu bærer den
  * som en overskrift, og ▾ er den lille del, der røber, at man kan skifte.
  */
+/*
+ * Titlen og dens undertekst. Underteksten hentes af skærmen selv — se
+ * Sideundertekst.tsx — og kan mangle, mens den henter, eller når der ikke er
+ * noget at sige. `gap` frem for margin på underteksten: så flytter titlen sig
+ * ikke, når linjen kommer og går.
+ */
+.sidetitel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+  min-width: 0;
+}
+
+/*
+ * Underteksten er IKKE en trykflade — man trykker på NAVNET for at skifte
+ * Kanal. Knappen bærer derfor selv de 44px, uanset om linjen er der: ved
+ * 28px er dens egen linjeboks kun ~41px, og regel 5 gælder også for en
+ * overskrift, der er en knap.
+ */
 .kanalknap {
   display: flex;
   align-items: center;
@@ -495,6 +514,12 @@ input {
   font-size: var(--tekst-xl);
   font-weight: var(--vaegt-fed);
   letter-spacing: var(--spor-tal);
+}
+
+.undertekst {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .kanalknap:active {
