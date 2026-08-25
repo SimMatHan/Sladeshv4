@@ -165,18 +165,80 @@
   --top-sikker: env(safe-area-inset-top, 0px);
 }
 
+/*
+ * Det lyse tema.
+ *
+ * FØR var det den mørke palet vendt om: kølig grå bund (#f6f7f9), hvide
+ * kort, og den ravgule accent uændret. Det virkede, men det lignede ingenting
+ * — en app uden holdning, i det tema halvdelen af brugerne har slået til.
+ *
+ * Nu er det en varm cremeflade med flaskegrøn accent. Bunden er papir frem
+ * for skærm, og grønt er både nordisk og dansk ølgrønt, så det er hjemme i
+ * en drikkeleg uden at være pjattet.
+ *
+ * ## Accenten er det ENE token, der har en farve per tema
+ *
+ * Alt andet her er samme rolle i en anden lyshed. `--accent` er en anden
+ * FARVE: ravgul i mørke, flaskegrøn i lys. Det er et bevidst valg — mørk er
+ * appens udgangspunkt og beholder sin signatur; lys er en anden stemning,
+ * ikke en afblegning af den samme.
+ *
+ * Konsekvensen skal kendes: alle de afledte flader i filen er
+ * `color-mix(in srgb, var(--accent) N%, var(--flade))` og følger derfor med
+ * af sig selv. Skriver du en accentfarve DIREKTE et sted, brækker du det
+ * lyse tema uden at kunne se det i mørke.
+ *
+ * Festivaltemaerne (`:root[data-tema="…"]`) vinder stadig over denne blok —
+ * et attribut på `:root` har højere specificitet end `:root` alene. Det er
+ * med vilje: de temaer er mørke i sig selv. Se docs/kanaltemaer.md.
+ */
 @media (prefers-color-scheme: light) {
   :root {
-    --bund: #f6f7f9;
-    --flade: #ffffff;
+    --bund: #f2eee4;
+    --flade: #fcfaf5;
     --flade-hvaelvet: #ffffff;
-    --kant: #e3e6ec;
+    --kant: #e3ddd0;
 
-    --tekst: #14161a;
-    --tekst-daempet: #5c626e;
-    --tekst-svag: #8b909b;
+    --tekst: #1a1c19;
+    --tekst-daempet: #5f6660;
+    /*
+     * MØRKERE end den mørke palets pendant, ikke lysere. `--tekst-svag`
+     * bærer de 11px versaletiketter, og den gamle #8b909b lå på 2,7:1 mod
+     * cremen — altså netop den tekst, der er mindst, var den, der ikke
+     * kunne læses.
+     *
+     * Målt mod `--bund`, ikke `--flade`: bunden er den mørkeste af de to,
+     * og etiketterne står begge steder. 4,70:1.
+     */
+    --tekst-svag: #676b63;
 
-    --accent-tekst: #241a05;
+    /* Flaskegrøn. Se blokkens overskrift for hvorfor den skifter farve her. */
+    --accent: #1b4d3e;
+    --accent-mork: #123528;
+    --accent-tekst: #f4f1e9;
+
+    /*
+     * De semantiske farver er lånt fra den mørke palet og kan ikke bare
+     * blive: #ef4444 og #34d399 er valgt til at lyse på en mørk flade, og på
+     * creme falder de begge under grænsen for læsbar tekst.
+     *
+     * `--medgang` må godt ligne accenten her — de to står aldrig ved siden
+     * af hinanden. Kravet er, at den kan skelnes fra `--fare`, fordi
+     * `.kvitteringstekst` og `.fejl` deler plads.
+     */
+    --fare: #b33a28;
+    --medgang: #1b6b4a;
+
+    /*
+     * Medaljerne er PATINERET metal her, ikke neon. Det er ikke en
+     * stilbeslutning alene: `.plads` er 13px fed, altså almindelig tekst
+     * efter WCAG, og de mørke palets medaljefarver ligger på 2,6-3,5:1 mod
+     * cremen. Sølv er værst — det er en lys grå i sagens natur og skal helt
+     * ned i tin, før tallet kan læses. Alle tre ligger nu over 4,5:1.
+     */
+    --guld: #856300;
+    --soelv: #656b71;
+    --bronze: #8f5d3d;
   }
 }
 
