@@ -1,0 +1,110 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: #1B4D3E; } a:hover { color: #123528; }
+    .num { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .lab { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6E7269; }
+    .sec { font-size: 17px; font-weight: 550; letter-spacing: -0.01em; }
+    .note { font-size: 13px; color: #5F6660; line-height: 1.55; }
+    .hex { font-size: 11px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: #6E7269; letter-spacing: 0; }
+    th { text-align: left; font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6E7269; padding: 0 0 8px 0; }
+    td { font-size: 13px; color: #1A1C19; padding: 7px 16px 7px 0; border-top: 1px solid #E7E2D6; vertical-align: top; }
+  </style>
+</helmet>
+
+<div style="width: 900px; background: #F2EEE4; color: #1A1C19; padding: 32px; display: flex; flex-direction: column; gap: 32px;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div class="lab">Tre retninger i lys</div>
+    <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.03em;">Cremet bund, tre forskellige accenter</div>
+    <div class="note" style="max-width: 660px;">Det nuværende lyse tema er kølig grå (<span class="hex">#f6f7f9</span>) og beholder den ravgule accent. Alle tre forslag skifter bunden til et varmt creme og accenten til noget andet. Strukturen er den samme på alle tre skærme — kun farverne skifter, så sammenligningen er reel.</div>
+  </div>
+
+  <!-- A -->
+  <div style="background: #FCFAF5; border: 1px solid #E3DDD0; border-radius: 22px; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <div class="sec">A · Flaskegrøn på creme</div>
+      <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #1B4D3E; background: #DCE8E0; padding: 4px 10px; border-radius: 999px;">Min anbefaling</div>
+    </div>
+    <div class="note">Nordisk og voksen — den palet, La Cabra-flisen i dine screenshots sidder i. Flaskegrøn er også dansk ølgrøn, så den er tematisk hjemme i en drikkeleg uden at være pjattet. Maksimalt langt fra den nuværende ravgule.</div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #F2EEE4; border: 1px solid #E3DDD0;"></div><div class="lab" style="font-size: 11px;">Bund</div><div class="hex">#F2EEE4</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #FCFAF5; border: 1px solid #E3DDD0;"></div><div class="lab" style="font-size: 11px;">Flade</div><div class="hex">#FCFAF5</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #1B4D3E;"></div><div class="lab" style="font-size: 11px;">Accent</div><div class="hex">#1B4D3E</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #DCE8E0;"></div><div class="lab" style="font-size: 11px;">Accent blød</div><div class="hex">#DCE8E0</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #B33A28;"></div><div class="lab" style="font-size: 11px;">Fare</div><div class="hex">#B33A28</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #1A1C19;"></div><div class="lab" style="font-size: 11px;">Tekst</div><div class="hex">#1A1C19</div></div>
+    </div>
+    <div class="note" style="border-top: 1px solid #E7E2D6; padding-top: 12px;"><span style="color: #1A1C19; font-weight: 550;">Bagsiden:</span> grøn betyder allerede "medgang" i appen (<span class="hex">--medgang</span>). Den rolle må slås sammen med accenten — brand og "det gik godt" bliver samme farve. Det er rent nok, men det er en beslutning, ikke en detalje. Og grøn er roligere end en fest måske fortjener.</div>
+  </div>
+
+  <!-- B -->
+  <div style="background: #FCFAF5; border: 1px solid #E3DDD0; border-radius: 22px; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+    <div class="sec">B · Koral på knogle</div>
+    <div class="note">Den eneste af de tre med en eksisterende forbindelse: appikonet er allerede <span style="color: #1A1C19;">den hvide shaka på koral</span> (<span class="hex">docs/produktion.md</span>, afsnit 6a). Appen ville for første gang ligne sit eget ikon. Varm, social, festival.</div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #F7F3EE; border: 1px solid #EBE3D9;"></div><div class="lab" style="font-size: 11px;">Bund</div><div class="hex">#F7F3EE</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #FFFCF8; border: 1px solid #EBE3D9;"></div><div class="lab" style="font-size: 11px;">Flade</div><div class="hex">#FFFCF8</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #D8452E;"></div><div class="lab" style="font-size: 11px;">Accent</div><div class="hex">#D8452E</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #FBE3DD;"></div><div class="lab" style="font-size: 11px;">Accent blød</div><div class="hex">#FBE3DD</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #C03B26;"></div><div class="lab" style="font-size: 11px;">Accent mørk</div><div class="hex">#C03B26</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #201A17;"></div><div class="lab" style="font-size: 11px;">Tekst</div><div class="hex">#201A17</div></div>
+    </div>
+    <div class="note" style="border-top: 1px solid #E7E2D6; padding-top: 12px;"><span style="color: #1A1C19; font-weight: 550;">Bagsiden:</span> du bad om noget andet end orange, og koral er stadig en varm farve. Ved siden af hinanden er de tydeligt forskellige — ravgul er øl og guld, koral er solnedgang og rød — men det er den mindst dramatiske af de tre. Desuden ligger den tæt på <span class="hex">--fare</span>: farerød skal flyttes til en dybere brik, ellers ligner "Nulstil run" en primær knap.</div>
+  </div>
+
+  <!-- C -->
+  <div style="background: #FCFAF5; border: 1px solid #E3DDD0; border-radius: 22px; padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+    <div class="sec">C · Blækindigo med lime</div>
+    <div class="note">To farver i stedet for én: dyb indigo bærer fladerne, og en syrlig lime er den ene ting, der råber — hovedtallet og ( + ). Den mest markante og mest "app" af de tre, og den eneste, hvor logknappen bliver skærmens klare midtpunkt.</div>
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #F4F2ED; border: 1px solid #E4E0D6;"></div><div class="lab" style="font-size: 11px;">Bund</div><div class="hex">#F4F2ED</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #FFFFFF; border: 1px solid #E4E0D6;"></div><div class="lab" style="font-size: 11px;">Flade</div><div class="hex">#FFFFFF</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #2E2A6B;"></div><div class="lab" style="font-size: 11px;">Primær</div><div class="hex">#2E2A6B</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #C7E63F;"></div><div class="lab" style="font-size: 11px;">Pop</div><div class="hex">#C7E63F</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #E7F2B8;"></div><div class="lab" style="font-size: 11px;">Pop blød</div><div class="hex">#E7F2B8</div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px;"><div style="height: 56px; border-radius: 12px; background: #14142B;"></div><div class="lab" style="font-size: 11px;">Tekst</div><div class="hex">#14142B</div></div>
+    </div>
+    <div class="note" style="border-top: 1px solid #E7E2D6; padding-top: 12px;"><span style="color: #1A1C19; font-weight: 550;">Bagsiden:</span> limen er kun lovlig som <span style="color: #1A1C19;">flade under mørk tekst</span> — som tekst på creme har den omkring 1,6:1 og er ulæselig. Det er en regel, der skal skrives ned og huskes hver gang, og det er den slags regel, der bliver brudt. To accenter er også dobbelt så meget at holde styr på i to temaer.</div>
+  </div>
+
+  <!-- Det der gaelder uanset -->
+  <div style="border-top: 1px solid #E3DDD0; padding-top: 24px; display: flex; flex-direction: column; gap: 12px;">
+    <div class="sec">Gælder uanset hvilken der vælges</div>
+    <table style="border-collapse: collapse; width: 100%;">
+      <tr><th style="width: 190px;">Sagen</th><th>Hvad der skal ske</th></tr>
+      <tr>
+        <td style="font-weight: 550;">Mørk er stadig standard</td>
+        <td>Oplægget begrunder mørk med, at appen bruges om aftenen i en bar. Det holder. De her tre er det <em>lyse</em> tema, som halvdelen af brugerne alligevel har slået til — ikke en afløser.</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 550;">Accenten er delt i dag</td>
+        <td>Det lyse tema overskriver kun bund, flade, kant, tekst og <span class="hex">--accent-tekst</span>. <span class="hex">--accent</span> er fælles. Skifter vi accent, skifter den i <em>begge</em> temaer — det er ikke et lys-alene-valg.</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 550;">Guld, sølv og bronze</td>
+        <td>Medaljefarverne fra det mørke tema er for lyse på creme. På lys: guld <span class="hex">#B08400</span>, sølv <span class="hex">#8E949A</span>, bronze <span class="hex">#A9714B</span>.</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 550;">De 11px versaletiketter</td>
+        <td>De er små og skal stadig kunne læses. På creme betyder det mindst <span class="hex">#6E7269</span> — den nuværende <span class="hex">--tekst-svag</span> (#8b909b) er for lys og falder under 4,5:1.</td>
+      </tr>
+      <tr>
+        <td style="font-weight: 550;">Appikonet</td>
+        <td>Ikonet er koral. Vælges A eller C, ligner appen ikke sit eget ikon på hjemmeskærmen — så skal ikonet tegnes om, eller uoverensstemmelsen accepteres bevidst.</td>
+      </tr>
+    </table>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

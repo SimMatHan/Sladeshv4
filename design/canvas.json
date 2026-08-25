@@ -1,13 +1,21 @@
 {
+  "pages": [
+    { "id": "page-1", "name": "Lys" },
+    { "id": "page-2", "name": "Mørk" }
+  ],
   "artboards": [
-    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844 },
-    { "file": "Stilling.dc.html", "x": 490, "y": 0, "w": 390, "h": 844 },
-    { "file": "System.dc.html", "x": 980, "y": 0, "w": 880, "h": 1560 }
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "A · Flaskegrøn", "page": "page-1" },
+    { "file": "DirectionB.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "title": "B · Koral", "page": "page-1" },
+    { "file": "DirectionC.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "title": "C · Indigo + lime", "page": "page-1" },
+    { "file": "Stilling.dc.html", "x": 1470, "y": 0, "w": 390, "h": 844, "title": "Stilling · retning A", "page": "page-1" },
+    { "file": "Palette.dc.html", "x": 1960, "y": 0, "w": 900, "h": 1420, "title": "Paletter og forbehold", "page": "page-1" },
+    { "file": "Moerk.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Mig · mørk", "page": "page-2" },
+    { "file": "System.dc.html", "x": 490, "y": 0, "w": 880, "h": 1560, "title": "De fem greb", "page": "page-2" }
   ],
   "annotations": [
-    { "id": "mig", "x": 0, "y": -120, "w": 390, "text": "Mig — knappebunken (Indstillinger / Admin / Nulstil / Log ud) flytter ind bag tandhjulet, og pladsen bliver til indhold: hero-tal, stime, naermeste achievement." },
-    { "id": "stilling", "x": 490, "y": -120, "w": 390, "text": "Stilling — raekkerne har allerede den rigtige anatomi. Aendringen er vaegt: stoerre tal, daempet undertekst, egen raekke i accent frem for en tung badge." },
-    { "id": "system", "x": 980, "y": -120, "w": 880, "text": "De fem greb bag de to skaerme, med det jeg bevidst har ladet ligge." }
+    { "id": "valg", "x": 0, "y": -150, "w": 390, "text": "Samme skaerm, tre paletter. Strukturen er identisk, saa kun farven adskiller dem. A er min anbefaling — se palet-arket til hoejre for hvorfor, og for bagsiden ved hver af dem.", "page": "page-1" },
+    { "id": "stillingnote", "x": 1470, "y": -150, "w": 390, "text": "Stillingen i retning A, saa du kan se paletten paa en liste og ikke kun paa et kort. Egen raekke bliver accent-bloed med accent-kant i stedet for en tung badge.", "page": "page-1" },
+    { "id": "moerknote", "x": 0, "y": -150, "w": 390, "text": "Forrige runde, bevaret. Moerk er stadig appens udgangspunkt — de lyse forslag er det tema, brugere med lysmode faar.", "page": "page-2" }
   ],
-  "launch": { "view": "canvas" }
+  "launch": { "view": "canvas", "page": "page-1" }
 }
