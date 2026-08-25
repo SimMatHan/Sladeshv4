@@ -1,0 +1,105 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: #1B4D3E; } a:hover { color: #123528; }
+    .num { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .lab { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6E7269; }
+    .chip { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border-radius: 999px; background: #F2EEE4; border: 1px solid #E3DDD0; font-size: 15px; color: #1A1C19; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #F2EEE4; overflow: hidden; position: relative;">
+
+  <!-- dug -->
+  <div style="position: absolute; inset: 0; background: rgb(26 28 25 / 0.42);"></div>
+
+  <!-- arket -->
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 700px; background: #FCFAF5; border-radius: 22px 22px 0 0; box-shadow: 0 -8px 40px rgb(26 28 25 / 0.22); display: flex; flex-direction: column;">
+
+    <div style="display: flex; flex-direction: column; align-items: center; padding: 10px 0 0 0;">
+      <div style="width: 38px; height: 4px; border-radius: 999px; background: #DDD6C7;"></div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 20px 12px 20px;">
+      <div style="flex-grow: 1; font-size: 17px; font-weight: 550; letter-spacing: -0.01em; color: #1A1C19;">Log en genstand</div>
+      <div style="width: 44px; height: 44px; border-radius: 999px; background: #F2EEE4; display: grid; place-items: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6660" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; overflow: hidden; padding: 0 20px; display: flex; flex-direction: column; gap: 24px;">
+
+      <!-- dine saedvanlige -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="lab">Dine sædvanlige</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px; border-radius: 999px; background: #1B4D3E; color: #F4F1E9; font-size: 15px; font-weight: 550;">
+            <span style="font-size: 18px;">🍺</span>Tuborg
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px; border-radius: 999px; background: #1B4D3E; color: #F4F1E9; font-size: 15px; font-weight: 550;">
+            <span style="font-size: 18px;">🍺</span>Carlsberg<span style="color: #A8C4B4; font-size: 13px;">Stor</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px; border-radius: 999px; background: #1B4D3E; color: #F4F1E9; font-size: 15px; font-weight: 550;">
+            <span style="font-size: 18px;">🥃</span>Fernet
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 0 18px; border-radius: 999px; background: #1B4D3E; color: #F4F1E9; font-size: 15px; font-weight: 550;">
+            <span style="font-size: 18px;">🍷</span>Rødvin
+          </div>
+        </div>
+      </div>
+
+      <!-- stoerrelse -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="lab">Størrelse</div>
+        <div style="display: flex; gap: 4px; padding: 4px; background: #EDE8DC; border-radius: 999px;">
+          <div style="flex-grow: 1; height: 48px; border-radius: 999px; background: #FCFAF5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; box-shadow: 0 1px 2px rgb(26 28 25 / 0.08);">
+            <div style="font-size: 15px; font-weight: 550; color: #1A1C19;">Lille</div>
+            <div style="font-size: 11px; color: #6E7269;">33cl</div>
+          </div>
+          <div style="flex-grow: 1; height: 48px; border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;">
+            <div style="font-size: 15px; color: #5F6660;">Mellem</div>
+            <div style="font-size: 11px; color: #8B8F87;">50cl</div>
+          </div>
+          <div style="flex-grow: 1; height: 48px; border-radius: 999px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;">
+            <div style="font-size: 15px; color: #5F6660;">Stor</div>
+            <div style="font-size: 11px; color: #8B8F87;">75cl</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- kategorier -->
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em; color: #1A1C19;">🍺 Øl</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div class="chip">Tuborg</div>
+          <div class="chip">Carlsberg</div>
+          <div class="chip">Grøn Tuborg</div>
+          <div class="chip">Royal</div>
+          <div class="chip">IPA</div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em; color: #1A1C19;">🍷 Vin</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div class="chip">Rødvin</div>
+          <div class="chip">Hvidvin</div>
+          <div class="chip">Rosé</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

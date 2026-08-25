@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: #1B4D3E; } a:hover { color: #123528; }
+    .num { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .lab { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6E7269; }
+    .soejleplads { display: flex; align-items: flex-end; justify-content: center; height: 92px; }
+    .soejle { width: 100%; max-width: 26px; border-radius: 6px 6px 0 0; background: #C3D6C9; }
+    .dagraekke { display: flex; align-items: center; gap: 12px; padding: 14px 16px; background: #FCFAF5; border: 1px solid #E3DDD0; border-radius: 14px; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #F2EEE4; color: #1A1C19; overflow: hidden; display: flex; flex-direction: column;">
+
+  <div style="display: flex; align-items: center; gap: 12px; padding: 20px 16px 8px 16px;">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+      <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.03em;">Ballade</div>
+      <div style="font-size: 13px; color: #6E7269;">Seneste 7 drikkedage</div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 4px; margin: 12px 16px 20px 16px; padding: 4px; background: #E9E4D8; border-radius: 999px;">
+    <div style="flex-grow: 1; height: 40px; border-radius: 999px; display: grid; place-items: center; font-size: 13px; color: #6E7269;">Stilling</div>
+    <div style="flex-grow: 1; height: 40px; border-radius: 999px; display: grid; place-items: center; font-size: 13px; color: #6E7269;">Chat</div>
+    <div style="flex-grow: 1; height: 40px; border-radius: 999px; display: grid; place-items: center; font-size: 13px; color: #6E7269;">Kort</div>
+    <div style="flex-grow: 1; height: 40px; border-radius: 999px; background: #FCFAF5; display: grid; place-items: center; font-size: 13px; font-weight: 550; box-shadow: 0 1px 2px rgb(26 28 25 / 0.08);">Historik</div>
+  </div>
+
+  <div style="flex-grow: 1; overflow: hidden; padding: 0 16px; display: flex; flex-direction: column; gap: 16px;">
+
+    <!-- soejlerne -->
+    <div style="background: #FCFAF5; border: 1px solid #E3DDD0; border-radius: 22px; padding: 20px;">
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; align-items: end;">
+        <div class="soejleplads"><div class="soejle" style="height: 38%;"></div></div>
+        <div class="soejleplads"><div class="soejle" style="height: 62%;"></div></div>
+        <div class="soejleplads"><div class="soejle" style="height: 24%;"></div></div>
+        <div class="soejleplads"><div class="soejle" style="height: 78%;"></div></div>
+        <div class="soejleplads"><div class="soejle" style="height: 45%;"></div></div>
+        <div class="soejleplads"><div class="soejle" style="height: 30%;"></div></div>
+        <div class="soejleplads"><div class="soejle" style="height: 100%; background: #1B4D3E;"></div></div>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; margin-top: 10px;">
+        <div class="lab" style="text-align: center;">L</div>
+        <div class="lab" style="text-align: center;">S</div>
+        <div class="lab" style="text-align: center;">M</div>
+        <div class="lab" style="text-align: center;">T</div>
+        <div class="lab" style="text-align: center;">O</div>
+        <div class="lab" style="text-align: center;">T</div>
+        <div class="lab" style="text-align: center; color: #1A1C19;">F</div>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 16px; padding-top: 16px; border-top: 1px solid #E7E2D6;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div class="lab">I alt</div>
+          <div class="num" style="font-size: 28px; font-weight: 700;">213</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <div class="lab">Snit pr. dag</div>
+          <div class="num" style="font-size: 28px; font-weight: 700;">30,4</div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
+          <div class="lab">Bedste dag</div>
+          <div class="num" style="font-size: 28px; font-weight: 700;">47</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- dagene -->
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+
+      <div class="dagraekke" style="background: #DCE8E0; border-color: #1B4D3E;">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: #1B4D3E; display: grid; place-items: center;">
+          <div class="num" style="font-size: 15px; font-weight: 700; color: #F4F1E9;">22</div>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em;">Fredag 22. august</div>
+          <div style="font-size: 13px; color: #3D5F51;">9 ude · Frederik i spidsen</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+          <div class="num" style="font-size: 28px; font-weight: 700; line-height: 1; color: #1B4D3E;">47</div>
+          <div class="lab" style="color: #3D5F51;">Genstande</div>
+        </div>
+      </div>
+
+      <div class="dagraekke">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: #EDE8DC; display: grid; place-items: center;">
+          <div class="num" style="font-size: 15px; font-weight: 700; color: #5F6660;">21</div>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em;">Torsdag 21. august</div>
+          <div style="font-size: 13px; color: #6E7269;">6 ude · Mathias i spidsen</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+          <div class="num" style="font-size: 28px; font-weight: 700; line-height: 1;">36</div>
+          <div class="lab">Genstande</div>
+        </div>
+      </div>
+
+      <div class="dagraekke">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: #EDE8DC; display: grid; place-items: center;">
+          <div class="num" style="font-size: 15px; font-weight: 700; color: #5F6660;">20</div>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em;">Onsdag 20. august</div>
+          <div style="font-size: 13px; color: #6E7269;">2 ude</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+          <div class="num" style="font-size: 28px; font-weight: 700; line-height: 1;">11</div>
+          <div class="lab">Genstande</div>
+        </div>
+      </div>
+
+      <div class="dagraekke">
+        <div style="width: 42px; height: 42px; border-radius: 12px; background: #EDE8DC; display: grid; place-items: center;">
+          <div class="num" style="font-size: 15px; font-weight: 700; color: #5F6660;">19</div>
+        </div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em;">Tirsdag 19. august</div>
+          <div style="font-size: 13px; color: #6E7269;">7 ude · Simon i spidsen</div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+          <div class="num" style="font-size: 28px; font-weight: 700; line-height: 1;">29</div>
+          <div class="lab">Genstande</div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <div style="padding: 12px 16px 16px 16px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; height: 64px; padding: 0 8px; border-radius: 999px; background: #FCFAF5; border: 1px solid #E3DDD0; box-shadow: 0 8px 24px rgb(26 28 25 / 0.10);">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 68px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1B4D3E" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+        <div class="lab" style="letter-spacing: 0.04em; color: #1A1C19;">Kanal</div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 68px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B8F87" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h4V10H3zM10 20h4V4h-4zM17 20h4v-7h-4z"></path></svg>
+        <div class="lab" style="letter-spacing: 0.04em;">Stilling</div>
+      </div>
+      <div style="width: 56px; height: 56px; border-radius: 999px; background: #1B4D3E; display: grid; place-items: center; box-shadow: 0 6px 18px rgb(27 77 62 / 0.35);">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F4F1E9" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 68px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B8F87" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <div class="lab" style="letter-spacing: 0.04em;">Chat</div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 68px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#8B8F87" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+        <div class="lab" style="letter-spacing: 0.04em;">Mig</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>

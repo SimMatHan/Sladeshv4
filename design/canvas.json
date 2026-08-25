@@ -1,21 +1,29 @@
 {
   "pages": [
-    { "id": "page-1", "name": "Lys" },
-    { "id": "page-2", "name": "Mørk" }
+    { "id": "page-1", "name": "Retning A" },
+    { "id": "page-2", "name": "Fravalgt" },
+    { "id": "page-3", "name": "Mørk" }
   ],
   "artboards": [
-    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "A · Flaskegrøn", "page": "page-1" },
-    { "file": "DirectionB.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "title": "B · Koral", "page": "page-1" },
-    { "file": "DirectionC.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "title": "C · Indigo + lime", "page": "page-1" },
-    { "file": "Stilling.dc.html", "x": 1470, "y": 0, "w": 390, "h": 844, "title": "Stilling · retning A", "page": "page-1" },
-    { "file": "Palette.dc.html", "x": 1960, "y": 0, "w": 900, "h": 1420, "title": "Paletter og forbehold", "page": "page-1" },
-    { "file": "Moerk.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Mig · mørk", "page": "page-2" },
-    { "file": "System.dc.html", "x": 490, "y": 0, "w": 880, "h": 1560, "title": "De fem greb", "page": "page-2" }
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Mig", "page": "page-1" },
+    { "file": "Stilling.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "title": "Stilling", "page": "page-1" },
+    { "file": "LogArk.dc.html", "x": 980, "y": 0, "w": 390, "h": 844, "title": "Log-arket", "page": "page-1" },
+    { "file": "Trofaehylden.dc.html", "x": 1470, "y": 0, "w": 390, "h": 844, "title": "Trofæhylden", "page": "page-1" },
+    { "file": "Chat.dc.html", "x": 0, "y": 1000, "w": 390, "h": 844, "title": "Chat", "page": "page-1" },
+    { "file": "Kort.dc.html", "x": 490, "y": 1000, "w": 390, "h": 844, "title": "Kort og Check In", "page": "page-1" },
+    { "file": "Historik.dc.html", "x": 980, "y": 1000, "w": 390, "h": 844, "title": "Historik", "page": "page-1" },
+    { "file": "Admin.dc.html", "x": 1470, "y": 1000, "w": 390, "h": 844, "title": "Admin", "page": "page-1" },
+    { "file": "Palette.dc.html", "x": 1960, "y": 0, "w": 900, "h": 1420, "title": "Paletten og forbeholdene", "page": "page-1" },
+    { "file": "DirectionB.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "B · Koral", "page": "page-2" },
+    { "file": "DirectionC.dc.html", "x": 490, "y": 0, "w": 390, "h": 844, "title": "C · Indigo + lime", "page": "page-2" },
+    { "file": "Moerk.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Mig · mørk", "page": "page-3" },
+    { "file": "System.dc.html", "x": 490, "y": 0, "w": 880, "h": 1560, "title": "De fem greb", "page": "page-3" }
   ],
   "annotations": [
-    { "id": "valg", "x": 0, "y": -150, "w": 390, "text": "Samme skaerm, tre paletter. Strukturen er identisk, saa kun farven adskiller dem. A er min anbefaling — se palet-arket til hoejre for hvorfor, og for bagsiden ved hver af dem.", "page": "page-1" },
-    { "id": "stillingnote", "x": 1470, "y": -150, "w": 390, "text": "Stillingen i retning A, saa du kan se paletten paa en liste og ikke kun paa et kort. Egen raekke bliver accent-bloed med accent-kant i stedet for en tung badge.", "page": "page-1" },
-    { "id": "moerknote", "x": 0, "y": -150, "w": 390, "text": "Forrige runde, bevaret. Moerk er stadig appens udgangspunkt — de lyse forslag er det tema, brugere med lysmode faar.", "page": "page-2" }
+    { "id": "raekke1", "x": 0, "y": -150, "w": 880, "text": "Retning A koert ud paa alle skaerme. Oeverste raekke er de fire, man rammer oftest; nederste er Kanalens tre faner plus Admin. Palet-arket til hoejre har de forbehold, der skal ryddes af vejen foer paletten kan skrives ind i index.css.", "page": "page-1" },
+    { "id": "arknote", "x": 980, "y": -150, "w": 880, "text": "Log-arket, Trofaehylden og Admin er ARK — de ligger over den skaerm, man stod paa, og lukkes ved tryk ved siden af. Derfor dugen bagved.", "page": "page-1" },
+    { "id": "fravalgt", "x": 0, "y": -150, "w": 880, "text": "Ikke valgt. Staar her som optegnelse over, hvad der blev overvejet — se palet-arket for bagsiden ved hver.", "page": "page-2" },
+    { "id": "moerknote", "x": 0, "y": -150, "w": 880, "text": "Moerk er fortsat appens udgangspunkt; retning A er det LYSE tema. De fem strukturelle greb til hoejre gaelder begge temaer.", "page": "page-3" }
   ],
   "launch": { "view": "canvas", "page": "page-1" }
 }

@@ -1,0 +1,109 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: #1B4D3E; } a:hover { color: #123528; }
+    .num { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .lab { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6E7269; }
+    .felt { min-height: 48px; display: flex; align-items: center; padding: 0 14px; border-radius: 9px; background: #F2EEE4; border: 1px solid #E3DDD0; font-size: 15px; color: #8B8F87; }
+    .fane { display: flex; align-items: center; min-height: 38px; padding: 0 14px; border-radius: 999px; background: #EDE8DC; font-size: 13px; color: #5F6660; white-space: nowrap; }
+    .adminraekke { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: #FCFAF5; border: 1px solid #E3DDD0; border-radius: 14px; }
+    .maerkat { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; padding: 3px 8px; border-radius: 999px; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; background: #F2EEE4; overflow: hidden; position: relative;">
+  <div style="position: absolute; inset: 0; background: rgb(26 28 25 / 0.42);"></div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 780px; background: #F2EEE4; border-radius: 22px 22px 0 0; box-shadow: 0 -8px 40px rgb(26 28 25 / 0.22); display: flex; flex-direction: column;">
+
+    <div style="display: flex; flex-direction: column; align-items: center; padding: 10px 0 0 0;">
+      <div style="width: 38px; height: 4px; border-radius: 999px; background: #DDD6C7;"></div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 20px 12px 20px;">
+      <div style="flex-grow: 1; font-size: 17px; font-weight: 550; letter-spacing: -0.01em; color: #1A1C19;">Admin</div>
+      <div style="width: 44px; height: 44px; border-radius: 999px; background: #FCFAF5; display: grid; place-items: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5F6660" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </div>
+    </div>
+
+    <!-- fanestriben -->
+    <div style="display: flex; gap: 6px; padding: 0 20px 16px 20px; overflow: hidden;">
+      <div class="fane">Oversigt</div>
+      <div class="fane">Drikkevarer</div>
+      <div class="fane">Brugere</div>
+      <div class="fane" style="background: #1B4D3E; color: #F4F1E9; font-weight: 550;">Broadcast</div>
+      <div class="fane">Tema</div>
+    </div>
+
+    <div style="flex-grow: 1; overflow: hidden; padding: 0 20px; display: flex; flex-direction: column; gap: 24px;">
+
+      <!-- ny broadcast -->
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em; color: #1A1C19;">Ny broadcast</div>
+        <div class="felt">Overskrift</div>
+        <div class="felt">Besked</div>
+
+        <div class="lab" style="margin-top: 6px;">Hvem skal se den?</div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+          <div style="display: flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; background: #1B4D3E; color: #F4F1E9; font-size: 15px; font-weight: 550;">Alle</div>
+          <div style="display: flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; background: #FCFAF5; border: 1px solid #E3DDD0; font-size: 15px; color: #1A1C19;">Ballade</div>
+          <div style="display: flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; background: #FCFAF5; border: 1px solid #E3DDD0; font-size: 15px; color: #1A1C19;">Brøndby IF</div>
+        </div>
+
+        <div class="felt" style="margin-top: 6px;">Timer den skal stå (tom = til du slukker den)</div>
+
+        <div style="display: flex; align-items: center; justify-content: center; min-height: 50px; border-radius: 999px; background: #1B4D3E; color: #F4F1E9; font-size: 15px; font-weight: 550; margin-top: 6px;">Send broadcast</div>
+      </div>
+
+      <!-- sendte -->
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div style="font-size: 17px; font-weight: 550; letter-spacing: -0.01em; color: #1A1C19;">Sendte broadcasts</div>
+
+        <div class="adminraekke">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="font-size: 15px; font-weight: 550; color: #1A1C19;">Vi mødes ved scenen</div>
+              <div class="maerkat" style="background: #DCE8E0; color: #1B4D3E;">Aktiv</div>
+            </div>
+            <div style="font-size: 13px; color: #6E7269;">alle · 21.04</div>
+          </div>
+          <div style="display: flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: 999px; border: 1px solid #E0BDB6; color: #B33A28; font-size: 13px; font-weight: 550;">Sluk</div>
+        </div>
+
+        <div class="adminraekke">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="font-size: 15px; font-weight: 550; color: #5F6660;">Sidste bar lukker kl. 2</div>
+              <div class="maerkat" style="background: #EDE8DC; color: #8B8F87;">Slukket</div>
+            </div>
+            <div style="font-size: 13px; color: #6E7269;">én Kanal · 19.30</div>
+          </div>
+        </div>
+
+        <div class="adminraekke">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <div style="font-size: 15px; font-weight: 550; color: #5F6660;">Husk pant</div>
+              <div class="maerkat" style="background: #EDE8DC; color: #8B8F87;">Slukket</div>
+            </div>
+            <div style="font-size: 13px; color: #6E7269;">alle · i går</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
