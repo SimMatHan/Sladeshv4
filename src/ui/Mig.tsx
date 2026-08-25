@@ -9,6 +9,7 @@ import { Achievements } from "./Achievements";
 import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
 import { Fremdriftsring } from "./Fremdriftsring";
+import { TandhjulIkon } from "./Ikoner";
 import { Indstillinger } from "./Indstillinger";
 import { Stimestribe } from "./Stimestribe";
 
@@ -88,12 +89,22 @@ export function Mig({
 
   return (
     <>
+      {/* Emailen er væk. Den bekræftede, hvem man er logget ind som — det
+          hører hjemme i Indstillinger, ikke på den skærm man åbner hver
+          aften. Tandhjulet står i stedet dér, hvor man kigger efter sig
+          selv, og tager en knap ud af bunken forneden. */}
       <div className="profiltop">
         <Avatar emoji={mig.emoji} navn={mig.displayName} farve={mig.avatarColor} stor />
-        <div>
+        <div className="navnblok">
           <div className="navn">{mig.displayName}</div>
-          <div className="email">{mig.email}</div>
         </div>
+        <button
+          className="profilhandling"
+          aria-label="Indstillinger"
+          onClick={() => setIndstillingerAabne(true)}
+        >
+          <TandhjulIkon />
+        </button>
       </div>
 
       {/* To ringe, ikke tre. Den tredje — næste mærke — er en fremdrift mod
@@ -113,19 +124,26 @@ export function Mig({
         onAaben={() => setHyldeAaben(true)}
       />
 
-      {/* Livstidspoint og længste stræk. Ægte tal, men ikke skærmens
-          hovedsag, så de står som én dæmpet linje. Den nuværende stime er
-          flyttet op i striben og gentages ikke her. */}
-      <p className="hjaelp livstidstal">
-        {genstande(mig.totalPoints ?? 0)} point i alt · længste stræk{" "}
-        {mig.longestStreak ?? 0} dage
-      </p>
+      {/* Livstidstallene stod som én dæmpet linje, man læste forbi. De er
+          ægte tal og tåler at blive vist som tal — men de er stadig ikke
+          skærmens hovedsag, så de står nederst og i den lille kortstørrelse,
+          `.talgitter` allerede bruger i Admin og på personkortet. */}
+      <div className="talgitter">
+        <div className="talkort">
+          <div className="vaerdi">{genstande(mig.totalPoints ?? 0)}</div>
+          <span className="etiket">Point</span>
+        </div>
+        <div className="talkort">
+          <div className="vaerdi">{mig.longestStreak ?? 0}</div>
+          <span className="etiket">Længste</span>
+        </div>
+        <div className="talkort">
+          <div className="vaerdi">{mig.checkInCount ?? 0}</div>
+          <span className="etiket">Check ins</span>
+        </div>
+      </div>
 
       <div className="knapraekke">
-        <button className="knap" onClick={() => setIndstillingerAabne(true)}>
-          Indstillinger
-        </button>
-
         {mig.isAdmin === true && (
           <button className="knap" onClick={() => setAdminAabent(true)}>
             Admin

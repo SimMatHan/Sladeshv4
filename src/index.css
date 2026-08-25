@@ -1142,33 +1142,68 @@ input {
 
 /* ------------------------------------------------------------------- mig */
 
+/*
+ * DISSE REGLER LÅ UDEN FOR SYSTEMET.
+ *
+ * `.profiltop`, `.talgitter` og `.medaljer` er ældre end designsystemet og
+ * blev aldrig flyttet med: 22px, 13.5px, 23px, 11.5px, 15px, 9px, 7px og
+ * `-0.02em` findes ingen af dem i skalaen. Det er ikke en skønhedsfejl —
+ * det er derfor Mig, Admin og personkortet føltes som en anden app end
+ * resten: de brugte bogstavelig talt en anden typografisk skala.
+ *
+ * Skriftstørrelserne er rundet til det NÆRMESTE af de fem trin, ikke til
+ * det, der lignede mest. 23px og 22px blev begge til 28 eller 17 — der er
+ * ingen 22'er, og det er hele pointen med regel 2.
+ */
 .profiltop {
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding: 20px 0 6px;
+  gap: var(--luft-4);
+  padding: var(--luft-5) 0 var(--luft-2);
+}
+
+.profiltop .navnblok {
+  flex: 1;
+  min-width: 0;
 }
 
 .profiltop .navn {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  letter-spacing: var(--spor-titel);
 }
 
-.profiltop .email {
-  font-size: 13.5px;
-  color: var(--tekst-svag);
+/* Tandhjulet. Indstillinger var en knap i bunken forneden; nu er den dér,
+   hvor man kigger efter sig selv. */
+.profilhandling {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--tryk);
+  height: var(--tryk);
+  border-radius: var(--radius-rund);
+  color: var(--tekst-daempet);
+}
+
+.profilhandling:active {
+  background: var(--flade);
+}
+
+.profilhandling svg {
+  width: var(--ikon);
+  height: var(--ikon);
+  display: block;
 }
 
 .talgitter {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 9px;
-  margin: 16px 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--luft-2);
+  margin: var(--luft-4) 0;
 }
 
 .talkort {
-  padding: 14px 10px;
+  padding: var(--luft-3) var(--luft-2);
   text-align: center;
   background: var(--flade);
   border: 1px solid var(--kant);
@@ -1176,22 +1211,23 @@ input {
 }
 
 .talkort .vaerdi {
-  font-size: 23px;
-  font-weight: 700;
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--spor-tal);
 }
 
+/* Genbruger `.etiket`s egen regel frem for at gentage den med andre tal. */
 .talkort .etiket {
-  font-size: 11.5px;
-  color: var(--tekst-svag);
+  display: block;
+  margin-top: var(--luft-1);
 }
 
 .medaljer {
   display: flex;
   flex-wrap: wrap;
-  gap: 7px;
-  font-size: 22px;
+  gap: var(--luft-1);
+  font-size: var(--tekst-m);
 }
 
 .medaljer .laast {
@@ -1265,10 +1301,6 @@ input {
 /* Hverken henter eller kender et tal endnu — "?" eller "–", ikke et 0. */
 .ringtal--tomt {
   color: var(--tekst-svag);
-}
-
-.livstidstal {
-  margin: 0 0 var(--luft-5);
 }
 
 /* --------------------------------------------------------------- stimen */
@@ -1788,14 +1820,76 @@ input {
   background: var(--accent);
 }
 
-.soejletekst {
+/*
+ * Søjlerne bor i et KORT, ikke løst på siden.
+ *
+ * De stod før bart på bunden med to små datoer under. Det gjorde dem
+ * svære at se som én figur — især på creme, hvor en bleg søjle på en
+ * bleg bund næsten forsvinder — og det var det eneste sted i appen, hvor
+ * indhold ikke lå på en flade.
+ */
+.soejlekort {
+  padding: var(--luft-5);
+  margin-bottom: var(--luft-4);
+}
+
+/*
+ * Ugedagen under hver søjle. Erstatter de to datoer i enderne: man læser
+ * "torsdag" hurtigere end "12. aug.", og det er tættere på, hvordan man
+ * husker sidste uge.
+ */
+.soejledage {
+  display: grid;
+  gap: var(--luft-1);
+  margin-top: var(--luft-2);
+  text-align: center;
+}
+
+.soejledage .idag {
+  color: var(--tekst);
+}
+
+/* Opsummeringen under søjlerne. Tre tal, der ikke fandtes før: man kunne
+   se formen, men ikke hvad den lagde op til. */
+.soejlesum {
   display: flex;
   justify-content: space-between;
-  /* 2px sideværts, ikke et luft-trin: teksten skal flugte lodret med
-     søjlerne ovenover, som har samme sidepolstring. */
-  margin: var(--luft-2) 2px var(--luft-5);
-  font-size: var(--tekst-xs);
-  color: var(--tekst-svag);
+  gap: var(--luft-4);
+  margin-top: var(--luft-5);
+  padding-top: var(--luft-5);
+  border-top: 1px solid var(--kant);
+}
+
+.soejlesum > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+}
+
+.soejlesum > div:last-child {
+  align-items: flex-end;
+}
+
+/* Datobrikken i venstre side af hver dagrække — samme rolle som avataren
+   i stillingen: noget fast at scanne ned ad. */
+.datobrik {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: var(--radius-lille);
+  background: var(--flade-saenket);
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  color: var(--tekst-daempet);
+}
+
+.dagraekke[aria-expanded="true"] .datobrik,
+.datobrik.idag {
+  background: var(--accent);
+  color: var(--accent-tekst);
 }
 
 .dage {
@@ -1842,6 +1936,9 @@ input {
 
 .dagraekke .talblok {
   flex: 0 0 auto;
+  /* Højrestillet som stillingens talblok — etiketten under tallet skal
+     flugte med det, ikke hænge til venstre. */
+  text-align: right;
 }
 
 .dagliste {
