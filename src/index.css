@@ -2105,6 +2105,17 @@ p.dagliste {
   background: var(--flade-hvaelvet);
 }
 
+/*
+ * Når ALT er låst op, er der intet næste mærke og dermed intet billede —
+ * kun 🎉. Den skal centreres i den samme flade, badgene ellers fylder, så
+ * rækken ikke skifter højde, når man når i mål.
+ */
+.badgebillede.alt-oplaast {
+  display: grid;
+  place-items: center;
+  font-size: var(--tekst-xl);
+}
+
 .badgebillede img {
   width: 100%;
   height: 100%;

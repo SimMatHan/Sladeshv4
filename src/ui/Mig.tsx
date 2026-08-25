@@ -96,19 +96,22 @@ export function Mig({
         </div>
       </div>
 
+      {/* To ringe, ikke tre. Den tredje — næste mærke — er en fremdrift mod
+          en tærskel og læses bedre som en bjælke; se AchievementRaekke. */}
       <div className="kort ringraekker">
         <PromilleRaekke minPromille={minPromille} onIndstil={() => setIndstillingerAabne(true)} />
         <GenstandeRaekke channelId={channelId} stilling={stilling} minUserId={mig._id} />
-        <AchievementRaekke
-          naesteMilepael={naesteMilepael}
-          achievements={achievements}
-          onAaben={() => setHyldeAaben(true)}
-        />
       </div>
 
-      {/* Stimen som stribe frem for et tal i en fodnote — se Stimestribe.tsx.
-          Den står UNDER ringene: ringene er i aften, striben er ugen. */}
+      {/* Rækkefølgen er tidsmæssig: ringene er I AFTEN, striben er UGEN,
+          mærket er DET NÆSTE. */}
       <Stimestribe stime={mig.currentDayStreak ?? 0} />
+
+      <AchievementRaekke
+        naesteMilepael={naesteMilepael}
+        achievements={achievements}
+        onAaben={() => setHyldeAaben(true)}
+      />
 
       {/* Livstidspoint og længste stræk. Ægte tal, men ikke skærmens
           hovedsag, så de står som én dæmpet linje. Den nuværende stime er
@@ -366,17 +369,7 @@ function AchievementRaekke({
   onAaben: () => void;
 }) {
   if (naesteMilepael === undefined || achievements === undefined) {
-    return (
-      <div className="ringraekke">
-        <Fremdriftsring andel={0} stoerrelse={100} tykkelse={8} srLabel="Henter achievements">
-          <span className="ringtal">–</span>
-        </Fremdriftsring>
-        <div className="ringtekst">
-          <span className="titel">Næste mærke</span>
-          <span className="hjaelp">Henter …</span>
-        </div>
-      </div>
-    );
+    return <p className="midtstillet">Henter achievements …</p>;
   }
 
   const oplaaste = achievements.filter((a) => a.unlocked).length;
@@ -385,14 +378,15 @@ function AchievementRaekke({
   // fejring, ikke en tom tilstand.
   if (naesteMilepael === null) {
     return (
-      <button className="ringraekke ringraekke--knap" onClick={onAaben}>
-        <Fremdriftsring andel={1} stoerrelse={100} tykkelse={8} farve="var(--medgang)" srLabel="Alle achievements låst op">
-          <span className="ringtal">🎉</span>
-        </Fremdriftsring>
-        <div className="ringtekst">
-          <span className="titel">Næste mærke</span>
+      <button className="kort taettest" onClick={onAaben}>
+        <span className="badgebillede lille alt-oplaast" aria-hidden="true">
+          🎉
+        </span>
+        <div className="taettestmidt">
+          <span className="etiket">Næste mærke</span>
+          <div className="titel">Alle låst op</div>
           <span className="hjaelp">
-            {oplaaste} af {achievements.length} — alle låst op!
+            {oplaaste} af {achievements.length} optjent
           </span>
           <Medaljestribe achievements={achievements} />
         </div>
@@ -401,29 +395,35 @@ function AchievementRaekke({
   }
 
   const def = findAchievement(naesteMilepael.achievementId);
-  const andel = naesteMilepael.percentage / 100;
 
   return (
-    <button className="ringraekke ringraekke--knap" onClick={onAaben}>
-      <Fremdriftsring
-        andel={andel}
-        stoerrelse={100}
-        tykkelse={8}
-        srLabel={`${def?.title ?? "Næste mærke"}: ${naesteMilepael.current} af ${naesteMilepael.threshold}`}
-      >
-        <span className="ringtal">
-          {naesteMilepael.current}/{naesteMilepael.threshold}
-        </span>
-      </Fremdriftsring>
-      <div className="ringtekst">
-        <span className="titel">
-          {def?.emoji ?? "🏆"} {def?.title ?? "Næste mærke"}
-        </span>
-        <span className="hjaelp">
-          {oplaaste} af {achievements.length} optjent
-        </span>
+    <button className="kort taettest" onClick={onAaben}>
+      {/* Genbruger `.badgebillede lille` fra hylden, så mærket ser ens ud
+          de to steder det vises. Definitionen har billedet; brugerens
+          tæller hører til i hylden og gentages ikke her. */}
+      <span className="badgebillede lille">
+        {def === undefined ? "🏆" : <img src={def.image} alt="" />}
+      </span>
+
+      <div className="taettestmidt">
+        <span className="etiket">Tættest på</span>
+        <div className="titel">{def?.title ?? "Næste mærke"}</div>
+        <div
+          className="bjaelke"
+          role="progressbar"
+          aria-valuenow={naesteMilepael.current}
+          aria-valuemin={0}
+          aria-valuemax={naesteMilepael.threshold}
+          aria-label={`${def?.title ?? "Næste mærke"}: ${naesteMilepael.current} af ${naesteMilepael.threshold}`}
+        >
+          <div className="fyld" style={{ width: `${naesteMilepael.percentage}%` }} />
+        </div>
         <Medaljestribe achievements={achievements} />
       </div>
+
+      <span className="hjaelp taettesttal">
+        {naesteMilepael.current}/{naesteMilepael.threshold}
+      </span>
     </button>
   );
 }
