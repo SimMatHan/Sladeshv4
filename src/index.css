@@ -49,6 +49,16 @@
   --bund: #08090c;
   --flade: #14161b;
   --flade-hvaelvet: #1f222a;
+  /*
+   * SÆNKET flade — sporet bag en kontrol, der glider: segmentvælgeren.
+   *
+   * Den findes, fordi "hævet = lysere" kun holder i mørke. I lys er
+   * `--flade` og `--flade-hvaelvet` #fcfaf5 og #ffffff — tre trin ud af
+   * 255 — så det valgte segment var i praksis usynligt på creme. Et spor
+   * skal være MØRKERE end siden i lys og lysere end den i mørke, og det
+   * er to forskellige retninger. Derfor et token og ikke en genbrug.
+   */
+  --flade-saenket: #14161b;
   --kant: #23262f;
 
   --tekst: #f2f3f5;
@@ -165,13 +175,27 @@
    */
   --navplads: calc(var(--navhoejde) + var(--luft-4));
 
+  /* ----------------------------------------------------------- højde */
+
   /*
-   * Pillens skygge. Den ENESTE skygge med et token, fordi den er det
-   * eneste sted, hvor en skygge skal bære en flade fri af indholdet bag
-   * den — og fordi den skal have vidt forskellig styrke i de to temaer:
-   * på nærsort må den være tung, på creme ville det samme se snavset ud.
+   * TRE trin, og de betyder noget bestemt hver især:
+   *
+   *   lav     en hævet kontrol INDE i en flade — det valgte segment
+   *   svaev   en flade der ligger OVER indholdet — navigationen, kvitteringen
+   *   hoej    en flade over DUGEN — arkene, fejringen
+   *
+   * De skal være tokens, fordi skyggens farve er en temabeslutning, ikke
+   * geometri: på nærsort må den være tung, på creme ville den samme sorte
+   * skygge se snavset ud. Appen havde før seks hårdkodede `rgb(0 0 0 / …)`
+   * i forskellige styrker, og de så alle forkerte ud i lysmode.
+   *
+   * Undtagelsen er `.kortnaal`, som ligger på KORTFLISER og ikke på en af
+   * appens flader. Fliserne er lyse i begge temaer, så nålens skygge skal
+   * være sort begge steder — den bliver derfor stående som en literal.
    */
-  --skygge-nav: 0 12px 32px rgb(0 0 0 / 0.5);
+  --skygge-lav: 0 1px 2px rgb(0 0 0 / 0.2);
+  --skygge-svaev: 0 12px 32px rgb(0 0 0 / 0.5);
+  --skygge-hoej: 0 20px 60px rgb(0 0 0 / 0.5);
 
   /* Komponentmål. Ikke afstand — det er tingenes egen størrelse. */
   --avatar: 42px;
@@ -238,6 +262,8 @@
     --bund: #f2eee4;
     --flade: #fcfaf5;
     --flade-hvaelvet: #ffffff;
+    /* MØRKERE end siden her — modsat i mørke. Se `--flade-saenket`. */
+    --flade-saenket: #e9e4d8;
     --kant: #e3ddd0;
 
     --tekst: #1a1c19;
@@ -277,8 +303,14 @@
      * cremen. Sølv er værst — det er en lys grå i sagens natur og skal helt
      * ned i tin, før tallet kan læses. Alle tre ligger nu over 4,5:1.
      */
-    /* På creme ville den mørke skygge se snavset ud. Se `--skygge-nav`. */
-    --skygge-nav: 0 8px 24px rgb(26 28 25 / 0.1);
+    /*
+     * Skyggerne er BLØDERE og bygget på tekstfarven frem for ren sort. En
+     * sort skygge på creme bliver grå og ser snavset ud; den skal have
+     * samme varme som fladen, den falder på.
+     */
+    --skygge-lav: 0 1px 2px rgb(26 28 25 / 0.06);
+    --skygge-svaev: 0 8px 24px rgb(26 28 25 / 0.1);
+    --skygge-hoej: 0 16px 48px rgb(26 28 25 / 0.16);
 
     --guld: #856300;
     --soelv: #656b71;
@@ -440,30 +472,38 @@ input {
   padding: var(--luft-3) var(--luft-4);
   background: color-mix(in srgb, var(--bund) 88%, transparent);
   backdrop-filter: blur(14px);
-  border-bottom: 1px solid var(--kant);
+  /*
+   * INGEN streg under. Sløringen skiller allerede bjælken fra det, der
+   * ruller under den, og en 1px kant oven i det blev til en søm — mest
+   * synlig på creme, hvor kanten i forvejen er svag og linjen derfor var
+   * det eneste, øjet fangede.
+   */
 }
 
+/*
+ * Kanalens navn er skærmens TITEL, ikke en kontrol i en værktøjslinje.
+ *
+ * Den var en pille med flade, kant og 17px tekst — en knap blandt knapper.
+ * Men den er det eneste i toppen, og den siger, hvor man er. Nu bærer den
+ * som en overskrift, og ▾ er den lille del, der røber, at man kan skifte.
+ */
 .kanalknap {
   display: flex;
   align-items: center;
   gap: var(--luft-2);
   min-height: var(--tryk);
-  padding: var(--luft-2) var(--luft-3);
-  border-radius: var(--radius-rund);
-  background: var(--flade);
-  border: 1px solid var(--kant);
-  font-size: var(--tekst-m);
-  font-weight: var(--vaegt-medium);
-  letter-spacing: var(--spor-titel);
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
 }
 
 .kanalknap:active {
-  background: var(--flade-hvaelvet);
+  opacity: 0.7;
 }
 
 .kanalknap .pil {
   color: var(--tekst-svag);
-  font-size: var(--tekst-xs);
+  font-size: var(--tekst-s);
 }
 
 .indhold {
@@ -474,13 +514,18 @@ input {
 
 /* --------------------------------------------------------- segmentvælger */
 
+/*
+ * Sporet er SÆNKET, og kun det valgte segment er hævet. Før var sporet
+ * `--flade` og knappen `--flade-hvaelvet`, hvilket virker i mørke, men i
+ * lys er de to #fcfaf5 og #ffffff — det valgte segment kunne ikke ses.
+ * Kanten er væk med det samme: den sænkede flade skiller allerede.
+ */
 .segmenter {
   display: flex;
   gap: var(--luft-1);
   padding: var(--luft-1);
   margin: var(--luft-4) 0 var(--luft-5);
-  background: var(--flade);
-  border: 1px solid var(--kant);
+  background: var(--flade-saenket);
   border-radius: var(--radius-rund);
 }
 
@@ -500,7 +545,7 @@ input {
 .segment[aria-selected="true"] {
   background: var(--flade-hvaelvet);
   color: var(--tekst);
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2);
+  box-shadow: var(--skygge-lav);
 }
 
 /* ------------------------------------------------------------ navigation */
@@ -539,7 +584,7 @@ input {
   background: color-mix(in srgb, var(--flade) 92%, transparent);
   backdrop-filter: blur(14px);
   border: 1px solid var(--kant);
-  box-shadow: var(--skygge-nav);
+  box-shadow: var(--skygge-svaev);
 }
 
 .navknap {
@@ -654,7 +699,7 @@ input {
   right: 0;
   bottom: 0;
   z-index: var(--lag-ark);
-  max-width: 560px;
+  max-width: var(--bredde);
   margin: 0 auto;
   max-height: 88dvh;
   display: flex;
@@ -663,6 +708,13 @@ input {
   border-top-left-radius: var(--radius-stor);
   border-top-right-radius: var(--radius-stor);
   border-top: 1px solid var(--kant);
+  /*
+   * Arket er appens MEST hævede flade — det ligger over dugen — men havde
+   * som det eneste ingen skygge og kun en kant foroven. På creme, hvor
+   * kanten er svag, gjorde det at arket så ud som om det sad fast i
+   * skærmen frem for at ligge oven på den.
+   */
+  box-shadow: var(--skygge-hoej);
   padding-bottom: var(--bund-sikker);
   animation: op var(--fart-lang) var(--kurve);
 }
@@ -839,7 +891,7 @@ input {
   background: var(--flade-hvaelvet);
   border: 1px solid var(--kant);
   border-radius: var(--radius);
-  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  box-shadow: var(--skygge-svaev);
   animation: op var(--fart) var(--kurve);
 }
 
@@ -902,6 +954,9 @@ input {
   font-variant-numeric: tabular-nums;
   border-radius: var(--radius-rund);
   background: var(--flade-hvaelvet);
+  /* Kant, som .chip og .knap har. Uden den forsvinder mærkatet i lys:
+     `--flade-hvaelvet` er #ffffff og kortet under den #fcfaf5. */
+  border: 1px solid var(--kant);
   color: var(--tekst-daempet);
 }
 
@@ -1266,6 +1321,8 @@ input {
   height: var(--stimeprik);
   border-radius: var(--radius-rund);
   background: var(--flade-hvaelvet);
+  /* Samme grund som .maerkat: uden kant er en tom dag usynlig i lys. */
+  border: 1px solid var(--kant);
   color: var(--tekst-svag);
   font-size: var(--tekst-s);
   font-weight: var(--vaegt-medium);
@@ -1274,6 +1331,7 @@ input {
 
 .stimeprik.fyldt {
   background: var(--accent);
+  border-color: var(--accent);
   color: var(--accent-tekst);
   font-weight: var(--vaegt-fed);
 }
@@ -1346,7 +1404,7 @@ input {
   z-index: 50;
   display: flex;
   flex-direction: column;
-  max-width: 560px;
+  max-width: var(--bredde);
   margin: 0 auto;
   padding: var(--top-sikker) 20px calc(var(--bund-sikker) + 20px);
   background:
@@ -2331,7 +2389,7 @@ p.dagliste {
   background: var(--flade);
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
   border-radius: var(--radius-stor);
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.5);
+  box-shadow: var(--skygge-hoej);
   animation: op var(--fart-lang) var(--kurve);
 }
 
