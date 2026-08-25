@@ -35,14 +35,35 @@
 
   /* ---------------------------------------------------------- farver */
 
-  --bund: #0e0f13;
-  --flade: #17191f;
+  /*
+   * Bunden er NÆRSORT, ikke mørkegrå.
+   *
+   * Den var #0e0f13, og kortene #17191f — ni trin fra hinanden. På en
+   * telefon i en bar var det ikke nok til, at et kort løftede sig fra
+   * siden; skærmen læste som én grå flade med tekst på.
+   *
+   * Nu er der tolv trin imellem, og bunden er tæt nok på sort til, at
+   * OLED-skærme faktisk slukker pixlerne. Det er også dét, alle tre
+   * referencer i design/README.md gør.
+   */
+  --bund: #08090c;
+  --flade: #14161b;
   --flade-hvaelvet: #1f222a;
-  --kant: #2a2e38;
+  --kant: #23262f;
 
   --tekst: #f2f3f5;
   --tekst-daempet: #9ba1ad;
-  --tekst-svag: #6b7280;
+  /*
+   * LYSERE end den var (#6b7280). Den lå på 3,6:1 mod kortfladen — under
+   * WCAG AA, og det gjorde den allerede før bunden blev gjort dybere. Det
+   * er den samme fejl, det lyse tema havde: `--tekst-svag` bærer de 11px
+   * versaletiketter, så netop den mindste tekst var den, der ikke kunne
+   * læses.
+   *
+   * Målt mod `--flade-hvaelvet`, den lyseste af de tre flader og dermed
+   * den bindende: 4,65:1.
+   */
+  --tekst-svag: #848b99;
 
   --accent: #f59e0b;
   --accent-mork: #d97706;
@@ -134,6 +155,23 @@
 
   --bredde: 560px;
   --navhoejde: 64px;
+  /*
+   * Hvor meget navigationen optager forneden: pillens egen højde PLUS
+   * luften under den, fordi den svæver frem for at sidde på kanten.
+   *
+   * Alt der skal ligge fri af navigationen — indholdet, kvitteringen,
+   * chattens skriver — regner fra DENNE, ikke fra `--navhoejde`. Ellers
+   * skal et løft af pillen huskes tre steder, og det tredje bliver glemt.
+   */
+  --navplads: calc(var(--navhoejde) + var(--luft-4));
+
+  /*
+   * Pillens skygge. Den ENESTE skygge med et token, fordi den er det
+   * eneste sted, hvor en skygge skal bære en flade fri af indholdet bag
+   * den — og fordi den skal have vidt forskellig styrke i de to temaer:
+   * på nærsort må den være tung, på creme ville det samme se snavset ud.
+   */
+  --skygge-nav: 0 12px 32px rgb(0 0 0 / 0.5);
 
   /* Komponentmål. Ikke afstand — det er tingenes egen størrelse. */
   --avatar: 42px;
@@ -149,6 +187,9 @@
   --badge-stor: 128px;
   /* Chattens lille afsenderavatar. */
   --avatar-lille: 26px;
+  /* Stimestribens dagprik. Syv af dem plus luft skal kunne stå på den
+     smalleste telefon uden at bryde om. */
+  --stimeprik: 30px;
   /* Historikkens søjlediagram — én chart, ét sted, men stadig et rigtigt
      designmål, ikke en glemt værdi. */
   --soejlehoejde: 92px;
@@ -236,6 +277,9 @@
      * cremen. Sølv er værst — det er en lys grå i sagens natur og skal helt
      * ned i tin, før tallet kan læses. Alle tre ligger nu over 4,5:1.
      */
+    /* På creme ville den mørke skygge se snavset ud. Se `--skygge-nav`. */
+    --skygge-nav: 0 8px 24px rgb(26 28 25 / 0.1);
+
     --guld: #856300;
     --soelv: #656b71;
     --bronze: #8f5d3d;
@@ -425,7 +469,7 @@ input {
 .indhold {
   flex: 1;
   padding: 0 var(--luft-4);
-  padding-bottom: calc(var(--navhoejde) + var(--bund-sikker) + var(--luft-6));
+  padding-bottom: calc(var(--navplads) + var(--bund-sikker) + var(--luft-6));
 }
 
 /* --------------------------------------------------------- segmentvælger */
@@ -461,22 +505,41 @@ input {
 
 /* ------------------------------------------------------------ navigation */
 
+/*
+ * Navigationen SVÆVER frem for at sidde på kanten.
+ *
+ * FØR var den en bjælke klistret til bunden med en streg over. Den
+ * fungerede, men den så ud som en webside med en menu i bunden — og den
+ * ene ting, appen gør hele aftenen, sad i en grå stribe.
+ *
+ * Nu er den en pille, der ligger OVEN PÅ indholdet med luft hele vejen
+ * rundt. Det er også, hvad alle tre referencer i design/README.md gør, og
+ * det giver ( + ) en flade at være midtpunkt i, uden at skulle hænge halvt
+ * ud over kanten som før.
+ *
+ * Der er stadig TO faner. Strukturen er uændret — se docs/redesign-kontrakt.md
+ * afsnit 4: Stilling, Chat, Kort og Historik er segmenter INDE i Kanal-fanen,
+ * ikke punkter hernede.
+ */
 .nav {
   position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  bottom: calc(var(--bund-sikker) + var(--luft-4));
+  left: var(--luft-4);
+  right: var(--luft-4);
   z-index: var(--lag-nav);
   display: flex;
   align-items: center;
   justify-content: space-around;
-  max-width: var(--bredde);
+  gap: var(--luft-2);
+  max-width: calc(var(--bredde) - var(--luft-4) * 2);
   margin: 0 auto;
   height: var(--navhoejde);
-  padding-bottom: var(--bund-sikker);
-  background: color-mix(in srgb, var(--bund) 92%, transparent);
+  padding: 0 var(--luft-2);
+  border-radius: var(--radius-rund);
+  background: color-mix(in srgb, var(--flade) 92%, transparent);
   backdrop-filter: blur(14px);
-  border-top: 1px solid var(--kant);
+  border: 1px solid var(--kant);
+  box-shadow: var(--skygge-nav);
 }
 
 .navknap {
@@ -495,27 +558,55 @@ input {
   color: var(--tekst);
 }
 
+/*
+ * Ikonet er en streg-SVG, ikke en emoji.
+ *
+ * Emoji tegnes af styresystemet og ser derfor forskellig ud på hver
+ * telefon — og i navigationen, hvor de to ikoner står side om side hele
+ * aftenen, var det det eneste sted i appen, hvor forskellen var synlig.
+ * `currentColor` gør desuden, at den aktive fane kan skifte farve; det
+ * kan en emoji ikke.
+ *
+ * Emoji bliver, hvor de bærer BETYDNING og ikke bare form: drikkekategorier,
+ * avatarer, badges. Se docs/redesign-kontrakt.md afsnit 2.
+ */
 .navknap .ikon {
-  font-size: var(--ikon);
-  line-height: 1;
+  display: grid;
+  place-items: center;
+  width: var(--ikon);
+  height: var(--ikon);
 }
 
-/* ( + ) — en handling, ikke en fane. Derfor hævet og i accentfarven. */
+.navknap .ikon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/*
+ * ( + ) — en handling, ikke en fane. Derfor i accentfarven.
+ *
+ * Den hang før halvt ud over bjælkens overkant med en negativ margin.
+ * Nu ligger pillen frit, så knappen kan sidde INDE i den og stadig være
+ * skærmens midtpunkt — samme greb som Stravas Registrer-knap.
+ */
 .logknap {
   flex: 0 0 auto;
   display: grid;
   place-items: center;
   width: var(--logknap);
   height: var(--logknap);
-  margin-top: calc(var(--logknap) / -2 - var(--luft-2) / 2);
   border-radius: 50%;
   background: linear-gradient(160deg, var(--accent), var(--accent-mork));
   color: var(--accent-tekst);
-  font-size: var(--ikon-stor);
-  font-weight: var(--vaegt-normal);
-  line-height: 1;
   box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 40%, transparent);
   transition: transform var(--fart-hurtig) ease;
+}
+
+.logknap svg {
+  width: var(--ikon-stor);
+  height: var(--ikon-stor);
+  display: block;
 }
 
 .logknap:active {
@@ -737,7 +828,7 @@ input {
   position: fixed;
   left: var(--luft-4);
   right: var(--luft-4);
-  bottom: calc(var(--navhoejde) + var(--bund-sikker) + var(--luft-4));
+  bottom: calc(var(--navplads) + var(--bund-sikker) + var(--luft-4));
   z-index: var(--lag-kvittering);
   max-width: calc(var(--bredde) - var(--luft-4) * 2);
   margin: 0 auto;
@@ -1100,6 +1191,101 @@ input {
   margin: 0 0 var(--luft-5);
 }
 
+/* --------------------------------------------------------------- stimen */
+
+/*
+ * De seneste syv drikkedage. Se Stimestribe.tsx for hvorfor tallet ikke
+ * kan stå alene.
+ */
+.stime {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-4);
+  margin-bottom: var(--luft-3);
+}
+
+.stimetal {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-1);
+}
+
+/* Tallet står OVEN I flammen, ikke ved siden af — den er en flade, det
+   er et tal, og to ting side om side ville blive to ting at læse. */
+.stimeflamme {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: var(--tryk);
+  height: var(--tryk);
+  color: var(--accent);
+}
+
+.stimeflamme svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0.16;
+}
+
+.stimeantal {
+  position: absolute;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+}
+
+.stimedage {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--luft-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stimedag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-2);
+}
+
+.stimeidag {
+  color: var(--tekst);
+}
+
+.stimeprik {
+  display: grid;
+  place-items: center;
+  width: var(--stimeprik);
+  height: var(--stimeprik);
+  border-radius: var(--radius-rund);
+  background: var(--flade-hvaelvet);
+  color: var(--tekst-svag);
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
+  font-variant-numeric: tabular-nums;
+}
+
+.stimeprik.fyldt {
+  background: var(--accent);
+  color: var(--accent-tekst);
+  font-weight: var(--vaegt-fed);
+}
+
+/* I dag uden logning endnu: en ring der kan fyldes, ikke et hul. */
+.stimeprik.idag {
+  background: var(--bund);
+  border: 2px solid var(--accent);
+  color: var(--tekst);
+  font-weight: var(--vaegt-fed);
+}
+
 .knapraekke {
   margin-top: var(--luft-5);
 }
@@ -1440,7 +1626,7 @@ input {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(var(--navhoejde) + var(--bund-sikker));
+  bottom: calc(var(--navplads) + var(--bund-sikker));
   z-index: var(--lag-skriver);
   display: flex;
   gap: var(--luft-2);
@@ -1917,6 +2103,17 @@ p.dagliste {
   border-radius: var(--radius);
   overflow: hidden;
   background: var(--flade-hvaelvet);
+}
+
+/*
+ * Når ALT er låst op, er der intet næste mærke og dermed intet billede —
+ * kun 🎉. Den skal centreres i den samme flade, badgene ellers fylder, så
+ * rækken ikke skifter højde, når man når i mål.
+ */
+.badgebillede.alt-oplaast {
+  display: grid;
+  place-items: center;
+  font-size: var(--tekst-xl);
 }
 
 .badgebillede img {

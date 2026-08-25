@@ -11,6 +11,7 @@ import { AchievementOplaasning } from "./ui/AchievementOplaasning";
 import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
 import { Faner } from "./ui/Faner";
+import { KanalIkon, MigIkon, PlusIkon } from "./ui/Ikoner";
 import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
 import { Kanaltema } from "./ui/Kanaltema";
@@ -305,7 +306,9 @@ function Appen() {
           aria-current={fane === "kanal" ? "page" : undefined}
           onClick={() => setFane("kanal")}
         >
-          <span className="ikon">🏆</span>
+          <span className="ikon">
+            <KanalIkon />
+          </span>
           Kanal
         </button>
 
@@ -314,7 +317,7 @@ function Appen() {
           aria-label="Log en genstand"
           onClick={() => setLogAabent(true)}
         >
-          +
+          <PlusIkon />
         </button>
 
         <button
@@ -322,7 +325,9 @@ function Appen() {
           aria-current={fane === "mig" ? "page" : undefined}
           onClick={() => setFane("mig")}
         >
-          <span className="ikon">👤</span>
+          <span className="ikon">
+            <MigIkon />
+          </span>
           Mig
         </button>
       </nav>
