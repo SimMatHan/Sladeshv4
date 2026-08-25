@@ -59,8 +59,14 @@ Uafhængige af farve, gælder begge temaer — se `System.dc.html`:
   afsnit 6a). Med grøn accent i lysmode ligner appen ikke sit eget ikon på
   hjemmeskærmen — enten tegnes ikonet om, eller uoverensstemmelsen accepteres
   bevidst.
-- **De fem strukturelle greb er ikke bygget endnu.** Kun paletten er kørt ud
-  i koden.
+- **Greb 4 — det sjette typografiske trin — er IKKE bygget.** `--tekst-hero:
+  56px` forudsætter ét stort, fritstående tal på Mig. Der er ikke noget: tallene
+  står inde i ringene, hvor 56px ikke kan være. At tegne skærmen om, så tallet
+  kommer ud af ringen, ville fjerne den figur, `docs/redesign-oplaeg.md` regel 6
+  kalder appens bærende, og et sjette trin bryder samtidig regel 2 — som står
+  skrevet i `index.css` selv. Det er en beslutning, ikke en detalje.
+
+  De øvrige fire er kørt ud i koden.
 
 ## Bevidst udeladt
 
