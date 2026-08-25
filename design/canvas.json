@@ -1,0 +1,13 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 390, "h": 844 },
+    { "file": "Stilling.dc.html", "x": 490, "y": 0, "w": 390, "h": 844 },
+    { "file": "System.dc.html", "x": 980, "y": 0, "w": 880, "h": 1560 }
+  ],
+  "annotations": [
+    { "id": "mig", "x": 0, "y": -120, "w": 390, "text": "Mig — knappebunken (Indstillinger / Admin / Nulstil / Log ud) flytter ind bag tandhjulet, og pladsen bliver til indhold: hero-tal, stime, naermeste achievement." },
+    { "id": "stilling", "x": 490, "y": -120, "w": 390, "text": "Stilling — raekkerne har allerede den rigtige anatomi. Aendringen er vaegt: stoerre tal, daempet undertekst, egen raekke i accent frem for en tung badge." },
+    { "id": "system", "x": 980, "y": -120, "w": 880, "text": "De fem greb bag de to skaerme, med det jeg bevidst har ladet ligge." }
+  ],
+  "launch": { "view": "canvas" }
+}

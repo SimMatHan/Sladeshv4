@@ -24,6 +24,12 @@ dist-ssr
 *-adminsdk-*.json
 serviceAccountKey.json
 
+# Designlærredet. `design/*.dc.html` og canvas.json er kilderne og er med i
+# git; den seedede HTML-fil er en GENERERET pakke på ~2,5 MB (hele
+# canvas-editoren bagt ind) og bygges igen fra kilderne, når mockuppen skal
+# opdateres. Se design/README.md.
+design/sladesh-redesign.html
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

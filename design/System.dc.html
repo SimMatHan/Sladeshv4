@@ -1,0 +1,165 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <style>
+    body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    a { color: #f59e0b; } a:hover { color: #d97706; }
+    .num { font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+    .lab { font-size: 11px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #6b7280; }
+    .sec { font-size: 17px; font-weight: 550; letter-spacing: -0.01em; color: #f2f3f5; }
+    .note { font-size: 13px; color: #9ba1ad; line-height: 1.5; }
+  </style>
+</helmet>
+
+<div style="width: 880px; background: #08090c; color: #f2f3f5; padding: 32px; display: flex; flex-direction: column; gap: 32px;">
+
+  <div style="display: flex; flex-direction: column; gap: 8px;">
+    <div class="lab">Forslag</div>
+    <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.03em;">Fem greb, hentet fra Oura, Strava og Syd for Solen</div>
+    <div class="note" style="max-width: 620px;">Alt herunder bruger appens egne tokens. Kun to nye værdier foreslås: en dybere bund og ét ekstra typografisk trin.</div>
+  </div>
+
+  <!-- 1. GRUND -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div class="sec">1 · Dybere bund</div>
+    <div class="note">Alle tre referencer sidder på nærsort. <span style="color:#f2f3f5">--bund</span> fra #0e0f13 til #08090c, og <span style="color:#f2f3f5">--flade</span> løftes en anelse, så kortene skiller sig tydeligere ud. Én linje i index.css.</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 4px;">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="height: 96px; border-radius: 14px; background: #0e0f13; border: 1px solid #2a2e38; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 70%; height: 52px; border-radius: 9px; background: #17191f; border: 1px solid #2a2e38;"></div>
+        </div>
+        <div class="lab">I dag · #0e0f13</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="height: 96px; border-radius: 14px; background: #08090c; border: 1px solid #23262f; display: flex; align-items: center; justify-content: center;">
+          <div style="width: 70%; height: 52px; border-radius: 9px; background: #14161b; border: 1px solid #23262f;"></div>
+        </div>
+        <div class="lab" style="color: #f59e0b;">Forslag · #08090c</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. NAV -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div class="sec">2 · Flydende bundnavigation</div>
+    <div class="note">Det største enkeltgreb. Strava, Oura og Syd for Solen har alle en pille, der svæver over bunden — ikke en bjælke klistret til kanten. <span style="color:#f2f3f5">( + )</span> bliver knappens midte, præcis som Stravas Registrer-knap: appens hyppigste handling, altid samme sted under tommelfingeren. Ikonerne skifter fra emoji til streg-SVG.</div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 4px;">
+      <div style="border-radius: 14px; background: #0e0f13; padding: 24px 0 0 0; overflow: hidden; border: 1px solid #2a2e38;">
+        <div style="display: flex; align-items: center; justify-content: space-around; height: 64px; background: #0e0f13; border-top: 1px solid #2a2e38;">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><div style="font-size: 20px;">🍻</div><div class="lab" style="font-size: 11px;">Kanal</div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><div style="font-size: 20px;">📊</div><div class="lab" style="font-size: 11px;">Stilling</div></div>
+          <div style="width: 58px; height: 58px; border-radius: 999px; background: linear-gradient(160deg, #f59e0b, #d97706); display: grid; place-items: center; color: #1a1206; font-size: 30px; margin-top: -37px;">+</div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><div style="font-size: 20px;">💬</div><div class="lab" style="font-size: 11px;">Chat</div></div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;"><div style="font-size: 20px;">🙂</div><div class="lab" style="font-size: 11px;">Mig</div></div>
+        </div>
+      </div>
+      <div class="lab">I dag — kant til kant, emoji-ikoner</div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+      <div style="border-radius: 14px; background: #08090c; padding: 24px 16px 16px 16px; border: 1px solid #23262f;">
+        <div style="display: flex; align-items: center; justify-content: space-between; height: 64px; padding: 0 8px; border-radius: 999px; background: #14161b; border: 1px solid #23262f; box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);">
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 76px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+            <div class="lab" style="font-size: 11px; letter-spacing: 0.04em;">Kanal</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 76px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h4V10H3zM10 20h4V4h-4zM17 20h4v-7h-4z"></path></svg>
+            <div class="lab" style="font-size: 11px; letter-spacing: 0.04em; color: #f2f3f5;">Stilling</div>
+          </div>
+          <div style="width: 56px; height: 56px; border-radius: 999px; background: linear-gradient(160deg, #f59e0b, #d97706); display: grid; place-items: center; box-shadow: 0 6px 20px rgb(245 158 11 / 0.45);">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1a1206" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 76px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <div class="lab" style="font-size: 11px; letter-spacing: 0.04em;">Chat</div>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 3px; width: 76px;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6b7280" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>
+            <div class="lab" style="font-size: 11px; letter-spacing: 0.04em;">Mig</div>
+          </div>
+        </div>
+      </div>
+      <div class="lab" style="color: #f59e0b;">Forslag — flydende pille, streg-ikoner, ( + ) i midten</div>
+    </div>
+  </div>
+
+  <!-- 3. STIME -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div class="sec">3 · Stimen som ugestribe</div>
+    <div class="note">Stravas stribe, med jeres data: <span style="color:#f2f3f5">currentDayStreak</span> og drikkedagene fra historikken. Fyldt cirkel = du var ude, ring = i dag, dæmpet = du sad over. Det er den her, der gør, at der SKER noget på Mig-skærmen — og en grund til at åbne appen dagen derpå.</div>
+    <div style="background: #14161b; border: 1px solid #23262f; border-radius: 22px; padding: 20px; display: flex; align-items: center; gap: 20px; margin-top: 4px;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; width: 52px;">
+        <div style="position: relative; width: 44px; height: 44px; display: grid; place-items: center;">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="#f59e0b" opacity="0.16"><path d="M12 2c1 4-3 5-3 9a3 3 0 0 0 6 0c0-1.2-.4-2-.4-2 2.4 1.4 3.4 3.4 3.4 5.5A6 6 0 0 1 6 14.5C6 9 12 8 12 2z"></path></svg>
+          <div class="num" style="position: absolute; font-size: 17px; font-weight: 700; color: #f59e0b;">12</div>
+        </div>
+        <div class="lab" style="font-size: 11px;">Dage</div>
+      </div>
+      <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="lab">M</div><div class="num" style="width: 34px; height: 34px; border-radius: 999px; background: #f59e0b; color: #1a1206; font-size: 13px; font-weight: 700; display: grid; place-items: center;">18</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="lab">T</div><div class="num" style="width: 34px; height: 34px; border-radius: 999px; background: #f59e0b; color: #1a1206; font-size: 13px; font-weight: 700; display: grid; place-items: center;">19</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="lab">O</div><div class="num" style="width: 34px; height: 34px; border-radius: 999px; background: #1f222a; color: #6b7280; font-size: 13px; font-weight: 550; display: grid; place-items: center;">20</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="lab">T</div><div class="num" style="width: 34px; height: 34px; border-radius: 999px; background: #f59e0b; color: #1a1206; font-size: 13px; font-weight: 700; display: grid; place-items: center;">21</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="lab" style="color: #f2f3f5;">F</div><div class="num" style="width: 34px; height: 34px; border-radius: 999px; background: #08090c; border: 2px solid #f59e0b; color: #f2f3f5; font-size: 13px; font-weight: 700; display: grid; place-items: center;">22</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="lab">L</div><div class="num" style="width: 34px; height: 34px; border-radius: 999px; background: #1f222a; color: #6b7280; font-size: 13px; font-weight: 550; display: grid; place-items: center;">23</div></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 6px;"><div class="lab">S</div><div class="num" style="width: 34px; height: 34px; border-radius: 999px; background: #1f222a; color: #6b7280; font-size: 13px; font-weight: 550; display: grid; place-items: center;">24</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. TAL -->
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <div class="sec">4 · Ét tal, der er stort nok</div>
+    <div class="note">Skalaen stopper ved 40px i dag, og hovedtallet står inde i en ring blandt to andre. Oura og Strava giver hovedtallet luft og en hvisket etiket. Ét nyt trin: <span style="color:#f2f3f5">--tekst-hero: 56px</span>.</div>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 4px;">
+      <div style="background: #14161b; border: 1px solid #23262f; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 8px;">
+        <div class="lab">I aften</div>
+        <div style="display: flex; align-items: baseline; gap: 8px;">
+          <div class="num" style="font-size: 56px; font-weight: 700; line-height: 1;">7</div>
+          <div style="font-size: 17px; color: #9ba1ad;">genstande</div>
+        </div>
+      </div>
+      <div style="background: #14161b; border: 1px solid #23262f; border-radius: 22px; padding: 20px; display: flex; flex-direction: column; gap: 12px; justify-content: center;">
+        <div style="display: flex; align-items: baseline; justify-content: space-between;">
+          <div style="font-size: 17px; font-weight: 550;">Obeerma</div>
+          <div class="num" style="font-size: 13px; color: #9ba1ad;">7 / 10</div>
+        </div>
+        <div style="height: 6px; border-radius: 999px; background: #23262f; position: relative; overflow: hidden;">
+          <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 70%; border-radius: 999px; background: #34d399;"></div>
+        </div>
+        <div class="note" style="font-size: 11px;">Bjælken læses hurtigere end ringen i en liste — ringen bliver hero-figuren alene.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. IKKE MED -->
+  <div style="display: flex; flex-direction: column; gap: 12px; border-top: 1px solid #23262f; padding-top: 24px;">
+    <div class="sec">Bevidst ikke taget med</div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div class="lab">Billedfliserne</div>
+        <div class="note">Syd for Solens store fotokakler kræver et billedbibliotek, appen ikke har. Undtagelsen er Trofæhylden, hvor badgene ER rigtige billeder.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div class="lab">Display-skriften</div>
+        <div class="note">CSP'en sætter font-src 'self'. Et eksternt skriftkald afvises, så snart politikken håndhæves. Systemskriften bliver.</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div class="lab">Det lyse tema</div>
+        <div class="note">Strava og Ouras lyse skærme hører til om dagen. Appen bruges om aftenen i en bar — mørk forbliver udgangspunktet.</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+</body>
+</html>
