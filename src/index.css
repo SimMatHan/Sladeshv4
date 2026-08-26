@@ -48,15 +48,26 @@
    */
   --bund: #08090c;
   --flade: #14161b;
+  /*
+   * HÆVET flade — noget der svæver over SIDEN: den valgte segmentknap,
+   * kvitteringen, "ny version"-bjælken.
+   */
   --flade-hvaelvet: #1f222a;
+  /*
+   * BRIK — et lille element oven på et KORT: en chip, et mærkat, en dag i
+   * stimestriben, et badgefelt.
+   *
+   * I mørke er den samme værdi som `--flade-hvaelvet`, og så kunne man
+   * tro, at det ene token var nok. Det er lige præcis dét, der var galt:
+   * i LYS peger de to modsat. Se det lyse tema.
+   */
+  --flade-brik: #1f222a;
   /*
    * SÆNKET flade — sporet bag en kontrol, der glider: segmentvælgeren.
    *
-   * Den findes, fordi "hævet = lysere" kun holder i mørke. I lys er
-   * `--flade` og `--flade-hvaelvet` #fcfaf5 og #ffffff — tre trin ud af
-   * 255 — så det valgte segment var i praksis usynligt på creme. Et spor
-   * skal være MØRKERE end siden i lys og lysere end den i mørke, og det
-   * er to forskellige retninger. Derfor et token og ikke en genbrug.
+   * Den findes, fordi "hævet = lysere" kun holder i mørke. Et spor skal
+   * være MØRKERE end siden i lys og lysere end den i mørke, og det er to
+   * forskellige retninger. Derfor et token og ikke en genbrug.
    */
   --flade-saenket: #14161b;
   --kant: #23262f;
@@ -263,9 +274,35 @@
  */
 @media (prefers-color-scheme: light) {
   :root {
+    /*
+     * CREMESTIGEN har tre trin, og der er ikke et fjerde.
+     *
+     *     #e9e4d8   sænket    spor, huller
+     *     #f2eee4   bund      siden selv, og brikker PÅ et kort
+     *     #fcfaf5   flade     kort, ark, den hævede knap
+     *
+     * `--flade-hvaelvet` var #ffffff — et fjerde trin, jeg fandt på. Ren
+     * hvid findes ikke ét sted i Retning A: søg efter #FFFFFF i
+     * design/*.dc.html, og de eneste to træffere er Retning C (fravalgt)
+     * og paletsiden, der viser C frem. Resultatet var, at det lyseste på
+     * skærmen — den valgte fane, et mærkat, en tom dag i stimen — var
+     * hvidere end kortene omkring det, og hvid mod creme er netop det
+     * spring, cremen er valgt for at undgå.
+     *
+     * Fejlen var at tro, at "hævet" betyder "lysere". Det gør det kun i
+     * mørke. Her løftes en flade af SKYGGE, og over #fcfaf5 er der ikke
+     * mere creme tilbage at give.
+     */
     --bund: #f2eee4;
     --flade: #fcfaf5;
-    --flade-hvaelvet: #ffffff;
+    /* Toppen af stigen. Højden kommer fra `--skygge-lav`, ikke fra farven. */
+    --flade-hvaelvet: #fcfaf5;
+    /*
+     * En brik på et kort går NEDAD her, ikke opad — der er ikke andre
+     * veje. Det er samme greb, mockuppen bruger: chippene i logarket er
+     * #F2EEE4 på arkets #FCFAF5 (design/LogArk.dc.html, `.chip`).
+     */
+    --flade-brik: #f2eee4;
     /* MØRKERE end siden her — modsat i mørke. Se `--flade-saenket`. */
     --flade-saenket: #e9e4d8;
     --kant: #e3ddd0;
@@ -545,8 +582,12 @@ input {
 
 /*
  * Sporet er SÆNKET, og kun det valgte segment er hævet. Før var sporet
- * `--flade` og knappen `--flade-hvaelvet`, hvilket virker i mørke, men i
- * lys er de to #fcfaf5 og #ffffff — det valgte segment kunne ikke ses.
+ * `--flade` og knappen `--flade-hvaelvet` — det virker i mørke, men i lys
+ * lå de to på #fcfaf5 og #ffffff, og det valgte segment kunne ikke ses.
+ * Dengang løste jeg det ved at sænke sporet OG lade knappen være hvid;
+ * hviden er siden væk (se `--flade-hvaelvet` i det lyse tema), og det
+ * sænkede spor er nu det eneste, der skiller. Det er nok — mockuppen gør
+ * præcis det samme, se design/Stilling.dc.html linje 30-31.
  * Kanten er væk med det samme: den sænkede flade skiller allerede.
  */
 .segmenter {
@@ -819,7 +860,7 @@ input {
   min-height: var(--tryk);
   padding: var(--luft-3) var(--luft-4);
   border-radius: var(--radius-rund);
-  background: var(--flade-hvaelvet);
+  background: var(--flade-brik);
   border: 1px solid var(--kant);
   font-size: var(--tekst-s);
   font-weight: var(--vaegt-medium);
@@ -833,6 +874,108 @@ input {
 .chip.stor {
   padding: var(--luft-3) var(--luft-5);
   font-size: var(--tekst-m);
+}
+
+/*
+ * FYLDT chip — "dine sædvanlige" i logarket.
+ *
+ * De fire genveje er ikke fire muligheder blandt firs. De er dét, arket
+ * åbner for at gøre, og de skal kunne rammes uden at læses. Mockuppen
+ * fylder dem med accentfarven, mens katalogets chips står som omrids
+ * (design/LogArk.dc.html: `#1B4D3E` mod `.chip`s `#F2EEE4`) — forskellen
+ * på "det du plejer" og "alt det andet".
+ */
+.chip.fyldt {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-tekst);
+  font-weight: var(--vaegt-medium);
+}
+
+/*
+ * Søgefeltet i logarket. Står før alt andet, så det er dét, tommelfingeren
+ * finder, hvis genvejene ikke rammer.
+ */
+.soegefelt {
+  margin-bottom: var(--luft-5);
+}
+
+/* iOS tegner sit eget ryd-kryds i `type="search"`. Det er en trykflade,
+   der er mindre end de 44px, alt andet i appen overholder, og den sidder
+   oven i feltets egen. Vores egen tekst kan ryddes ved at slette. */
+.soegefelt::-webkit-search-decoration,
+.soegefelt::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/* ----------------------------------------------------------- kanalvælger */
+
+.kanalliste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+}
+
+/*
+ * En Kanal er et STED, ikke en handling.
+ *
+ * Rækkerne var `.knap` — den samme grå omridsknap som "Log ud" og "Opret
+ * Kanal". Et sted, man kan gå hen, så altså ud som en knap, der gør noget
+ * ved noget. De har deres egen række nu: navnet i brødtekst, medlemstal og
+ * invitationskode i hjælpelinjen under.
+ */
+.kanalrk {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-3);
+  width: 100%;
+  min-height: var(--tryk);
+  padding: var(--luft-3) var(--luft-4);
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.kanalrk:active {
+  transform: scale(0.99);
+}
+
+/* Den man står i. Accentkanten er nok — en fyldt række ville gøre "hvor du
+   er" til den mest larmende ting i et ark, man kun åbner for at komme
+   videre. */
+.kanalrk.aktiv {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--flade));
+}
+
+.kanalmidt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+}
+
+.kanalflueben {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-weight: var(--vaegt-fed);
+}
+
+/* Feltet og knappen deles af "meld dig ind" og "opret ny". */
+.kanaltilfoej .segmenter {
+  margin-top: 0;
+}
+
+.kanalfelt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
 }
 
 .chip[aria-pressed="true"] {
@@ -982,9 +1125,9 @@ input {
   font-weight: var(--vaegt-fed);
   font-variant-numeric: tabular-nums;
   border-radius: var(--radius-rund);
-  background: var(--flade-hvaelvet);
-  /* Kant, som .chip og .knap har. Uden den forsvinder mærkatet i lys:
-     `--flade-hvaelvet` er #ffffff og kortet under den #fcfaf5. */
+  background: var(--flade-brik);
+  /* Kant, som .chip og .knap har. Den bar hele forskellen, dengang brikken
+     var hvidere end kortet; nu er den mørkere, og kanten skærper den blot. */
   border: 1px solid var(--kant);
   color: var(--tekst-daempet);
 }
@@ -1177,6 +1320,24 @@ input {
   letter-spacing: var(--spor-titel);
 }
 
+/*
+ * "Ballade · tirsdag" under navnet.
+ *
+ * Den stod før i skallens header, sammen med kanalnavnet — to lag titel
+ * oven på hinanden, hvor mockuppen har ét. Headeren er nu skjult på denne
+ * fane (se App.tsx), og linjen er flyttet herned, hvor design/Main.dc.html
+ * har den. Intet er forsvundet: kanalnavnet står her, og kanalskifteren
+ * bliver på Kanal-fanen, hvor man skifter kanal.
+ */
+.profiltop .undernavn {
+  display: block;
+  /* Mockuppen har 2px. Der er ingen 2'er i skalaen, og en undtagelse her
+     ville koste mere end de to pixels er værd — se regel 3. */
+  margin-top: var(--luft-1);
+  font-size: var(--tekst-s);
+  color: var(--tekst-svag);
+}
+
 /* Tandhjulet. Indstillinger var en knap i bunken forneden; nu er den dér,
    hvor man kigger efter sig selv. */
 .profilhandling {
@@ -1227,6 +1388,45 @@ input {
   margin-top: var(--luft-1);
 }
 
+/*
+ * LIVSTIDSTALLENE på Mig — point, længste stræk, check ins.
+ *
+ * De stod som tre `.talkort`, altså tre hvide kasser. Sammen med
+ * ringkortet, stimekortet og mærkekortet gav det seks hvide blokke oven på
+ * hinanden, og skærmen læste som en liste af kasser frem for som én side.
+ *
+ * Mockuppen sætter dem BART på baggrunden: ingen flade, ingen kant, ingen
+ * midterstilling — etiket over tal, venstrestillet, tre spalter (se
+ * design/Main.dc.html, blokken mærket LIVSTID). Det er også rigtigt af en
+ * anden grund end optælling: tallene er ægte, men de er ikke aftenens
+ * sag, og et kort omkring dem lover mere, end de skal indfri.
+ *
+ * De deler IKKE klasse med `.talkort`. Den bruges af Admin og af
+ * personkortet, hvor tallene ER sagen og gerne må stå i en kasse; at give
+ * den en variant, der fjerner alt det, den er, ville gøre den til to ting.
+ */
+.livstid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--luft-3);
+  margin: var(--luft-5) 0;
+  padding: 0 var(--luft-1);
+}
+
+.livstid > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+}
+
+.livstid .vaerdi {
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+  line-height: 1;
+}
+
 .medaljer {
   display: flex;
   flex-wrap: wrap;
@@ -1247,10 +1447,81 @@ input {
  * boks: tre bokse ved siden af hinanden ville veje tungere end tre tal, der
  * hører sammen. "Fjern før du tilføjer" — se docs/redesign-prompt.md.
  */
+/*
+ * Mig-fanens tre kort er STORE i hjørnerne — 22px, ikke systemets 14.
+ *
+ * Det er ikke pynt, og det er heller ikke en ny beslutning: mockuppen gør
+ * det. Stillingens rækker er 14px (design/Stilling.dc.html), Migs kort
+ * 22px (design/Main.dc.html). Forskellen er, hvad kortet ER: en række i en
+ * liste af mange, eller ét af tre felter, der fylder skærmen. Begge tal
+ * findes allerede som `--radius` og `--radius-stor`.
+ */
+.ringraekker,
+.stime,
+.taettest {
+  border-radius: var(--radius-stor);
+}
+
 .ringraekker {
   display: flex;
   flex-direction: column;
   margin: var(--luft-5) 0;
+
+  /*
+   * Ringenes farver som variabler frem for som inline-stil.
+   *
+   * `farveForNiveau` i Mig.tsx returnerede før en rigtig farve — "grøn ved
+   * ædru, rød ved fare" — sat direkte på SVG'en. Det virkede, så længe
+   * kortet var neutralt. Fyldes kortet med accentfarven, holder ingen af de
+   * farver: `--medgang` er #1b6b4a på et #1b4d3e-kort. Farven afhænger nu af
+   * FLADEN, og den ved kun CSS noget om.
+   */
+  --ringspor: var(--kant);
+  --ringneutral: var(--accent);
+  --ringrolig: var(--medgang);
+  --ringvarsel: var(--accent);
+  --ringfare: var(--fare);
+}
+
+/*
+ * Det FYLDTE hero-kort — kun i lys, og kun uden festivaltema.
+ *
+ * Mockuppen fylder det ikke begge steder, og det er ikke en forglemmelse:
+ * i design/Main.dc.html er kortet #1B4D3E, i design/Moerk.dc.html er det
+ * #14161b med accenten kun på promilletallet. Det er rigtigt. På en pale
+ * creme-side er ét mørkt felt dét, der holder skærmen sammen; i mørke ville
+ * et fyldt ravgult kort være en projektør.
+ *
+ * `:root:not([data-tema])` holder festivaltemaerne udenfor. De er mørke i
+ * sig selv, og ringfarverne herunder er valgt mod flaskegrøn — ikke mod
+ * Copenhells rød.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema]) .ringraekker {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-tekst);
+
+    /* Sporet kan ikke være `--kant` her: en creme streg på flaskegrøn er
+       lysere end buen selv skulle være. Hvid med lav dækning i stedet, som
+       fremdriftsbjælken i mockuppens hero. */
+    --ringspor: rgb(255 255 255 / 0.2);
+    --ringneutral: var(--accent-tekst);
+    /* Mockuppens egen dæmpede creme-grøn på det fyldte kort. */
+    --ringrolig: #a8c4b4;
+    --ringvarsel: #f2c14e;
+    --ringfare: #ffa48f;
+  }
+
+  /* Skillelinjen mellem rækkerne og den dæmpede tekst skal begge lyse OP
+     fra fladen her, ikke ned i den. */
+  :root:not([data-tema]) .ringraekker .ringraekke + .ringraekke {
+    border-top-color: rgb(255 255 255 / 0.16);
+  }
+
+  :root:not([data-tema]) .ringraekker .hjaelp {
+    color: #c2d6c9;
+  }
 }
 
 .ringraekke {
@@ -1381,7 +1652,7 @@ input {
   width: var(--stimeprik);
   height: var(--stimeprik);
   border-radius: var(--radius-rund);
-  background: var(--flade-hvaelvet);
+  background: var(--flade-brik);
   /* Samme grund som .maerkat: uden kant er en tom dag usynlig i lys. */
   border: 1px solid var(--kant);
   color: var(--tekst-svag);
@@ -1777,7 +2048,7 @@ input {
 }
 
 .sendknap:disabled {
-  background: var(--flade-hvaelvet);
+  background: var(--flade-brik);
   color: var(--tekst-svag);
 }
 
@@ -2100,13 +2371,16 @@ p.dagliste {
    Meld-dig-ud-knappen, så de to tilstande sidder ens uanset hvilken der
    vises. */
 .kortaktion {
-  margin-top: var(--luft-3);
-}
-
-.checkindform {
   display: flex;
   flex-direction: column;
   gap: var(--luft-2);
+  margin-top: var(--luft-3);
+}
+
+/* Hjælpelinjen under Check ind og Check ud. `.hjaelp` sætter kun størrelse
+   og farve; margenen er `p`-standarden og skal væk, når forælderen har gap. */
+.kortaktion .hjaelp {
+  margin: 0;
 }
 
 /* ------------------------------------------------- profilfelter og onboarding */
@@ -2122,7 +2396,7 @@ p.dagliste {
   place-items: center;
   aspect-ratio: 1;
   border-radius: var(--radius-lille);
-  background: var(--flade-hvaelvet);
+  background: var(--flade-brik);
   border: 1px solid var(--kant);
   /* Emoji som ikon, ikke som tekst. */
   font-size: var(--ikon);
@@ -2297,7 +2571,7 @@ p.dagliste {
   height: var(--badge);
   border-radius: var(--radius);
   overflow: hidden;
-  background: var(--flade-hvaelvet);
+  background: var(--flade-brik);
 }
 
 /*
@@ -2386,7 +2660,7 @@ p.dagliste {
  * i "Ny Kanal" rørte hinanden kant mod kant, og de øvrige formularer
  * lappede hullerne med `marginTop` sat direkte på hvert felt.
  *
- * Én beholder med `gap` i stedet — samme mønster som `.checkindform` i
+ * Én beholder med `gap` i stedet — samme mønster som `.kortaktion` i
  * Kortet. Overskriftens egen bundmargin nulstilles, så afstanden kun kommer
  * ét sted fra.
  */
@@ -2572,6 +2846,7 @@ p.dagliste {
   --bund: #0a0a0a;
   --flade: #1a1a1a;
   --flade-hvaelvet: #242424;
+  --flade-brik: #242424;
   --kant: #2e2e2e;
 
   --tekst: #f5f5f5;
@@ -2588,6 +2863,7 @@ p.dagliste {
   --bund: #121212;
   --flade: #1c1c1c;
   --flade-hvaelvet: #262626;
+  --flade-brik: #262626;
   --kant: #383838;
 
   --tekst: #f4f0ea;
@@ -2648,7 +2924,7 @@ p.dagliste {
 }
 
 .broadcastluk:active {
-  background: var(--flade-hvaelvet);
+  background: var(--flade-brik);
 }
 
 /*

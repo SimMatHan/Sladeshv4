@@ -1,4 +1,4 @@
-import { isDrinkCategory, getSize } from "../../convex/constants";
+import { isDrinkCategory } from "../../convex/constants";
 import type { ScoreboardRow } from "../../convex/scoreboard";
 
 /**
@@ -18,15 +18,17 @@ import type { ScoreboardRow } from "../../convex/scoreboard";
  * Koblingen til Convex' localStore ligger i src/lib/optimistiskeKald.ts.
  */
 
-/** Hvor meget en genstand tæller i stillingen. */
-export function vaegtForStoerrelse(
-  categoryId: string,
-  sizeId: string | undefined,
-): number {
-  // Kun rigtige drikkevarer tæller — en cigaret flytter ikke stillingen.
-  if (!isDrinkCategory(categoryId)) return 0;
-  // `getSize` giver undefined for kategorier uden størrelse. De tæller som én.
-  return getSize(sizeId, categoryId)?.multiplier ?? 1;
+/**
+ * Hvor meget en genstand tæller i stillingen: én, eller nul.
+ *
+ * Hed `vaegtForStoerrelse` og slog en multiplikator op på størrelsen. Der
+ * er ikke længere en størrelse at slå op — se kommentaren, hvor
+ * `DRINK_SIZES` stod, i convex/constants.ts — så det eneste spørgsmål
+ * tilbage er, om det overhovedet er en drikkevare. En cigaret flytter
+ * ikke stillingen.
+ */
+export function vaegtForGenstand(categoryId: string): number {
+  return isDrinkCategory(categoryId) ? 1 : 0;
 }
 
 /**

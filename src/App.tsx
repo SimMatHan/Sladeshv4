@@ -210,23 +210,29 @@ function Appen() {
 
   return (
     <div className="skal">
-      <header className="top">
-        <div className="sidetitel">
-          <button className="kanalknap" onClick={() => setKanalAabent(true)}>
-            {harKanal ? <KanalNavn channelId={channelId} /> : "Vælg Kanal"}
-            <span className="pil">▾</span>
-          </button>
+      {/* INGEN header på Mig. Den fane har sin egen top — profilrækken med
+          avatar, navn og "Ballade · tirsdag" — og en kanaltitel oven over
+          ville være to lag titel, hvor mockuppen har ét. Se
+          design/Main.dc.html og `Profilundertekst` i Mig.tsx.
 
-          {/* Skallen VÆLGER kun hvilken undertekst der monteres; hver af dem
-              henter sit eget tal. Se Sideundertekst.tsx. */}
-          {channelId !== undefined && (
-            <Sideundertekst
-              skaerm={fane === "mig" ? "mig" : visning}
-              channelId={channelId}
-            />
-          )}
-        </div>
-      </header>
+          Kanalskifteren forsvinder dermed fra Mig. Det er med vilje: man
+          skifter Kanal dér, hvor Kanalen er. */}
+      {fane !== "mig" && (
+        <header className="top">
+          <div className="sidetitel">
+            <button className="kanalknap" onClick={() => setKanalAabent(true)}>
+              {harKanal ? <KanalNavn channelId={channelId} /> : "Vælg Kanal"}
+              <span className="pil">▾</span>
+            </button>
+
+            {/* Skallen VÆLGER kun hvilken undertekst der monteres; hver af dem
+                henter sit eget tal. Se Sideundertekst.tsx. */}
+            {channelId !== undefined && (
+              <Sideundertekst skaerm={visning} channelId={channelId} />
+            )}
+          </div>
+        </header>
+      )}
 
       <main className="indhold">
         <Forbindelse />

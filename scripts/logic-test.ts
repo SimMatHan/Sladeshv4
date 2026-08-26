@@ -15,7 +15,6 @@ import {
   drikkedageBagud,
   forrigeDrikkedag,
   getDrinkDayStart,
-  getSize,
   isAvatarColor,
 } from "../convex/constants";
 import { computeStreak, pointsForDrink } from "../convex/streaks";
@@ -24,7 +23,7 @@ import type { ScoreboardRow } from "../convex/scoreboard.ts";
 import {
   medGenstand,
   udenGenstand,
-  vaegtForStoerrelse,
+  vaegtForGenstand,
 } from "../src/lib/optimistisk.ts";
 import {
   PHASE_ORDER,
@@ -67,6 +66,7 @@ import {
 import {
   beregnRunStart,
   byggAggregat,
+  erUdeIDag,
   nettoForVariant,
   variantNoegle,
 } from "../convex/drinkRules.ts";
@@ -303,20 +303,44 @@ console.log("\n[Logic] stræk");
   check("5 dage i træk → stræk 5", streak, 5);
 }
 
-console.log("\n[Logic] point og størrelser");
+console.log("\n[Logic] point");
 {
-  check("lille øl → 1 point", pointsForDrink("beer", getSize("small", "beer")?.multiplier), 1);
-  check("mellem øl → 1.5 point", pointsForDrink("beer", getSize("medium", "beer")?.multiplier), 1.5);
-  check("stor øl → 2 point", pointsForDrink("beer", getSize("large", "beer")?.multiplier), 2);
-  check("uden størrelse → 1 point (default Lille)", pointsForDrink("beer", getSize(undefined, "beer")?.multiplier), 1);
-  check("cigaret → 0 point", pointsForDrink("other", getSize(undefined, "other")?.multiplier), 0);
-  check("cigaret har ingen størrelse", getSize("large", "other"), undefined);
-  check("ukendt størrelse falder tilbage til Lille", getSize("gigantisk", "beer")?.label, "Lille");
-  check(
-    "størrelsesnavne er danske",
-    ["small", "medium", "large"].map((id) => getSize(id, "beer")?.label),
-    ["Lille", "Mellem", "Stor"],
-  );
+  // Størrelserne er væk: nye logninger sender ingen multiplikator, og
+  // `pointsForDrink` får derfor `undefined`. Se kommentaren, hvor
+  // `DRINK_SIZES` stod, i convex/constants.ts.
+  check("en genstand → 1 point", pointsForDrink("beer", undefined), 1);
+  check("cigaret → 0 point", pointsForDrink("other", undefined), 0);
+
+  // GAMLE rækker bærer stadig deres egen vægt, og den skal blive ved med at
+  // tælle. Det er hele grunden til, at der ikke er nogen migrering.
+  check("gammel mellem-øl tæller stadig 1,5", pointsForDrink("beer", 1.5), 1.5);
+  check("gammel stor øl tæller stadig 2", pointsForDrink("beer", 2), 2);
+  check("gammel cigaret tæller stadig 0", pointsForDrink("other", 2), 0);
+
+  // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
+  check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] er man ude i dag?");
+{
+  // `erUdeIDag` afgør fem ting: hvem der står på stillingen, hvem der ses på
+  // kortet, om positionen gemmes, om aftenens første genstand checker dig
+  // ind — og om Kanalen får besked om, at du er gået ud. Den sidste er ny,
+  // og den er grunden til, at grænsen fortjener sine egne prøver: fyrer den
+  // to gange på én aften, får alle to notifikationer om den samme person.
+  const fredag = getDrinkDayStart(cest("2026-08-14T20:00:00"));
+
+  check("checket ind i aften", erUdeIDag({ checkInStatus: true, lastCheckIn: fredag + 3600_000 }, fredag), true);
+  check("checket ind præcis ved døgnskiftet", erUdeIDag({ checkInStatus: true, lastCheckIn: fredag }, fredag), true);
+
+  // Flaget bliver stående, til man checker ud. Uden tidsgrænsen ville et
+  // check-in fra i går stadig se sandt ud i aften — og så ville aftenens
+  // første genstand hverken checke én ind eller sige det til nogen.
+  check("checket ind i går tæller ikke", erUdeIDag({ checkInStatus: true, lastCheckIn: fredag - 1 }, fredag), false);
+
+  check("checket ud", erUdeIDag({ checkInStatus: false, lastCheckIn: fredag + 3600_000 }, fredag), false);
+  check("aldrig checket ind", erUdeIDag({}, fredag), false);
+  check("flag uden tidspunkt", erUdeIDag({ checkInStatus: true }, fredag), false);
 }
 
 console.log("\n[Logic] fortrydelser (action: \"remove\", negativ sizeMultiplier)");
@@ -1224,12 +1248,11 @@ console.log("\n[Logic] optimistisk stilling");
     color: "sunset",
   };
 
-  check("øl i lille tæller 1", vaegtForStoerrelse("beer", "small"), 1);
-  check("øl i stor tæller 2", vaegtForStoerrelse("beer", "large"), 2);
+  check("en øl tæller 1", vaegtForGenstand("beer"), 1);
+  check("en shot tæller også 1", vaegtForGenstand("shot"), 1);
   // "other" er cigaretter og lignende. De logges, men flytter ikke stillingen.
-  check("andet tæller ikke med", vaegtForStoerrelse("other", "small"), 0);
-  // Kategorier uden størrelse har ingen multiplikator at slå op.
-  check("ukendt størrelse falder til 1", vaegtForStoerrelse("beer", "xxl"), 1);
+  check("andet tæller ikke med", vaegtForGenstand("other"), 0);
+  check("ukendt kategori tæller ikke med", vaegtForGenstand("ingenting"), 0);
 
   const tom = medGenstand([], mig, 1, nu);
   check("kommer på listen ved første genstand", tom.length, 1);

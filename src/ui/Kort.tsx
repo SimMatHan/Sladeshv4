@@ -256,12 +256,13 @@ function CheckInFormular({ channelId }: { channelId: Id<"kanaler"> }) {
   };
 
   return (
-    <form className="checkindform kortaktion" onSubmit={(event) => void send(event)}>
+    <form className="kortaktion" onSubmit={(event) => void send(event)}>
       <input
         className="felt"
         value={sted}
         placeholder="Hvor er du? Fx Ballade"
         maxLength={NAVN_MAX}
+        aria-label="Hvor er du?"
         onChange={(event) => setSted(event.target.value)}
       />
       <button
@@ -271,14 +272,42 @@ function CheckInFormular({ channelId }: { channelId: Id<"kanaler"> }) {
       >
         Check ind
       </button>
+      {/* Hvad man køber for de to tryk. Uden den er "Check ind" bare et ord
+          på en knap — og stedet ligner noget, appen vil vide om én, frem
+          for noget, de andre skal kunne se. */}
+      <p className="hjaelp">
+        Så står du på stillingen og på kortet, og de andre kan se, hvor du
+        er. Aftenens første genstand gør det samme af sig selv.
+      </p>
       {fejl !== undefined && <p className="fejl">{fejl}</p>}
     </form>
   );
 }
 
 /**
- * Melder ud igen. Ingen bekræftelse — i modsætning til Nulstil run rører den
- * ingen historik og er trivielt at fortryde: man checker bare ind igen.
+ * Ud af kortet igen.
+ *
+ * ## Knappen hed "Meld dig ud"
+ *
+ * Det er det samme ord, som Kanalvælgeren bruger om at melde sig IND i en
+ * Kanal med en invitationskode — så "Meld dig ud" lige her læste som "forlad
+ * Kanalen". På dansk er "at melde sig ud" af noget netop dét. Handlingen
+ * hedder `checkOut` i convex/checkIns.ts, vejen tilbage hedder "Check ind",
+ * og der var ingen grund til, at knappen skulle hedde en tredje ting.
+ *
+ * ## Hvad den faktisk gør
+ *
+ * `checkInStatus` bliver falsk, og `currentLocation` ryddes. Kortet kræver
+ * `erUdeIDag` (se convex/kort.ts), så man forsvinder derfra med det samme.
+ *
+ * Stillingen gør IKKE det samme: den beholder alle, der har logget noget i
+ * dag, uanset markeringen — `if (!checketIndIDag && !harLoggetIDag) continue`
+ * i convex/scoreboard.ts. Har man drukket, bliver man altså stående på
+ * listen og forsvinder kun fra kortet. Det er den forskel, hjælpelinjen
+ * fortæller, for den er ikke til at gætte.
+ *
+ * Ingen bekræftelse — i modsætning til Nulstil run rører den ingen historik
+ * og er trivielt at fortryde: man checker bare ind igen.
  */
 function CheckOutKnap() {
   const checkOut = useMutation(api.checkIns.checkOut);
@@ -294,9 +323,15 @@ function CheckOutKnap() {
   };
 
   return (
-    <button className="knap kortaktion" disabled={arbejder} onClick={() => void send()}>
-      Meld dig ud
-    </button>
+    <div className="kortaktion">
+      <button className="knap" disabled={arbejder} onClick={() => void send()}>
+        Check ud
+      </button>
+      <p className="hjaelp">
+        Du forsvinder fra kortet. Har du logget noget i aften, bliver du
+        stående på stillingen — og du kan checke ind igen når som helst.
+      </p>
+    </div>
   );
 }
 

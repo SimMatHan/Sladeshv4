@@ -2,8 +2,9 @@ import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { evaluerAchievements } from "./achievements";
-import { getDrinkDayStart, getSize } from "./constants";
-import { beregnRunStart } from "./drinkRules";
+import { getDrinkDayStart } from "./constants";
+import { beregnRunStart, erUdeIDag } from "./drinkRules";
+import { varslingUdeIAften } from "./kanaler";
 import { requireCanViewUser, requireCurrentUser } from "./identity";
 import { computeStreak, pointsForDrink } from "./streaks";
 
@@ -33,7 +34,6 @@ export const logDrink = mutation({
     categoryId: v.string(),
     variationName: v.string(),
     channelId: v.optional(v.id("kanaler")),
-    sizeId: v.optional(v.string()),
     location: v.optional(v.object({ lat: v.number(), lng: v.number() })),
   },
   handler: async (ctx, args): Promise<LogDrinkResultat> => {
@@ -54,7 +54,6 @@ export const logDrink = mutation({
     }
 
     const now = Date.now();
-    const size = getSize(args.sizeId, args.categoryId);
 
     // Snapshot af brugeren, så historikken ikke ændrer sig hvis brugeren
     // senere skifter navn eller avatar.
@@ -63,10 +62,9 @@ export const logDrink = mutation({
       channelId: args.channelId,
       categoryId: args.categoryId,
       variationName: args.variationName,
-      sizeId: size?.id,
-      sizeMultiplier: size?.multiplier,
-      sizeLabel: size?.label,
-      sizeVolume: size?.volumeLabel,
+      // INGEN størrelsesfelter. En logning er én genstand — se
+      // kommentaren, hvor `DRINK_SIZES` stod, i convex/constants.ts.
+      // Felterne bliver i schemaet for de rækker, der allerede har dem.
       location: args.location,
       timestamp: now,
       userDisplayName: user.displayName,
@@ -82,10 +80,12 @@ export const logDrink = mutation({
       currentDayStreak: user.currentDayStreak,
       longestStreak: user.longestStreak,
       categoryId: args.categoryId,
-      sizeMultiplier: size?.multiplier,
+      // Udeladt: `computeStreak` bruger kun feltet til at genkende en
+      // FORTRYDELSE på dens negative fortegn, og en ny logning er aldrig
+      // en fortrydelse.
     });
 
-    const points = pointsForDrink(args.categoryId, size?.multiplier);
+    const points = pointsForDrink(args.categoryId, undefined);
 
     // Den første rigtige genstand i en drikkedag checker dig ind.
     //
@@ -95,11 +95,7 @@ export const logDrink = mutation({
     // ingenting at vide. Se docs/brugerrejser.md, afsnit 5.
     //
     // Kun rigtige drikkevarer tæller: en cigaret siger ikke, at man er ude.
-    const alleredeUdeIDag =
-      user.checkInStatus === true &&
-      user.lastCheckIn !== undefined &&
-      user.lastCheckIn >= getDrinkDayStart(now);
-    const checkerInd = streak.changed && !alleredeUdeIDag;
+    const checkerInd = streak.changed && !erUdeIDag(user, getDrinkDayStart(now));
 
     await ctx.db.patch(user._id, {
       totalPoints: (user.totalPoints ?? 0) + points,
@@ -129,12 +125,21 @@ export const logDrink = mutation({
       userId: user._id,
       kategori: args.categoryId,
       variant: args.variationName,
-      størrelse: size?.label,
       point: points,
       stræk: streak.currentDayStreak,
       checkedInd: checkerInd,
       achievements: nyeAchievements.length,
     });
+
+    // AFTENENS FØRSTE — sig det til de andre.
+    //
+    // `checkerInd` er sand præcis én gang per drikkedag, og det er ikke et
+    // tilfælde, at det passer: den er allerede reglen for, hvornår man
+    // kommer på stillingen. Logger man sin femte øl, sker der ingenting
+    // her. Se `varslingUdeIAften` for den anden vej ind i samme tilstand.
+    if (checkerInd && args.channelId !== undefined) {
+      await varslingUdeIAften(ctx, args.channelId, user._id, user.displayName);
+    }
 
     return { logId, nyeAchievements };
   },
