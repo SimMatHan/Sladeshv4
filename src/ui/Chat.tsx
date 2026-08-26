@@ -105,7 +105,7 @@ export function Chat({
   };
 
   return (
-    <div className="chat">
+    <div className="chat skaerm-ind">
       {beskeder === undefined ? (
         <p className="midtstillet">Henter beskeder …</p>
       ) : beskeder.length === 0 ? (

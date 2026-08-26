@@ -55,6 +55,13 @@ Felterne i `schema.ts` er derfor bevaret — de skal stadig kunne læses, og
 `removeDrink` bruger stadig en negativ `sizeMultiplier` som fortegn på
 sin modpost.
 
+**Bevidst undtagelse 3:** kortets fliser er skiftet fra OpenStreetMaps
+egne til CARTOs gråtone-basemaps, så kortet følger appens tema. Det
+krævede én linje i `scripts/sw-skabelon.js`, som cacher fliser på
+VÆRTSNAVN. Uden den ville fliserne falde igennem til "alt andet udefra"
+og holde op med at blive gemt — og et kort i en kælder ville blive tomt
+igen. Ingen anden logik i service workeren er rørt.
+
 ---
 
 ## 2. Afhængigheder

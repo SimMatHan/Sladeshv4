@@ -54,7 +54,7 @@ export function Historik({
   }
 
   return (
-    <div className="historik">
+    <div className="historik skaerm-ind">
       {/* Søjlerne er ikke en knap: de er en oversigt, man læser på ét blik.
           Selve valget sker i listen nedenunder, hvor målene er store nok til
           en tommelfinger. */}
