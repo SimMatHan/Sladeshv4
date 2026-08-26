@@ -36,6 +36,7 @@ import {
   getBlockEnd,
   getBlockStart,
   SLADESH_TIME_LIMIT_MS,
+  sladeshUdfaldVarsling,
   sladeshVarsling,
 } from "../convex/sladeshRules.ts";
 import {
@@ -368,6 +369,45 @@ console.log("\n[Logic] sladesh-varslingen");
     "et tomt navn falder tilbage",
     sladeshVarsling("   ").tekst.startsWith("Nogen "),
     true,
+  );
+
+  // Og den anden vej: hvordan gik det. Afsenderen sad før tilbage med en
+  // venterbjælke, der bare forsvandt.
+  //
+  // De TRE udfald har hver sin tekst med vilje. "Gav op" og "nåede det
+  // ikke" er to forskellige ting at have gjort, og afsenderen sendte den
+  // for at vide hvilken — så en fælles "det gik ikke" ville tage netop den
+  // oplysning væk.
+  check(
+    "gennemført",
+    sladeshUdfaldVarsling("Mathias", "completed"),
+    { titel: "🍺 Sladesh gennemført", tekst: "Mathias klarede den." },
+  );
+  check(
+    "opgivet",
+    sladeshUdfaldVarsling("Mathias", "failed"),
+    { titel: "Sladesh opgivet", tekst: "Mathias gav op." },
+  );
+  check(
+    "udløbet nævner fristen",
+    sladeshUdfaldVarsling("Mathias", "expired"),
+    {
+      titel: "Sladesh udløbet",
+      tekst: `Mathias nåede det ikke inden for ${Math.round(SLADESH_TIME_LIMIT_MS / 60000)} minutter.`,
+    },
+  );
+
+  // De tre er FORSKELLIGE. Prøven findes, fordi en fælles tekst er præcis
+  // den forenkling, nogen ville lave en dag.
+  const udfald = (["completed", "failed", "expired"] as const).map(
+    (u) => sladeshUdfaldVarsling("Mathias", u).tekst,
+  );
+  check("tre udfald, tre tekster", new Set(udfald).size, 3);
+
+  check(
+    "et tomt navn falder også tilbage her",
+    sladeshUdfaldVarsling("  ", "completed").tekst,
+    "Nogen klarede den.",
   );
 }
 

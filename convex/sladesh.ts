@@ -13,8 +13,10 @@ import {
   erCooldownAktiv,
   erFremadrettet,
   erUdloebet,
+  sladeshUdfaldVarsling,
   sladeshVarsling,
   type CooldownTilstand,
+  type SladeshUdfald,
 } from "./sladeshRules";
 
 /**
@@ -133,6 +135,34 @@ export const getCooldown = query({
 // ---------------------------------------------------------------------------
 
 /**
+ * Fortæller AFSENDEREN, hvordan det gik.
+ *
+ * Afsenderen sad før tilbage med en venterbjælke, der bare forsvandt: åbnede
+ * hun ikke appen i de ti minutter, fik hun aldrig at vide, om den blev
+ * gennemført, opgivet eller løb ud. Det var hele grunden til at sende den.
+ *
+ * Kaldes fra ALLE TRE udgange — gennemført, opgivet, udløbet — og fra ét
+ * sted per udgang, så teksten ikke kan komme til at mangle på den ene.
+ */
+async function varslAfsender(
+  ctx: MutationCtx,
+  udfordring: Doc<"sladeshChallenges">,
+  udfald: SladeshUdfald,
+): Promise<void> {
+  const varsling = sladeshUdfaldVarsling(udfordring.recipientName, udfald);
+  await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+    userIds: [udfordring.senderId],
+    title: varsling.titel,
+    body: varsling.tekst,
+    // Samme tag som selve udfordringen. De to notifikationer går til hver
+    // sin telefon — modtagerens og afsenderens — så de kan ikke overskrive
+    // hinanden; taggen samler i stedet alt om ÉN udfordring, hvis den
+    // samme udfordring nogensinde skulle sige mere end én ting.
+    tag: `sladesh-${udfordring._id}`,
+  });
+}
+
+/**
  * Markerer en udløbet udfordring som `expired`.
  *
  * Kaldes både af den planlagte funktion og inline, når en ny Sladesh forsøges
@@ -143,9 +173,23 @@ async function udloebHvisForaeldet(
   ctx: MutationCtx,
   udfordring: Doc<"sladeshChallenges">,
   now: number,
+  /**
+   * Spring fristtjekket over.
+   *
+   * Den planlagte kørsel fyrer PRÆCIS ved `deadlineAt`, og `erUdloebet` er
+   * `now > deadlineAt` — altså strengt. Rammer scheduleren millisekundet
+   * rent, ville tjekket sige "ikke udløbet endnu", og udfordringen ville
+   * blive hængende, til sikkerhedsnettet fandt den ti minutter senere.
+   *
+   * `udloebSladesh` havde derfor sin egen kopi af hele udløbet uden
+   * fristtjek. To kopier af "marker udløbet og tæl fejl op" er to steder,
+   * en varsling kan komme til at mangle — så nu er der én, med en dør til
+   * den ene kalder, der har brug for den.
+   */
+  tvungen = false,
 ): Promise<boolean> {
   if (erAfsluttetStatus(udfordring.status)) return false;
-  if (!erUdloebet(udfordring.deadlineAt, now)) return false;
+  if (!tvungen && !erUdloebet(udfordring.deadlineAt, now)) return false;
 
   await ctx.db.patch(udfordring._id, {
     status: "expired",
@@ -160,6 +204,8 @@ async function udloebHvisForaeldet(
       updatedAt: now,
     });
   }
+
+  await varslAfsender(ctx, udfordring, "expired");
 
   console.log("[Sladesh] udløbet", { challengeId: udfordring._id });
   return true;
@@ -550,6 +596,8 @@ export const afslutSladesh = mutation({
       updatedAt: now,
     });
 
+    await varslAfsender(ctx, udfordring, "completed");
+
     console.log("[Sladesh] gennemført", { challengeId: args.challengeId });
   },
 });
@@ -562,7 +610,7 @@ export const opgivSladesh = mutation({
   },
   handler: async (ctx, args): Promise<void> => {
     const now = args.now ?? Date.now();
-    const { bruger } = await hentSomModtager(ctx, args.challengeId);
+    const { udfordring, bruger } = await hentSomModtager(ctx, args.challengeId);
 
     await ctx.db.patch(args.challengeId, {
       status: "failed",
@@ -574,6 +622,8 @@ export const opgivSladesh = mutation({
       sladeshFailedCount: (bruger.sladeshFailedCount ?? 0) + 1,
       updatedAt: now,
     });
+
+    await varslAfsender(ctx, udfordring, "failed");
 
     console.log("[Sladesh] opgivet", { challengeId: args.challengeId });
   },
@@ -597,27 +647,22 @@ export const udloebSladesh = internalMutation({
     const udfordring = await ctx.db.get(args.challengeId);
     if (udfordring === null) return;
 
-    const now = Date.now();
-    if (erAfsluttetStatus(udfordring.status)) {
+    // `tvungen`, fordi scheduleren fyrer PRÆCIS ved fristen og `erUdloebet`
+    // er streng. Hele udløbet — status, fejltælleren og varslingen til
+    // afsenderen — lå her i en kopi for sig; nu er der ét sted.
+    const blevUdloebet = await udloebHvisForaeldet(
+      ctx,
+      udfordring,
+      Date.now(),
+      true,
+    );
+
+    if (!blevUdloebet) {
       console.log("[Sladesh] allerede afgjort — udløb springes over", {
         challengeId: args.challengeId,
         status: udfordring.status,
       });
       return;
-    }
-
-    await ctx.db.patch(args.challengeId, {
-      status: "expired",
-      phase: "failed",
-      updatedAt: now,
-    });
-
-    const modtager = await ctx.db.get(udfordring.recipientId);
-    if (modtager !== null) {
-      await ctx.db.patch(udfordring.recipientId, {
-        sladeshFailedCount: (modtager.sladeshFailedCount ?? 0) + 1,
-        updatedAt: now,
-      });
     }
 
     console.log("[Sladesh] udløbet af scheduleren", {
