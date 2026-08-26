@@ -73,6 +73,32 @@ export function SkiftIkon() {
 }
 
 /**
+ * Send — pil op, i chattens runde knap.
+ *
+ * Var glyffen ↑ sat som tekst. En pil er et TEGN i en skrifttype, og
+ * systemskrifterne tegner den forskelligt: på nogle telefoner er den tynd
+ * og høj, på andre kort og fed, og den sidder sjældent optisk midt i en
+ * cirkel. Samme grund som navigationens ikoner, se toppen af filen.
+ *
+ * Tykkere streg end de andre, fordi den sidder på en fyldt flade.
+ */
+export function SendIkon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2.4}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 19V5M5 12l7-7 7 7" />
+    </svg>
+  );
+}
+
+/**
  * ( + ) — tykkere streg end de to andre, fordi den sidder på en fyldt
  * flade og skal bære lige så meget som dem på afstand.
  */

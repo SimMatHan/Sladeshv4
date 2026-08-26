@@ -1533,14 +1533,6 @@ input {
 }
 
 /*
- * De tre ringrækker — Mig-fanens hero, redesignet efter
- * docs/redesign-oplaeg.md, afsnit 1.
- *
- * ÉN fælles kortbaggrund, rækkerne adskilt af en linje frem for hver sin
- * boks: tre bokse ved siden af hinanden ville veje tungere end tre tal, der
- * hører sammen. "Fjern før du tilføjer" — se docs/redesign-prompt.md.
- */
-/*
  * Mig-fanens tre kort er STORE i hjørnerne — 22px, ikke systemets 14.
  *
  * Det er ikke pynt, og det er heller ikke en ny beslutning: mockuppen gør
@@ -1549,126 +1541,177 @@ input {
  * liste af mange, eller ét af tre felter, der fylder skærmen. Begge tal
  * findes allerede som `--radius` og `--radius-stor`.
  */
-.ringraekker,
+.hero,
 .stime,
 .taettest {
   border-radius: var(--radius-stor);
 }
 
-.ringraekker {
+/*
+ * HEROET på Mig — aftenens ene tal.
+ *
+ * Her stod to ringe. Ringen er en god figur for "hvor langt er du henne",
+ * men aftenens genstande har ikke noget rigtigt loft: ringen målte mod
+ * Full Benders 20, altså mod et tal, ingen sigter efter. Den brugte
+ * skærmens dyreste plads på at antyde en andel, der ikke betød noget.
+ *
+ * Mockuppen sætter TALLET stort og lader bjælken under gøre det, ringen
+ * gjorde — se design/Main.dc.html. Promillen står i hjørnet, fordi den er
+ * det andet tal, man kigger efter, og hjælpelinjerne forneden svarer på
+ * "hvornår sidst" og "hvor langt til det næste".
+ *
+ * TO FORMER, og det er ikke en forglemmelse: mockuppen fylder kortet i lys
+ * (#1B4D3E) og lader det være et almindeligt kort i mørk (#14161b med
+ * accenten kun på promilletallet). På en pale creme-side er ét mørkt felt
+ * dét, der holder skærmen sammen; i mørke ville et fyldt ravgult kort være
+ * en projektør.
+ */
+.hero {
   display: flex;
   flex-direction: column;
+  gap: var(--luft-5);
   margin: var(--luft-5) 0;
 
+  /* Fladeafhængige farver som variabler. Fyldes kortet, kan hverken kant,
+     dæmpet tekst eller bjælkens spor være de samme som på et hvidt kort. */
+  --herokant: var(--kant);
+  --herodaempet: var(--tekst-daempet);
+  --heroetiket: var(--tekst-svag);
+  --herotal: var(--accent);
   /*
-   * Ringenes farver som variabler frem for som inline-stil.
-   *
-   * `farveForNiveau` i Mig.tsx returnerede før en rigtig farve — "grøn ved
-   * ædru, rød ved fare" — sat direkte på SVG'en. Det virkede, så længe
-   * kortet var neutralt. Fyldes kortet med accentfarven, holder ingen af de
-   * farver: `--medgang` er #1b6b4a på et #1b4d3e-kort. Farven afhænger nu af
-   * FLADEN, og den ved kun CSS noget om.
+   * Bjælkens spor er `--kant`, IKKE `--flade-saenket`. Den sænkede flade er
+   * #14161b i mørk — nøjagtig samme værdi som `--flade`, altså som kortet
+   * bjælken ligger på — så sporet ville være usynligt, og bjælken ville se
+   * ud til at svæve. Mockuppens mørke hero bruger også kantfarven.
    */
-  --ringspor: var(--kant);
-  --ringneutral: var(--accent);
-  --ringrolig: var(--medgang);
-  --ringvarsel: var(--accent);
-  --ringfare: var(--fare);
+  --herospor: var(--kant);
+  --herofyld: var(--accent);
 }
 
-/*
- * Det FYLDTE hero-kort — kun i lys, og kun uden festivaltema.
- *
- * Mockuppen fylder det ikke begge steder, og det er ikke en forglemmelse:
- * i design/Main.dc.html er kortet #1B4D3E, i design/Moerk.dc.html er det
- * #14161b med accenten kun på promilletallet. Det er rigtigt. På en pale
- * creme-side er ét mørkt felt dét, der holder skærmen sammen; i mørke ville
- * et fyldt ravgult kort være en projektør.
- *
- * `:root:not([data-tema])` holder festivaltemaerne udenfor. De er mørke i
- * sig selv, og ringfarverne herunder er valgt mod flaskegrøn — ikke mod
- * Copenhells rød.
- */
 @media (prefers-color-scheme: light) {
-  :root:not([data-tema]) .ringraekker {
+  /*
+   * `:root:not([data-tema])` holder festivaltemaerne udenfor. De er mørke i
+   * sig selv, og de dæmpede toner herunder er valgt mod flaskegrøn — ikke
+   * mod Copenhells rød.
+   */
+  :root:not([data-tema]) .hero {
     background: var(--accent);
     border-color: var(--accent);
     color: var(--accent-tekst);
 
-    /* Sporet kan ikke være `--kant` her: en creme streg på flaskegrøn er
-       lysere end buen selv skulle være. Hvid med lav dækning i stedet, som
-       fremdriftsbjælken i mockuppens hero. */
-    --ringspor: rgb(255 255 255 / 0.2);
-    --ringneutral: var(--accent-tekst);
-    /* Mockuppens egen dæmpede creme-grøn på det fyldte kort. */
-    --ringrolig: #a8c4b4;
-    --ringvarsel: #f2c14e;
-    --ringfare: #ffa48f;
-  }
-
-  /* Skillelinjen mellem rækkerne og den dæmpede tekst skal begge lyse OP
-     fra fladen her, ikke ned i den. */
-  :root:not([data-tema]) .ringraekker .ringraekke + .ringraekke {
-    border-top-color: rgb(255 255 255 / 0.16);
-  }
-
-  :root:not([data-tema]) .ringraekker .hjaelp {
-    color: #c2d6c9;
+    /* Alt herunder skal lyse OP fra fladen, ikke ned i den. Tonerne er
+       mockuppens egne: #A8C4B4 på etiketter, #C2D6C9 på hjælpelinjer. */
+    --herokant: rgb(255 255 255 / 0.16);
+    --herodaempet: #c2d6c9;
+    --heroetiket: #a8c4b4;
+    --herotal: var(--accent-tekst);
+    --herospor: rgb(255 255 255 / 0.18);
+    --herofyld: var(--accent-tekst);
   }
 }
 
-.ringraekke {
+.herotop {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: var(--luft-4);
-  width: 100%;
-  padding: var(--luft-2) 0;
-  text-align: left;
 }
 
-.ringraekke + .ringraekke {
-  margin-top: var(--luft-3);
-  padding-top: var(--luft-4);
-  border-top: 1px solid var(--kant);
-}
-
-/* Kun promille- uden konfiguration og achievement-rækken er trykbare — den
-   ene åbner Indstillinger, den anden trofæhylden. */
-.ringraekke--knap {
-  cursor: pointer;
-  transition: transform var(--fart-hurtig) ease;
-}
-
-.ringraekke--knap:active {
-  transform: scale(0.99);
-}
-
-.ringtekst {
-  flex: 1;
-  min-width: 0;
+.heroblok {
   display: flex;
   flex-direction: column;
-  gap: var(--luft-1);
+  gap: var(--luft-2);
+  min-width: 0;
 }
 
-/* Tallet i selve ringen. `.ringtekst .titel` og `.hjaelp` er allerede
-   systemets egne utility-klasser og genbruges direkte — se toppen af filen. */
-.ringtal {
+/* Promillen står til højre og læses derfra. */
+.heroblok.hoejre {
+  align-items: flex-end;
+  text-align: right;
+}
+
+.hero .etiket {
+  color: var(--heroetiket);
+}
+
+/*
+ * Aftenens tal. `--tekst-xxl` er 40px, mockuppen har 56 — men 56 findes
+ * ikke i skalaen, og `--tekst-xxl` er netop beskrevet som "det ene store
+ * tal på skærmen". Det er dét, det her er. Se regel 2 i toppen af filen.
+ */
+.herotal {
+  display: flex;
+  align-items: baseline;
+  gap: var(--luft-2);
+}
+
+.herotal .tal {
+  font-size: var(--tekst-xxl);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+  line-height: 1;
+}
+
+.herotal .enhed {
+  font-size: var(--tekst-m);
+  color: var(--herodaempet);
+}
+
+/* Promilletallet. Mindre end aftenens, og i accent på det mørke kort —
+   dér er det den eneste farve, mockuppen bruger. */
+.heropromille {
   font-size: var(--tekst-xl);
   font-weight: var(--vaegt-fed);
-  letter-spacing: var(--spor-tal);
   font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+  line-height: 1;
+  color: var(--herotal);
 }
 
-/* Promillen er et decimaltal og fylder mere end de andre ringes hele tal —
-   den får derfor systemets næste trin ned, ikke en opfundet størrelse. */
-.ringtal--kompakt {
-  font-size: var(--tekst-m);
+/* Ikke udfyldt vægt og køn: der REGNES ikke, og der gættes ikke. Feltet er
+   en knap, der åbner Indstillinger. */
+.heropromille.tom {
+  color: var(--herodaempet);
 }
 
-/* Hverken henter eller kender et tal endnu — "?" eller "–", ikke et 0. */
-.ringtal--tomt {
-  color: var(--tekst-svag);
+.herobund {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+}
+
+.herobjaelke {
+  height: 6px;
+  border-radius: var(--radius-rund);
+  background: var(--herospor);
+  overflow: hidden;
+}
+
+.herobjaelke .fyld {
+  height: 100%;
+  border-radius: var(--radius-rund);
+  background: var(--herofyld);
+  transition: width var(--fart) ease;
+}
+
+.herolinjer {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--luft-3);
+  font-size: var(--tekst-s);
+  color: var(--herodaempet);
+}
+
+/* Hele toppen er trykbar, når promillen mangler — så er der én ting at
+   gøre ved kortet, og den skal kunne rammes. */
+.heroknap {
+  display: block;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 /* --------------------------------------------------------------- stimen */
@@ -2026,10 +2069,29 @@ input {
   padding-bottom: var(--skriverhoejde);
 }
 
+/*
+ * Luften mellem beskeder var `--luft-1`, altså 4px — den afstand, der hører
+ * til to bobler fra SAMME afsender lige efter hinanden. Brugt på hele
+ * listen klistrede en samtale sammen til én blok, og man kunne ikke se,
+ * hvor en replik holdt op. Mockuppen har 14px mellem replikker og 5px
+ * inden for en gruppe.
+ */
 .beskeder {
   display: flex;
   flex-direction: column;
-  gap: var(--luft-1);
+  gap: var(--luft-3);
+}
+
+/*
+ * Samme afsender igen kort efter: kun det lille spring.
+ *
+ * `gap` gælder hele listen ens, så den mindre afstand INDEN i en gruppe må
+ * trækkes fra igen. Negativ margen frem for at droppe `gap` og sætte
+ * margener på hver besked: så er der stadig kun ét sted, den almindelige
+ * afstand står. 12 − 8 = 4px mellem to bobler fra samme person.
+ */
+.besked.samlet {
+  margin-top: calc(var(--luft-1) - var(--luft-3));
 }
 
 .besked {
@@ -2074,20 +2136,42 @@ input {
 
 .boble {
   position: relative;
-  padding: var(--luft-2) var(--luft-3);
+  padding: var(--luft-3) var(--luft-4);
   background: var(--flade);
   border: 1px solid var(--kant);
   /* Boblens egen form — rundet med én spids side mod afsenderen — er
      geometri, ikke systemets radius-skala. */
   border-radius: 16px;
   border-bottom-left-radius: 5px;
-  line-height: 1.35;
+  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
+/*
+ * En FORTSÆTTELSE har også et fladt hjørne foroven, ikke kun forneden.
+ * To bobler med runde hjørner hele vejen ligner to replikker; med det flade
+ * hjørne vendt mod den forrige ligner de én, der fortsætter. Mockuppen:
+ * `16 16 16 5` på den første, `5 16 16 5` på dem, der følger.
+ */
+.besked.samlet:not(.min) .boble {
+  border-top-left-radius: 5px;
+}
+
+.besked.min.samlet .boble {
+  border-top-right-radius: 5px;
+}
+
+/*
+ * Egen boble er FLAD accent, ikke en gradient.
+ *
+ * Gradienten var det sidste sted i appen, hvor accenten løb fra én tone til
+ * en anden. Ingen af mockupperne gør det på en flade, man læser tekst på —
+ * design/Chat.dc.html har `#1B4D3E` rent — og en tone, der skifter under
+ * bogstaverne, gør netop tekst sværere at læse, ikke pænere.
+ */
 .besked.min .boble {
-  background: linear-gradient(160deg, var(--accent), var(--accent-mork));
-  border-color: transparent;
+  background: var(--accent);
+  border-color: var(--accent);
   color: var(--accent-tekst);
   border-radius: 16px;
   border-bottom-right-radius: 5px;
@@ -2108,6 +2192,14 @@ input {
   color: color-mix(in srgb, var(--accent-tekst) 62%, transparent);
 }
 
+/*
+ * Skriveren hviler på `--flade`, ikke på en sløret bund.
+ *
+ * Sløringen hører til toppen, som ligger OVEN PÅ indhold, der ruller forbi.
+ * Skriveren ligger under en tråd, der ender over den, og en halvgennemsigtig
+ * flade dér gav en stribe halvt synlig tekst bag feltet. Mockuppen giver den
+ * en egen flade med en streg over — se design/Chat.dc.html.
+ */
 .skriver {
   position: fixed;
   left: 0;
@@ -2115,13 +2207,45 @@ input {
   bottom: calc(var(--navplads) + var(--bund-sikker));
   z-index: var(--lag-skriver);
   display: flex;
-  gap: var(--luft-2);
+  align-items: center;
+  gap: var(--luft-3);
   max-width: var(--bredde);
   margin: 0 auto;
-  padding: var(--luft-2) var(--luft-4);
-  background: color-mix(in srgb, var(--bund) 94%, transparent);
-  backdrop-filter: blur(14px);
+  padding: var(--luft-3) var(--luft-4);
+  background: var(--flade);
   border-top: 1px solid var(--kant);
+}
+
+/*
+ * Dagsskillelinjen — "I dag", "I går".
+ *
+ * Beskeder ryddes efter et døgn (se crons.ts), så der er højst to dage i
+ * tråden. Men netop derfor er grænsen værd at markere: uden den står
+ * gårsdagens sidste replik klistret op ad dagens første, og et klokkeslæt
+ * alene siger ikke hvilken aften.
+ */
+.dagsskel {
+  align-self: center;
+  padding: var(--luft-1) var(--luft-3);
+  border-radius: var(--radius-rund);
+  background: var(--flade-saenket);
+  /*
+   * `.etiket`s egen `--tekst-svag` er MÅLT til 4,70:1 mod `--bund` — men
+   * den sænkede flade er mørkere end bunden, og dér falder den til 4,29:1.
+   * Det er 11px versaler, altså netop den mindste tekst i appen. Et trin
+   * mørkere: 4,66:1.
+   */
+  color: var(--tekst-daempet);
+}
+
+/* Fodnoten under tråden. Den stod kun i den tomme tilstand — men det er,
+   mens man SKRIVER, at det er værd at vide, at det forsvinder igen.
+   Ingen egen margen: listens `gap` bærer afstanden. */
+.chatfod {
+  margin: 0;
+  text-align: center;
+  font-size: var(--tekst-xs);
+  color: var(--tekst-svag);
 }
 
 .skriver .felt {
@@ -2131,13 +2255,19 @@ input {
 
 .sendknap {
   flex: 0 0 auto;
+  display: grid;
+  place-items: center;
   width: var(--tryk);
   height: var(--tryk);
   border-radius: 50%;
   background: var(--accent);
   color: var(--accent-tekst);
-  font-size: var(--ikon);
-  font-weight: var(--vaegt-fed);
+}
+
+.sendknap svg {
+  width: var(--ikon);
+  height: var(--ikon);
+  display: block;
 }
 
 .sendknap:disabled {
@@ -2651,6 +2781,28 @@ p.dagliste {
  * struktur — kun tokenisering og genbrug af systemets egne utility-klasser
  * (`.ringtal`, `.titel`, `.etiket`, `.hjaelp`), samme princip som Stilling.
  */
+
+/*
+ * Tallet inde i fremdriftsringen.
+ *
+ * Boede før hos Mig-fanen, som havde to ringe. De er erstattet af `.hero`,
+ * og hylden er nu det ENESTE sted i appen med en ring — så reglen står her,
+ * hvor den bruges, frem for at pege tilbage på en skærm, der ikke har den
+ * mere.
+ */
+.ringtal {
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-tal);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Et decimaltal fylder mere end et helt og får derfor systemets næste trin
+   ned, ikke en opfundet størrelse. */
+.ringtal--kompakt {
+  font-size: var(--tekst-m);
+}
+
 .hyldeintro {
   margin: 0 0 var(--luft-4);
 }

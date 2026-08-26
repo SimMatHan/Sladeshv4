@@ -9,7 +9,6 @@ import { fejltekst, genstande, promille } from "../lib/visning";
 import { Achievements } from "./Achievements";
 import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
-import { Fremdriftsring } from "./Fremdriftsring";
 import { TandhjulIkon } from "./Ikoner";
 import { Indstillinger } from "./Indstillinger";
 import { Stimestribe } from "./Stimestribe";
@@ -22,14 +21,14 @@ import { Stimestribe } from "./Stimestribe";
  * for resten af dagen, og det er ikke til at fortryde. Det er den ene
  * handling i appen, der spørger.
  *
- * Skærmens hero er TRE rækker, hver med en ring og et rigtigt tal: promille,
- * dagens genstande, og den achievement man er tættest på. Se
- * docs/redesign-oplaeg.md, afsnit 1.
+ * Skærmens hero er aftenens ene tal — genstande i dag, med promillen i
+ * hjørnet og en bjælke mod Full Bender. Det var to ringe indtil videre; se
+ * `.hero` i index.css for hvorfor de er væk.
  *
- * Under ringene står stimen som en stribe over ugen (Stimestribe.tsx).
- * Ringene er I AFTEN; striben er de syv dage, der førte hertil. Livstidspoint
+ * Under heroet står stimen som en stribe over ugen (Stimestribe.tsx).
+ * Heroet er I AFTEN; striben er de syv dage, der førte hertil. Livstidspoint
  * og længste stræk er ægte information, men ikke skærmens hovedsag, og står
- * som én dæmpet linje til sidst.
+ * bart forneden.
  *
  * Trofæhylden og admin åbner som ark herfra — det er dét, `/achievements` og
  * `/admin` blev til, jf. rutekortet i docs/skaermkortlaegning.md. Admin-
@@ -109,14 +108,16 @@ export function Mig({
         </button>
       </div>
 
-      {/* To ringe, ikke tre. Den tredje — næste mærke — er en fremdrift mod
-          en tærskel og læses bedre som en bjælke; se AchievementRaekke. */}
-      <div className="kort ringraekker">
-        <PromilleRaekke minPromille={minPromille} onIndstil={() => setIndstillingerAabne(true)} />
-        <GenstandeRaekke channelId={channelId} stilling={stilling} minUserId={mig._id} />
-      </div>
+      <Hero
+        channelId={channelId}
+        stilling={stilling}
+        minUserId={mig._id}
+        minPromille={minPromille}
+        sidsteGenstandAt={mig.lastDrinkAt}
+        onIndstil={() => setIndstillingerAabne(true)}
+      />
 
-      {/* Rækkefølgen er tidsmæssig: ringene er I AFTEN, striben er UGEN,
+      {/* Rækkefølgen er tidsmæssig: heroet er I AFTEN, striben er UGEN,
           mærket er DET NÆSTE. */}
       <Stimestribe stime={mig.currentDayStreak ?? 0} />
 
@@ -223,54 +224,122 @@ function Profilundertekst({ channelId }: { channelId: Id<"kanaler"> | undefined 
   );
 }
 
-/* ------------------------------------------------------------------ ringene */
+/* -------------------------------------------------------------------- heroet */
 
 type PromilleSvar = NonNullable<
   ReturnType<typeof useQuery<typeof api.promille.getMinPromille>>
 >;
 
-/**
- * Ringens visuelle loft for promille.
- *
- * IKKE en af `beruselsesniveau`s grænser (0.3 / 0.8 / 1.5 i
- * convex/promilleRules.ts) — det tal må ikke duplikeres herude, for så kan de
- * to komme ud af trit. Dette er i stedet et uafhængigt, rundt visningsloft:
- * et helt frit valg af hvornår ringen ser "fuld" ud, og har ingen betydning
- * ud over det. Farven, ikke fyldningsgraden, er det der siger noget om
- * niveauet — se `farveForNiveau` nedenfor.
- */
-const PROMILLE_RING_LOFT = 2;
+type ScoreboardRaekker = NonNullable<
+  ReturnType<typeof useQuery<typeof api.scoreboard.getScoreboard>>
+>;
 
 /**
- * Status → ringvariabel.
+ * Aftenens loft for fremdriftsbjælken.
  *
- * Den returnerede FØR en rigtig farve: `--medgang`, `--fare`, `--accent`.
- * Det holdt, så længe ringene stod på et neutralt kort. I lys er kortet nu
- * fyldt med accentfarven, og på flaskegrøn er `--medgang` (#1b6b4a) næsten
- * usynlig og `--accent` er selve baggrunden. Hvilken farve der kan læses,
- * afhænger af fladen — og fladen kender kun CSS. Så her vælges kun
- * BETYDNINGEN, og `.ringraekker` i index.css binder den til en farve pr.
- * tema.
+ * Genbruger Full Benders tærskel (20 genstande i ét run) fra
+ * achievementRules.ts i stedet for at opfinde et nyt tal — 20 på én dag er
+ * allerede appens etablerede "det er en stor aften"-reference, og det er
+ * dét, hjælpelinjen til højre tæller ned mod.
+ *
+ * Bemærk at vinduet ikke er identisk: Full Bender måler RUNNET, bjælken
+ * her DRIKKEDAGEN (`scoreboard.drinksToday`). Tallet er lånt, ikke
+ * definitionen.
  */
-function farveForNiveau(status: "online" | "warning" | "danger" | undefined): string {
-  if (status === "online") return "var(--ringrolig)";
-  if (status === "danger") return "var(--ringfare)";
-  return "var(--ringvarsel)"; // "warning", og default mens ukendt
+const AFTENLOFT = (() => {
+  const def = findAchievement("full_bender");
+  return def === undefined ? 20 : taerskelFor(def);
+})();
+
+/**
+ * Mig-fanens hero — ét stort tal, én bjælke, to hjælpelinjer.
+ *
+ * Se `.hero` i index.css for hvorfor de to ringe er væk, og hvorfor kortet
+ * kun er fyldt i lys tilstand.
+ *
+ * ## Vis intet, du ikke ved
+ *
+ * Kortet tegnes, så snart det VED noget, og hver linje kan mangle for sig.
+ * Promillen kræver vægt og køn; er de ikke udfyldt, står feltet som en
+ * knap, der åbner Indstillinger, frem for som et gæt eller et nul. Uden
+ * aktiv Kanal er der ingen genstande at tælle. Se
+ * docs/redesign-kontrakt.md afsnit 7.
+ */
+function Hero({
+  channelId,
+  stilling,
+  minUserId,
+  minPromille,
+  sidsteGenstandAt,
+  onIndstil,
+}: {
+  channelId: Id<"kanaler"> | undefined;
+  stilling: ScoreboardRaekker | undefined;
+  minUserId: Id<"users">;
+  minPromille: PromilleSvar | undefined;
+  sidsteGenstandAt: number | undefined;
+  onIndstil: () => void;
+}) {
+  // Man kan mangle på listen uden at det er en fejl — scoreboardet viser kun
+  // dem der er MED i dag. Har man hverken logget eller checket ind, er
+  // svaret ægte 0, ikke et opslag der fejlede.
+  const egenRaekke = stilling?.find((raekke) => raekke.userId === minUserId);
+  const drukketIDag = egenRaekke?.drinksToday ?? 0;
+
+  const henter = stilling === undefined && channelId !== undefined;
+  const andel = Math.min(drukketIDag / AFTENLOFT, 1);
+  const mangler = Math.max(AFTENLOFT - drukketIDag, 0);
+
+  return (
+    <div className="kort hero">
+      <div className="herotop">
+        <div className="heroblok">
+          <span className="etiket">I aften</span>
+          <div className="herotal">
+            <span className="tal">{henter ? "–" : genstande(drukketIDag)}</span>
+            <span className="enhed">genstande</span>
+          </div>
+        </div>
+
+        <Heropromille minPromille={minPromille} onIndstil={onIndstil} />
+      </div>
+
+      <div className="herobund">
+        <div
+          className="herobjaelke"
+          role="progressbar"
+          aria-valuenow={drukketIDag}
+          aria-valuemin={0}
+          aria-valuemax={AFTENLOFT}
+          aria-label={`${genstande(drukketIDag)} af ${AFTENLOFT} genstande`}
+        >
+          <div className="fyld" style={{ width: `${andel * 100}%` }} />
+        </div>
+
+        <div className="herolinjer">
+          <span>{sidsteGenstand(sidsteGenstandAt)}</span>
+          <span>
+            {mangler === 0
+              ? "Full Bender \u{1F37B}"
+              : `${genstande(mangler)} til Full Bender`}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 /**
- * Promillen uden ‰-tegnet, til at stå inde i en 100px ring.
+ * Promillen i heroets højre hjørne.
  *
- * Selve formateringen (komma, to decimaler) delegeres til `promille()` fra
- * lib/visning.ts — den eneste kilde til det format i hele appen. Kun det
- * KENDTE, faste suffiks trimmes bagefter, så der ikke opstår en anden kopi af
- * selve tal-formateringen, der kunne komme ud af trit med den rigtige.
+ * `‰`-tegnet er skåret fra: etiketten over tallet siger allerede
+ * "Promille", og tegnet ville gøre et 28px-tal til et 28px-tal plus en
+ * krølle. Selve formateringen delegeres stadig til `promille()` fra
+ * lib/visning.ts — den eneste kilde til komma og decimaler i hele appen —
+ * og kun det KENDTE, faste suffiks trimmes bagefter, så der ikke opstår en
+ * anden kopi af talformateringen.
  */
-function kompaktPromille(vaerdi: number): string {
-  return promille(vaerdi).replace(" ‰", "");
-}
-
-function PromilleRaekke({
+function Heropromille({
   minPromille,
   onIndstil,
 }: {
@@ -279,14 +348,9 @@ function PromilleRaekke({
 }) {
   if (minPromille === undefined) {
     return (
-      <div className="ringraekke">
-        <Fremdriftsring andel={0} stoerrelse={100} tykkelse={8} srLabel="Henter promille">
-          <span className="ringtal">–</span>
-        </Fremdriftsring>
-        <div className="ringtekst">
-          <span className="titel">Promille</span>
-          <span className="hjaelp">Henter …</span>
-        </div>
+      <div className="heroblok hoejre">
+        <span className="etiket">Promille</span>
+        <span className="heropromille tom">–</span>
       </div>
     );
   }
@@ -294,127 +358,33 @@ function PromilleRaekke({
   // Gæt aldrig et tal. Uden vægt og køn regnes der ikke — se getMinPromille.
   if (!minPromille.konfigureret || minPromille.promille === null) {
     return (
-      <button className="ringraekke ringraekke--knap" onClick={onIndstil}>
-        <Fremdriftsring andel={0} stoerrelse={100} tykkelse={8} srLabel="Promille ikke konfigureret">
-          <span className="ringtal ringtal--tomt">?</span>
-        </Fremdriftsring>
-        <div className="ringtekst">
-          <span className="titel">Promille</span>
-          <span className="hjaelp">Udfyld vægt og køn i indstillinger →</span>
-        </div>
+      <button className="heroblok hoejre heroknap" onClick={onIndstil}>
+        <span className="etiket">Promille</span>
+        <span className="heropromille tom">Udfyld →</span>
       </button>
     );
   }
 
-  const andel = Math.min(minPromille.promille / PROMILLE_RING_LOFT, 1);
-
   return (
-    <div className="ringraekke">
-      <Fremdriftsring
-        andel={andel}
-        stoerrelse={100}
-        tykkelse={8}
-        farve={farveForNiveau(minPromille.niveau?.status)}
-        srLabel={`Promille ${promille(minPromille.promille)}`}
-      >
-        <span className="ringtal ringtal--kompakt">{kompaktPromille(minPromille.promille)}</span>
-      </Fremdriftsring>
-      <div className="ringtekst">
-        <span className="titel">Promille</span>
-        <span className="hjaelp">
-          {minPromille.niveau?.label}
-          {minPromille.timerTilAedru !== null &&
-            minPromille.timerTilAedru > 0 &&
-            ` · ædru om ca. ${minPromille.timerTilAedru} t`}
-        </span>
-      </div>
+    <div className="heroblok hoejre">
+      <span className="etiket">Promille</span>
+      <span className="heropromille">
+        {promille(minPromille.promille).replace(" \u2030", "")}
+      </span>
     </div>
   );
 }
 
-type ScoreboardRaekker = NonNullable<
-  ReturnType<typeof useQuery<typeof api.scoreboard.getScoreboard>>
->;
+/** "Sidste for 24 min siden" — eller intet at måle fra endnu. */
+function sidsteGenstand(sidsteAt: number | undefined): string {
+  if (sidsteAt === undefined) return "Ingen genstande endnu";
 
-/**
- * Ringens visuelle loft for dagens genstande.
- *
- * Genbruger Full Benders tærskel (20, "run_drinks" uden kategori) fra
- * achievementRules.ts, i stedet for at opfinde et nyt tal — 20 genstande på
- * én dag er allerede appens etablerede "det er en stor aften"-reference.
- *
- * Bemærk vinduet ikke er identisk: Full Bender måler RUNNET, denne ring
- * DRIKKEDAGEN (`scoreboard.drinksToday`) — to nært beslægtede, men ikke
- * samme, tidsvinduer. Loftet er lånt for tallet, ikke for definitionen.
- */
-const GENSTANDE_RING_LOFT = (() => {
-  const def = findAchievement("full_bender");
-  return def === undefined ? 20 : taerskelFor(def);
-})();
+  const minutter = Math.max(0, Math.round((Date.now() - sidsteAt) / 60000));
+  if (minutter < 1) return "Sidste lige nu";
+  if (minutter < 60) return `Sidste for ${minutter} min siden`;
 
-function GenstandeRaekke({
-  channelId,
-  stilling,
-  minUserId,
-}: {
-  channelId: Id<"kanaler"> | undefined;
-  stilling: ScoreboardRaekker | undefined;
-  minUserId: Id<"users">;
-}) {
-  if (channelId === undefined) {
-    return (
-      <div className="ringraekke">
-        <Fremdriftsring andel={0} stoerrelse={100} tykkelse={8} srLabel="Ingen aktiv Kanal">
-          <span className="ringtal ringtal--tomt">–</span>
-        </Fremdriftsring>
-        <div className="ringtekst">
-          <span className="titel">I dag</span>
-          <span className="hjaelp">Ingen aktiv Kanal</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (stilling === undefined) {
-    return (
-      <div className="ringraekke">
-        <Fremdriftsring andel={0} stoerrelse={100} tykkelse={8} srLabel="Henter dagens genstande">
-          <span className="ringtal">–</span>
-        </Fremdriftsring>
-        <div className="ringtekst">
-          <span className="titel">I dag</span>
-          <span className="hjaelp">Henter …</span>
-        </div>
-      </div>
-    );
-  }
-
-  // Man kan mangle på listen uden at det er en fejl — scoreboardet viser kun
-  // dem der er MED i dag (logget noget, eller checket ind). Har man ikke gjort
-  // nogen af delene, er svaret ægte 0, ikke en fejlende opslag.
-  const egenRaekke = stilling.find((r) => r.userId === minUserId);
-  const drukketIDag = egenRaekke?.drinksToday ?? 0;
-
-  const andel = Math.min(drukketIDag / GENSTANDE_RING_LOFT, 1);
-
-  return (
-    <div className="ringraekke">
-      <Fremdriftsring
-        andel={andel}
-        stoerrelse={100}
-        tykkelse={8}
-        srLabel={`${genstande(drukketIDag)} genstande i dag`}
-      >
-        <span className="ringtal">{genstande(drukketIDag)}</span>
-      </Fremdriftsring>
-      <div className="ringtekst">
-        <span className="titel">I dag</span>
-        <span className="hjaelp">
-          {drukketIDag === 0 ? "Ingen genstande endnu" : "Genstande i Kanalen"}
-        </span>
-      </div>
-    </div>
-  );
+  const timer = Math.round(minutter / 60);
+  return `Sidste for ${timer} t siden`;
 }
 
 type AchievementListe = NonNullable<
