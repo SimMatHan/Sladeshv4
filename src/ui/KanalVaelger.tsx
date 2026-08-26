@@ -8,12 +8,13 @@ import { Ark } from "./Ark";
 /**
  * Kanalvælgeren.
  *
- * Åbnes fra kanalnavnet i toppen — altså fra en knap, der står OVER det, den
- * ændrer. I den gamle app lå det samme valg under More → Channels, tre tryk
- * væk fra den stilling, det bestemmer indholdet af. Det er formentlig den
- * største enkeltkilde til "hvorfor kan jeg ikke se nogen".
+ * Åbnes fra `.kanalskift` i toppen — knappen ved siden af kanalnavnet,
+ * altså lige ved det, den ændrer. I den gamle app lå det samme valg under
+ * More → Channels, tre tryk væk fra den stilling, det bestemmer indholdet
+ * af. Det er formentlig den største enkeltkilde til "hvorfor kan jeg ikke
+ * se nogen".
  *
- * ## Hvorfor arket ser anderledes ud end før
+ * ## Arket gør nu ÉN ting
  *
  * Det viste tre afsnit på én gang: dine Kanaler, "Meld dig ind" med et felt
  * og en knap, og "Opret en ny" med endnu et felt og endnu en knap. To
@@ -24,15 +25,24 @@ import { Ark } from "./Ark";
  * "Log ud" og "Opret Kanal". Der var ingen forskel at se på et STED, man kan
  * gå hen, og en HANDLING, der gør noget.
  *
- * Nu er listen listen. De to andre ting deler ét felt og én knap bag en
- * segmentvælger, og de fylder dermed en tredjedel af, hvad de gjorde.
+ * ## At oprette en Kanal hører ikke til her
  *
- * ## Koden står nu på hver Kanal
+ * "Opret ny" er FJERNET efter ønske. Det var den sjældneste handling i
+ * appen placeret ved siden af den hyppigste, og de to ligner hinanden på
+ * en telefon: et felt og en knap. Skrev man en invitationskode i det
+ * forkerte af de to, oprettede man en Kanal, der hed "SLA-4821".
  *
- * Den var kun synlig i Admin. Oprettede en almindelig bruger en Kanal, blev
- * der genereret en invitationskode, som brugeren ALDRIG fik at se — man
- * havde altså en Kanal, man ikke kunne invitere nogen til. Den står nu på
- * hver række, hvor den kan læses højt.
+ * Kanaler oprettes nu to steder, og begge er rigtige: i førstegangsforløbet
+ * (Onboarding.tsx), hvor den første Kanal skal opstå et sted, og i Admin
+ * for dem, der bestyrer dem. En almindelig bruger, der ALLEREDE er med i
+ * noget, melder sig ind med en kode.
+ *
+ * ## Koden står på hver Kanal
+ *
+ * Den var kun synlig i Admin. Oprettede en bruger en Kanal i
+ * førstegangsforløbet, blev der genereret en invitationskode, som brugeren
+ * ALDRIG fik at se — man havde altså en Kanal, man ikke kunne invitere
+ * nogen til. Den står nu på hver række, hvor den kan læses højt.
  */
 export function KanalVaelger({
   aktivId,
@@ -44,10 +54,8 @@ export function KanalVaelger({
   const kanaler = useQuery(api.kanaler.getMineKanaler, {});
   const setActive = useMutation(api.users.setActiveChannel);
   const joinKanal = useMutation(api.kanaler.joinKanal);
-  const createKanal = useMutation(api.kanaler.createKanal);
 
-  const [tilstand, setTilstand] = useState<"meld" | "opret">("meld");
-  const [tekst, setTekst] = useState("");
+  const [kode, setKode] = useState("");
   const [arbejder, setArbejder] = useState(false);
   const [fejl, setFejl] = useState<string | undefined>();
 
@@ -64,31 +72,11 @@ export function KanalVaelger({
     }
   };
 
-  const skiftTilstand = (ny: "meld" | "opret") => {
-    setTilstand(ny);
-    // Feltet deles af de to. En invitationskode, der bliver stående som
-    // forslag til et kanalnavn, er værre end et tomt felt.
-    setTekst("");
-    setFejl(undefined);
-  };
-
-  const klar = tekst.trim().length > 0 && !arbejder;
+  const klar = kode.trim().length > 0 && !arbejder;
 
   const udfoer = () => {
     if (!klar) return;
-    if (tilstand === "meld") {
-      void koer(() => joinKanal({ code: tekst.trim() }));
-      return;
-    }
-    void koer(async () => {
-      // Koden er invitationen. Den skal kunne siges højt i en bar, så
-      // den er kort og uden tegn, der kan forveksles.
-      const channelId = await createKanal({
-        name: tekst.trim(),
-        code: nyKode(),
-      });
-      await setActive({ channelId });
-    });
+    void koer(() => joinKanal({ code: kode.trim() }));
   };
 
   return (
@@ -132,35 +120,16 @@ export function KanalVaelger({
         </div>
       )}
 
-      {/* Ét felt og én knap til begge ting. De to afsnit havde hver sit felt
-          og sin knap, og de stod åbne samtidig — dobbelt så meget at læse
-          forbi for at komme til listen ovenfor. */}
-      <div className="arkgruppe kanaltilfoej">
-        <div className="segmenter">
-          <button
-            className="segment"
-            aria-selected={tilstand === "meld"}
-            onClick={() => skiftTilstand("meld")}
-          >
-            Meld dig ind
-          </button>
-          <button
-            className="segment"
-            aria-selected={tilstand === "opret"}
-            onClick={() => skiftTilstand("opret")}
-          >
-            Opret ny
-          </button>
-        </div>
-
+      <div className="arkgruppe">
+        <h3>Meld dig ind i en Kanal</h3>
         <div className="kanalfelt">
           <input
             className="felt"
-            value={tekst}
-            placeholder={tilstand === "meld" ? "Invitationskode" : "Navn på Kanalen"}
-            autoCapitalize={tilstand === "meld" ? "characters" : "sentences"}
-            aria-label={tilstand === "meld" ? "Invitationskode" : "Navn på Kanalen"}
-            onChange={(event) => setTekst(event.target.value)}
+            value={kode}
+            placeholder="Invitationskode"
+            autoCapitalize="characters"
+            aria-label="Invitationskode"
+            onChange={(event) => setKode(event.target.value)}
             // Enter gør det samme som knappen. Man skriver en kode af med
             // tommelfingeren og skal ikke skulle finde en knap bagefter.
             onKeyDown={(event) => {
@@ -168,23 +137,16 @@ export function KanalVaelger({
             }}
           />
           <button className="knap primaer" disabled={!klar} onClick={udfoer}>
-            {tilstand === "meld" ? "Meld mig ind" : "Opret"}
+            Meld mig ind
           </button>
+          <p className="hjaelp">
+            Koden får du af en, der allerede er med — den står på hver Kanal
+            herover.
+          </p>
         </div>
       </div>
 
       {fejl !== undefined && <p className="fejl">{fejl}</p>}
     </Ark>
   );
-}
-
-/**
- * En invitationskode på formen `SLA-4821`.
- *
- * Kun cifre efter bindestregen: bogstaver som O og 0, eller I og 1, bliver
- * hørt forkert, når koden siges videre til den næste ved bordet.
- */
-function nyKode(): string {
-  const tal = Math.floor(1000 + Math.random() * 9000);
-  return `SLA-${tal}`;
 }

@@ -524,9 +524,17 @@ input {
 /*
  * Kanalens navn er skærmens TITEL, ikke en kontrol i en værktøjslinje.
  *
- * Den var en pille med flade, kant og 17px tekst — en knap blandt knapper.
- * Men den er det eneste i toppen, og den siger, hvor man er. Nu bærer den
- * som en overskrift, og ▾ er den lille del, der røber, at man kan skifte.
+ * Den var først en pille med flade, kant og 17px tekst — en knap blandt
+ * knapper. Så blev den en overskrift, der SELV var knappen, med en ▾ efter
+ * sig som det, der skulle røbe, at man kunne skifte.
+ *
+ * Det holdt ikke. En overskrift, der også er en kontrol, ligner mest af alt
+ * en overskrift, og ▾'en var for lille til at læses som andet end pynt —
+ * så skiftet var i praksis usynligt for den, der ikke vidste, det var der.
+ *
+ * Nu er de to ting to ting: titlen bærer, hvor man er, og `.kanalskift` er
+ * en rigtig knap ved siden af. Det er også, hvad mockuppen gør, se
+ * design/Stilling.dc.html.
  */
 /*
  * Titlen og dens undertekst. Underteksten hentes af skærmen selv — se
@@ -541,35 +549,57 @@ input {
   min-width: 0;
 }
 
-/*
- * Underteksten er IKKE en trykflade — man trykker på NAVNET for at skifte
- * Kanal. Knappen bærer derfor selv de 44px, uanset om linjen er der: ved
- * 28px er dens egen linjeboks kun ~41px, og regel 5 gælder også for en
- * overskrift, der er en knap.
- */
-.kanalknap {
-  display: flex;
-  align-items: center;
-  gap: var(--luft-2);
-  min-height: var(--tryk);
+/* Overskrift, ikke knap. Ingen trykflade at holde, og derfor heller ingen
+   `min-height` — regel 5 gælder kontroller, og den er der en af nu. */
+.kanalnavn {
+  margin: 0;
   font-size: var(--tekst-xl);
   font-weight: var(--vaegt-fed);
   letter-spacing: var(--spor-tal);
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Skift Kanal. En rund flade i højre side af toppen, 44px, som mockuppen.
+ *
+ * Den ligner en knap, fordi den ER en: flade, kant, og et ikon der siger
+ * "vælg mellem flere" frem for "fold ud". Se `SkiftIkon` i Ikoner.tsx.
+ *
+ * `--flade-hvaelvet`, ikke `--flade`: toppen er halvgennemsigtig og lader
+ * indholdet skinne igennem, og knappen skal blive ved med at være en flade,
+ * også når en søjle eller et kort ruller op bag den.
+ */
+.kanalskift {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--tryk);
+  height: var(--tryk);
+  border-radius: var(--radius-rund);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  color: var(--tekst-daempet);
+  cursor: pointer;
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.kanalskift:active {
+  transform: scale(0.92);
+}
+
+.kanalskift svg {
+  width: var(--ikon);
+  height: var(--ikon);
+  display: block;
 }
 
 .undertekst {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.kanalknap:active {
-  opacity: 0.7;
-}
-
-.kanalknap .pil {
-  color: var(--tekst-svag);
-  font-size: var(--tekst-s);
 }
 
 .indhold {
@@ -741,6 +771,14 @@ input {
   padding: var(--luft-6) var(--luft-5);
   text-align: center;
   color: var(--tekst-daempet);
+}
+
+/* En tom tilstand med en vej ud af sig selv. Knappen får luft over sig og
+   må ikke fylde hele bredden — den er ét valg, ikke en formular. */
+.tom .knap {
+  width: auto;
+  margin: var(--luft-5) auto 0;
+  padding: var(--luft-3) var(--luft-5);
 }
 
 .tom .stort {
@@ -967,15 +1005,26 @@ input {
   font-weight: var(--vaegt-fed);
 }
 
-/* Feltet og knappen deles af "meld dig ind" og "opret ny". */
-.kanaltilfoej .segmenter {
-  margin-top: 0;
+/*
+ * Feltet, knappen og hjælpelinjen under listen.
+ *
+ * `.arkgruppe + .arkgruppe` bærer normalt afstanden mellem arkets afsnit,
+ * men `.kanalliste` er ikke en `.arkgruppe`, så gruppen efter den skal
+ * selv have luften.
+ */
+.kanalliste + .arkgruppe {
+  margin-top: var(--luft-6);
 }
 
 .kanalfelt {
   display: flex;
   flex-direction: column;
   gap: var(--luft-2);
+}
+
+/* Forældren har `gap`; `p`-standardmargenen ville lægge sig oveni. */
+.kanalfelt .hjaelp {
+  margin: 0;
 }
 
 .chip[aria-pressed="true"] {
