@@ -1,8 +1,10 @@
+import { useMemo } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useCachetQuery } from "../lib/oejebliksbillede";
 import { genstande, promille } from "../lib/visning";
 import { Avatar } from "./Avatar";
+import { useFlip } from "./flip";
 
 /**
  * Stillingen — appens forside.
@@ -12,6 +14,10 @@ import { Avatar } from "./Avatar";
  *
  * Rækken er en knap: et tryk åbner personkortet. Samme mønster som overalt
  * ellers i appen — et navn er altid noget, man kan trykke på.
+ *
+ * Rækkerne GLIDER, når stillingen skifter — se `useFlip`. Overhalingen er
+ * hele det øjeblik, appen findes for, og den var indtil nu usynlig: man så
+ * listen før og listen efter, aldrig selve skiftet.
  */
 export function Stilling({
   channelId,
@@ -32,6 +38,15 @@ export function Stilling({
     channelId,
   });
 
+  // Nøglerne skal beregnes FØR de tidlige returneringer: en hook må ikke
+  // stå efter en betinget exit. `useMemo` holder listen stabil, så FLIP'ens
+  // effekt ikke kører på hver eneste tegning, kun når rækkefølgen ændrer sig.
+  const noegler = useMemo(
+    () => (raekker ?? []).map((raekke) => raekke.userId as string),
+    [raekker],
+  );
+  const listen = useFlip(noegler);
+
   if (raekker === undefined) {
     return <p className="midtstillet">Henter stillingen …</p>;
   }
@@ -49,7 +64,7 @@ export function Stilling({
   }
 
   return (
-    <div className="raekker skaerm-ind">
+    <div className="raekker skaerm-ind" ref={listen}>
       {raekker.map((raekke, plads) => (
         <button
           key={raekke.userId}

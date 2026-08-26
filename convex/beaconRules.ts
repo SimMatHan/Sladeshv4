@@ -141,15 +141,42 @@ export function beaconTitel(
 }
 
 /**
- * Teksten i varslingen. Ordret fra det gamle repo, inklusive emojis —
- * brugerne kender den.
+ * Teksten i varslingen.
+ *
+ * ## Admins egen besked bliver brugt nu
+ *
+ * `opretBeacon` har altid gemt et `message`-felt, og admin-formularen har
+ * altid haft et felt til det. Ingen af delene nåede nogensinde frem:
+ * funktionen her tog kun opretterens navn og returnerede den samme faste
+ * tekst hver gang. Man kunne skrive hvad som helst i feltet, og modtagerne
+ * fik det aldrig at se.
+ *
+ * ## Hvorfor standarden ikke bare blev erstattet
+ *
+ * Den faste tekst er ordret fra det gamle repo, inklusive emojis, og
+ * brugerne kender den. Skriver admin INTET, gemmer `opretBeacon`
+ * standardbeskeden — og så skal varslingen se ud, som den altid har.
+ *
+ * Har admin derimod skrevet noget, er det dét, der skal stå. At hænge
+ * "Log en drink NU – næste tjek er om 5 minutter" på enden af en besked,
+ * nogen har formuleret selv, ville begrave den: den, der skrev "Sidste
+ * omgang inden vi går", mente ikke også det andet.
  */
-export function beaconVarsling(opretterNavn: string): {
-  titel: string;
-  tekst: string;
-} {
+export function beaconVarsling(
+  opretterNavn: string,
+  besked?: string,
+): { titel: string; tekst: string } {
+  const titel = "🚨 STRESS BEACON AKTIVERET! 🚨";
+  const egen = besked?.trim();
+
+  if (egen !== undefined && egen.length > 0 && egen !== BEACON_STANDARD_BESKED) {
+    // Navnet står stadig med. En besked uden afsender er en besked, man
+    // ikke ved, om man skal tage alvorligt.
+    return { titel, tekst: `${opretterNavn}: ${egen}` };
+  }
+
   return {
-    titel: "🚨 STRESS BEACON AKTIVERET! 🚨",
+    titel,
     tekst:
       `${opretterNavn} har aktiveret en Stress Beacon i dit område! ` +
       `Log en drink NU – næste tjek er om 5 minutter! 🍻🔥`,

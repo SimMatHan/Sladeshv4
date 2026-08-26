@@ -1091,6 +1091,110 @@ input {
   appearance: none;
 }
 
+/* ------------------------------------------------------- sladeshhistorik */
+
+/*
+ * De afgjorte Sladesh på personkortet, med bevisbillederne.
+ *
+ * Rækken genbruger `.adminliste`s stabling og `.adminraekke`s mål, men er
+ * sin egen klasse, fordi den kan FOLDE UD: billederne hænger under, og
+ * rækken skal derfor kunne have en åben og en lukket form.
+ */
+.sladeshraekke {
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.sladeshtop {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-3);
+  width: 100%;
+  min-height: var(--tryk);
+  padding: var(--luft-3) var(--luft-4);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+/* Uden beviser er der intet at folde ud. Rækken må så heller ikke se ud
+   som en knap — hverken for en finger eller for en markør. */
+.sladeshtop:disabled {
+  cursor: default;
+}
+
+.sladeshtop .midt {
+  flex: 1;
+  min-width: 0;
+}
+
+.sladeshtop .navn {
+  display: block;
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
+}
+
+.sladeshtop .under {
+  display: block;
+  font-size: var(--tekst-xs);
+  color: var(--tekst-svag);
+}
+
+/* Udfaldet som en brik i venstre side — samme rolle som datobrikken i
+   historikken og avataren i stillingen: noget fast at scanne ned ad. */
+.udfald {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: var(--radius-lille);
+  background: var(--flade-brik);
+  font-size: var(--tekst-m);
+  line-height: 1;
+}
+
+.udfald.gennemfoert {
+  background: color-mix(in srgb, var(--accent) 16%, var(--flade));
+}
+
+/*
+ * Beviserne. To billeder side om side, aldrig flere.
+ *
+ * `aspect-ratio` og `object-fit: cover` frem for at lade billedet bestemme:
+ * telefonkameraer leverer både stående og liggende, og to figurer i
+ * forskellig højde ved siden af hinanden ligner en fejl.
+ */
+.beviser {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--luft-2);
+  padding: 0 var(--luft-3) var(--luft-3);
+}
+
+.beviser figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+}
+
+.beviser img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-lille);
+  /* Baggrunden ses, mens billedet hentes. Uden den er der et hul i
+     kortets farve, indtil filen lander. */
+  background: var(--flade-brik);
+}
+
+.beviser figcaption {
+  text-align: center;
+}
+
 /* ----------------------------------------------------------- kanalvælger */
 
 .kanalliste {
@@ -2035,15 +2139,49 @@ input {
   font-size: var(--ikon);
 }
 
+/*
+ * Uret i de to statusbjælker.
+ *
+ * Var overtagelsens hero på `--tekst-xxl`, og begge bjælker skrev deres
+ * egen `--tekst-m` oven i den. Overtagelsen har fået `.urring` i stedet,
+ * og så var 40px'eren en størrelse, ingen brugte — hver eneste forekomst
+ * blev overskrevet. Størrelsen står nu hos bjælkerne, hvor den gælder.
+ */
 .ur {
-  /* Overtagelsens hero: ét stort tal på skærmen, jf. regel 1 i oplægget. */
-  font-size: var(--tekst-xxl);
-  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+  font-weight: var(--vaegt-fed);
+}
+
+/*
+ * OVERTAGELSENS ur: en ring der tømmes.
+ *
+ * Et tal, der tæller ned, læses. En ring, der løber tom, mærkes — og det
+ * er dét, de ti minutter skal føles som. Tallet står stadig inde i ringen,
+ * fordi "halvandet minut" og "lidt" ikke er samme oplysning.
+ *
+ * `--urfarve` skifter ved udløb. Den ligger som variabel og ikke som to
+ * regler, fordi buen tegnes af en SVG, `Fremdriftsring` sætter `stroke` på
+ * — en CSS-regel på `.udloebet .ring circle` ville skulle kende
+ * komponentens indre.
+ */
+.urring {
+  --urfarve: var(--accent);
+  display: grid;
+  place-items: center;
+}
+
+.urring.udloebet {
+  --urfarve: var(--fare);
+}
+
+.urring .ringtal {
+  font-size: var(--tekst-xl);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--spor-tal);
 }
 
-.ur.udloebet {
+.urring.udloebet .ringtal {
   color: var(--fare);
 }
 

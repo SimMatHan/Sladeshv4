@@ -407,6 +407,89 @@ export const sendSladesh = mutation({
  * gemte kun download-URL'en i dokumentet — ikke base64, som typekommentaren
  * ellers antydede. Convex-pendanten er storage, og feltet er `v.id("_storage")`.
  */
+/**
+ * En persons afgjorte Sladesh, nyeste først — med beviserne.
+ *
+ * ## Hvorfor den findes
+ *
+ * Hver eneste gennemført Sladesh tager TO billeder, som `registrerBevis`
+ * lægger i Convex-storage som `proofBeforeImage` og `proofAfterImage`. De
+ * har ligget der siden appen blev bygget, og ingen skærm har nogensinde
+ * vist dem. Lagringen blev betalt, billederne blev aldrig set.
+ *
+ * ## Hvem må se billederne
+ *
+ * RÆKKEN er synlig for alle, der deler Kanal med personen — det er samme
+ * grænse som stillingen, og tallene står der allerede på personkortet.
+ *
+ * BILLEDERNE er kun synlige for de TO parter. Beviset blev taget til
+ * afsenderen som svar på en udfordring, ikke til Kanalen: det er et foto
+ * taget med telefonens kamera i en bar, og der er ansigter og lokaler i
+ * baggrunden, som ingen har sagt ja til at dele bredt. Ser man rækken uden
+ * at være part, får man udfaldet og intet billede.
+ *
+ * Grænsen er sat med vilje snævert og kan udvides. Den modsatte vej —
+ * billeder, der har været synlige for hele Kanalen, og som man så trækker
+ * tilbage — kan ikke gøres om.
+ *
+ * ## URL'erne slås op HER
+ *
+ * `getBevisUrl` findes og tager ét storage-id. Havde klienten brugt den,
+ * ville en liste på ti udfordringer koste enogtyve opslag. Her slås de op
+ * i samme query, som henter rækkerne.
+ */
+export const getSladeshHistorik = query({
+  args: {
+    userId: v.optional(v.id("users")),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const viewer = await requireCurrentUser(ctx);
+    const targetId = args.userId ?? viewer._id;
+
+    if (targetId !== viewer._id) {
+      await requireCanViewUser(ctx, targetId);
+    }
+
+    // Som MODTAGER. Det er den retning, der har et bevis: afsenderen
+    // trykker på en knap, modtageren drikker og fotograferer.
+    const raekker = await ctx.db
+      .query("sladeshChallenges")
+      .withIndex("by_recipient_and_created_at", (q) =>
+        q.eq("recipientId", targetId),
+      )
+      .order("desc")
+      .take(args.limit ?? 10);
+
+    const afgjorte = raekker.filter((r) => erAfsluttetStatus(r.status));
+
+    return await Promise.all(
+      afgjorte.map(async (r) => {
+        const erPart = viewer._id === r.senderId || viewer._id === r.recipientId;
+
+        return {
+          challengeId: r._id,
+          status: r.status,
+          senderName: r.senderName,
+          recipientName: r.recipientName,
+          createdAt: r.createdAt,
+          completedAt: r.completedAt,
+          venue: r.venue,
+          /** Kun for de to parter. Se afsnittet om hvem der må se hvad. */
+          foerBillede:
+            erPart && r.proofBeforeImage !== undefined
+              ? await ctx.storage.getUrl(r.proofBeforeImage)
+              : null,
+          efterBillede:
+            erPart && r.proofAfterImage !== undefined
+              ? await ctx.storage.getUrl(r.proofAfterImage)
+              : null,
+        };
+      }),
+    );
+  },
+});
+
 export const genererUploadUrl = mutation({
   args: {},
   handler: async (ctx): Promise<string> => {

@@ -69,6 +69,16 @@ Forbudslisten står, fordi de eksisterende scripts kan ødelægge data; et
 script, der kun tæller efter, kan ikke. `package.json` fik én linje i
 `scripts`, og ingen afhængigheder er tilføjet — afsnit 2 gælder uændret.
 
+**Bevidst undtagelse 5:** bevisbillederne fra Sladesh vises nu, og det
+krævede en ny query i `convex/sladesh.ts`. Billederne har ligget i
+Convex-storage siden appen blev bygget — to per gennemført Sladesh — og
+ingen skærm har vist dem. Ingen tabel, intet felt og ingen mutation er
+ændret; queryen LÆSER `sladeshChallenges` gennem et indeks, der allerede
+fandtes (`by_recipient_and_created_at`, også ubrugt indtil nu).
+
+Grænsen for hvem der ser billederne er sat i queryen og med vilje snæver:
+kun de to parter i udfordringen. Se kommentaren ved `getSladeshHistorik`.
+
 ---
 
 ## 2. Afhængigheder
