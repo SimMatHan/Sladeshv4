@@ -112,6 +112,57 @@ overskrift("skalaerne");
 }
 
 // ---------------------------------------------------------------------------
+// 1b. Afstande i JSX
+// ---------------------------------------------------------------------------
+
+/**
+ * Rå afstande gemt i `style={{ ... }}`.
+ *
+ * Revisionen læste kun `src/index.css`, og skalaerne meldte grønt i
+ * månedsvis, mens FEM `marginTop: 9` sad i komponenterne — i onboardingen,
+ * i indstillingerne og i profilfelterne. Ni er ikke engang et af de seks
+ * trin; det var et tal, nogen skrev, fordi det så rigtigt ud.
+ *
+ * Samme lærestreg som kommentar-blankningen ovenfor: værktøjet sagde
+ * grønt, fordi det ikke kiggede det rigtige sted. En regel, der kun
+ * håndhæves i én fil, er ikke en regel — den er en vane i den fil.
+ *
+ * Kun `margin`, `padding` og `gap` med et TAL. Bredder, højder, procenter
+ * og `transform` hører til geometri, som skalaen aldrig har dækket — se
+ * `.soejle` og `Fremdriftsring` for to steder, hvor et tal i JSX er det
+ * eneste rigtige.
+ */
+overskrift("afstande i JSX");
+{
+  const filer: string[] = [];
+  const gaa = (mappe: string): void => {
+    for (const navn of readdirSync(mappe)) {
+      const sti = join(mappe, navn);
+      if (statSync(sti).isDirectory()) gaa(sti);
+      else if (sti.endsWith(".tsx")) filer.push(sti);
+    }
+  };
+  gaa("src");
+
+  const fundne: string[] = [];
+  for (const sti of filer) {
+    readFileSync(sti, "utf8")
+      .split("\n")
+      .forEach((linje, nr) => {
+        if (/(margin|padding|gap)[A-Za-z]*:\s*[0-9]/.test(linje)) {
+          fundne.push(`${sti}:${nr + 1} — ${linje.trim()}`);
+        }
+      });
+  }
+
+  if (fundne.length === 0) {
+    ok(`${filer.length} komponenter, ingen rå afstande i JSX`);
+  } else {
+    for (const traef of fundne) daarligt(traef);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // 2. Kontrast
 // ---------------------------------------------------------------------------
 

@@ -467,7 +467,7 @@ function SendSladesh({
   if (sendt) {
     return (
       <div className="arkgruppe">
-        <p className="knap" style={{ color: "var(--medgang)" }}>
+        <p className="kvitteret" role="status">
           Sladesh sendt til {modtagerNavn} 🍺
         </p>
       </div>

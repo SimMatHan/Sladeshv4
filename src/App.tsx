@@ -518,7 +518,7 @@ function Kvittering({
 }
 
 function LoginSkaerm() {
-  const { signIn, signUp, signInWithGoogle, error } = useAuth();
+  const { signIn, signUp, error } = useAuth();
   const [email, setEmail] = useState("");
   const [kodeord, setKodeord] = useState("");
   const [opretter, setOpretter] = useState(false);
@@ -568,9 +568,13 @@ function LoginSkaerm() {
         </button>
       </form>
 
-      <button className="knap" onClick={() => void signInWithGoogle()}>
-        Fortsæt med Google
-      </button>
+      {/*
+       * Ingen Google-knap. Den virkede ikke — popup'en blev afvist i den
+       * installerede PWA — og en knap, der ser ud som en vej ind uden at
+       * være det, er værre end ingen knap. `signInWithGoogle` ligger stadig
+       * i AuthContext.tsx, som kontrakten fredner; den har bare ingen
+       * kaldere længere.
+       */}
 
       <button className="skift" onClick={() => setOpretter(!opretter)}>
         {opretter
