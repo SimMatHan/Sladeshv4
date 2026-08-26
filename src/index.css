@@ -240,7 +240,17 @@
   /* Chattens faste skriver — cirka sendknappens 44px plus dens egen
      lodrette polstring. `.chat`s bundpolstring skal matche, så sidste
      besked ikke gemmer sig bag den. */
-  --skriverhoejde: 66px;
+  /*
+   * Skriverens højde — REGNET, ikke målt.
+   *
+   * Den stod som 66px, altså et tal nogen havde talt sig frem til på et
+   * tidspunkt, hvor skriveren så anderledes ud. Den var 68 den dag, jeg
+   * regnede efter, og chatten fik derfor to pixels for lidt i bunden.
+   *
+   * Nu følger den af sig selv: trykfladen plus polstringen plus de to
+   * kanter. Ændrer polstringen sig, ændrer tallet sig med.
+   */
+  --skriverhoejde: calc(var(--tryk) + var(--luft-2) * 2 + 2px);
 
   /* Sikker afstand til telefonens hjemmebjælke og hak. */
   --bund-sikker: env(safe-area-inset-bottom, 0px);
@@ -730,6 +740,12 @@ input {
  * Den hang før halvt ud over bjælkens overkant med en negativ margin.
  * Nu ligger pillen frit, så knappen kan sidde INDE i den og stadig være
  * skærmens midtpunkt — samme greb som Stravas Registrer-knap.
+ *
+ * FLAD accent, ikke en gradient. Mockuppens ( + ) er ren #1B4D3E
+ * (design/Main.dc.html), og det er den samme regel, chatboblen fik: en
+ * tone, der løber fra én farve til en anden, hører ikke til på en flade,
+ * der bærer noget, man skal aflæse. Dybden kommer fra skyggen, som er
+ * tonet med accenten — dét er mockuppens greb.
  */
 .logknap {
   flex: 0 0 auto;
@@ -738,7 +754,7 @@ input {
   width: var(--logknap);
   height: var(--logknap);
   border-radius: 50%;
-  background: linear-gradient(160deg, var(--accent), var(--accent-mork));
+  background: var(--accent);
   color: var(--accent-tekst);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--accent) 40%, transparent);
   transition: transform var(--fart-hurtig) ease;
@@ -1498,6 +1514,14 @@ input {
   overflow: hidden;
 }
 
+/*
+ * Den ENESTE gradient tilbage i appen, og den bliver.
+ *
+ * De tre andre lå under tekst og er væk. Denne er 6px høj og bærer
+ * ingenting — og den har mockuppens ord for sig: den mørke heros
+ * fremdriftsbjælke er `linear-gradient(90deg, #d97706, #f59e0b)`, se
+ * design/Moerk.dc.html.
+ */
 .bjaelke .fyld {
   height: 100%;
   border-radius: var(--radius-rund);
@@ -2243,7 +2267,10 @@ input {
   width: 100%;
   margin: var(--luft-3) 0 var(--luft-1);
   padding: var(--luft-3) var(--luft-4);
-  background: linear-gradient(160deg, var(--accent), var(--accent-mork));
+  /* Flad accent. Bjælken bærer TEKST, og en tone der skifter under
+     bogstaverne gør dem sværere at læse, ikke pænere — samme grund som
+     chatboblen og ( + ). */
+  background: var(--accent);
   color: var(--accent-tekst);
   border-radius: var(--radius);
   text-align: left;
@@ -2337,8 +2364,9 @@ input {
  * tastaturet. Kun tokenisering herunder, ingen ny logik.
  */
 .chat {
-  /* Plads til den faste skriver nederst. */
-  padding-bottom: var(--skriverhoejde);
+  /* Plads til den faste skriver nederst — plus luften over navigationen,
+     som skriveren selv står løftet med. */
+  padding-bottom: calc(var(--skriverhoejde) + var(--luft-2));
 }
 
 /*
@@ -2465,27 +2493,39 @@ input {
 }
 
 /*
- * Skriveren hviler på `--flade`, ikke på en sløret bund.
+ * Skriveren SVÆVER, som navigationen under den.
  *
- * Sløringen hører til toppen, som ligger OVEN PÅ indhold, der ruller forbi.
- * Skriveren ligger under en tråd, der ender over den, og en halvgennemsigtig
- * flade dér gav en stribe halvt synlig tekst bag feltet. Mockuppen giver den
- * en egen flade med en streg over — se design/Chat.dc.html.
+ * Den var en plade i fuld bredde med en streg over — mockuppens form, se
+ * design/Chat.dc.html. Mockuppen tegner bare ikke navigationen på
+ * chatskærmen, og i appen ligger den lige under: en kant-til-kant plade
+ * bag en svævende pille ser ud som to lag, der ikke hører sammen.
+ *
+ * Værre var geometrien. Skriverens underkant sad på
+ * `--navplads + --bund-sikker`, og navigationens OVERKANT sidder på
+ * nøjagtig det samme tal — de rørte hinanden uden en pixel imellem. Nu er
+ * der `--luft-2` mellem dem, og skriveren er trukket ind fra siderne, så
+ * de to læses som to ting, der ligger oven på siden.
+ *
+ * Fladen er stadig UGENNEMSIGTIG. Sløringen hører til toppen, som ligger
+ * oven på indhold, der ruller forbi; her ender tråden lige over, og en
+ * halvgennemsigtig flade gav en stribe halvt synlig tekst bag feltet.
  */
 .skriver {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--navplads) + var(--bund-sikker));
+  left: var(--luft-4);
+  right: var(--luft-4);
+  bottom: calc(var(--navplads) + var(--bund-sikker) + var(--luft-2));
   z-index: var(--lag-skriver);
   display: flex;
   align-items: center;
-  gap: var(--luft-3);
+  gap: var(--luft-2);
   max-width: var(--bredde);
   margin: 0 auto;
-  padding: var(--luft-3) var(--luft-4);
+  padding: var(--luft-2);
   background: var(--flade);
-  border-top: 1px solid var(--kant);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius-rund);
+  box-shadow: var(--skygge-svaev);
 }
 
 /*
