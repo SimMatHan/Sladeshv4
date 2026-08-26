@@ -1,7 +1,6 @@
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { getDrinkDayStart } from "../../convex/constants";
 import { genstande } from "../lib/visning";
 
 /**
@@ -34,7 +33,12 @@ import { genstande } from "../lib/visning";
  * et gæt og ikke et nul. Se docs/redesign-kontrakt.md afsnit 7.
  */
 
-export type Undertekstskaerm = "stilling" | "chat" | "kort" | "historik" | "mig";
+/*
+ * Ingen "mig" her længere. Mig-fanen viser ikke skallens header — den har
+ * sin egen profilrække med kanalnavn og ugedag, se `Profilundertekst` i
+ * Mig.tsx. Denne fil dækker nu kun de fire segmenter inde i Kanal-fanen.
+ */
+export type Undertekstskaerm = "stilling" | "chat" | "kort" | "historik";
 
 export function Sideundertekst({
   skaerm,
@@ -52,8 +56,6 @@ export function Sideundertekst({
       return <KortUndertekst channelId={channelId} />;
     case "historik":
       return <HistorikUndertekst channelId={channelId} />;
-    case "mig":
-      return <MigUndertekst />;
   }
 }
 
@@ -122,16 +124,3 @@ function HistorikUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
   );
 }
 
-/**
- * Mig-fanen har ingen kanaltal at vise — den handler om én selv. Dagens navn
- * er til gengæld ægte og siger, hvilken aften man står i; drikkedagen skifter
- * først kl. 10, så "fredag" holder også kl. 03.
- */
-function MigUndertekst() {
-  // DRIKKEDAGEN, ikke kalenderdagen. Kl. 03 om lørdagen står man stadig i
-  // fredagens aften, og det er den, resten af appen tæller efter.
-  const ugedag = new Intl.DateTimeFormat("da-DK", { weekday: "long" }).format(
-    new Date(getDrinkDayStart(Date.now())),
-  );
-  return <Linje>{ugedag}</Linje>;
-}

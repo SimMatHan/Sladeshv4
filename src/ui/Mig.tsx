@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { findAchievement, taerskelFor } from "../../convex/achievementRules";
+import { getDrinkDayStart } from "../../convex/constants";
 import { useAuth } from "../contexts/AuthContext";
 import { fejltekst, genstande, promille } from "../lib/visning";
 import { Achievements } from "./Achievements";
@@ -97,6 +98,7 @@ export function Mig({
         <Avatar emoji={mig.emoji} navn={mig.displayName} farve={mig.avatarColor} stor />
         <div className="navnblok">
           <div className="navn">{mig.displayName}</div>
+          <Profilundertekst channelId={channelId} />
         </div>
         <button
           className="profilhandling"
@@ -186,6 +188,41 @@ export function Mig({
   );
 }
 
+/**
+ * "Ballade · tirsdag" under navnet.
+ *
+ * Den stod i skallens header sammen med kanalnavnet. Headeren er skjult på
+ * denne fane nu (se App.tsx), fordi mockuppen har ÉN titel på Mig og ikke
+ * to, og linjen er flyttet herned, hvor design/Main.dc.html har den.
+ *
+ * Egen komponent, så kun den henter kanalopslaget — samme mønster som
+ * `KanalNavn` i App.tsx og underteksterne i Sideundertekst.tsx. Convex
+ * deler ét abonnement mellem identiske kald, så opslaget er gratis: skallen
+ * henter allerede den samme kanal med de samme argumenter.
+ */
+function Profilundertekst({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
+  const kanal = useQuery(
+    api.kanaler.getKanal,
+    channelId === undefined ? "skip" : { channelId },
+  );
+
+  // DRIKKEDAGEN, ikke kalenderdagen. Kl. 03 om lørdagen står man stadig i
+  // fredagens aften, og det er den, resten af appen tæller efter.
+  const ugedag = new Intl.DateTimeFormat("da-DK", { weekday: "long" }).format(
+    new Date(getDrinkDayStart(Date.now())),
+  );
+
+  // Uden Kanal, eller mens den hentes, står ugedagen alene. Et gæt på
+  // kanalnavnet ville stå forkert i det halve sekund, opslaget tager.
+  const navn = kanal === undefined || kanal === null ? undefined : kanal.name;
+
+  return (
+    <span className="undernavn">
+      {navn === undefined ? ugedag : `${navn} · ${ugedag}`}
+    </span>
+  );
+}
+
 /* ------------------------------------------------------------------ ringene */
 
 type PromilleSvar = NonNullable<
@@ -204,11 +241,21 @@ type PromilleSvar = NonNullable<
  */
 const PROMILLE_RING_LOFT = 2;
 
-/** Status → farve. Genbruger eksisterende tokens; ingen nye opfundet. */
+/**
+ * Status → ringvariabel.
+ *
+ * Den returnerede FØR en rigtig farve: `--medgang`, `--fare`, `--accent`.
+ * Det holdt, så længe ringene stod på et neutralt kort. I lys er kortet nu
+ * fyldt med accentfarven, og på flaskegrøn er `--medgang` (#1b6b4a) næsten
+ * usynlig og `--accent` er selve baggrunden. Hvilken farve der kan læses,
+ * afhænger af fladen — og fladen kender kun CSS. Så her vælges kun
+ * BETYDNINGEN, og `.ringraekker` i index.css binder den til en farve pr.
+ * tema.
+ */
 function farveForNiveau(status: "online" | "warning" | "danger" | undefined): string {
-  if (status === "online") return "var(--medgang)";
-  if (status === "danger") return "var(--fare)";
-  return "var(--accent)"; // "warning", og default mens ukendt
+  if (status === "online") return "var(--ringrolig)";
+  if (status === "danger") return "var(--ringfare)";
+  return "var(--ringvarsel)"; // "warning", og default mens ukendt
 }
 
 /**

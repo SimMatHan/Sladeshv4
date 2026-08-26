@@ -17,11 +17,13 @@ export function Fremdriftsring({
   stoerrelse = 80,
   tykkelse = 6,
   /**
-   * Buens farve. Default er accentfarven, som Achievements-hylden bruger.
-   * Mig-fanens promillering sender en status-farve i stedet (grøn/gul/rød) —
-   * se `beruselsesniveau` i convex/promilleRules.ts.
+   * Buens farve. Default læser `--ringneutral`, hvis den flade ringen står
+   * på har sat den, og falder ellers tilbage på accentfarven — det er dét,
+   * Achievements-hylden får. Mig-fanens promillering sender en af de andre
+   * ringvariabler ind, fordi dens farve betyder noget: se `farveForNiveau`
+   * i Mig.tsx og `beruselsesniveau` i convex/promilleRules.ts.
    */
-  farve = "var(--accent)",
+  farve = "var(--ringneutral, var(--accent))",
   /**
    * Overstyrer skærmlæserens tekst. Default er procenten, som er rigtig for
    * en fremdriftsbue, men forkert for en promillering — der er "2,5 ‰
@@ -55,7 +57,9 @@ export function Fremdriftsring({
           cy={stoerrelse / 2}
           r={radius}
           fill="none"
-          stroke="var(--kant)"
+          // Sporet følger fladen på samme måde som buen: en kantfarve er
+          // rigtig på et almindeligt kort og forkert på et fyldt et.
+          stroke="var(--ringspor, var(--kant))"
           strokeWidth={tykkelse}
         />
         <circle

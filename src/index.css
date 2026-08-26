@@ -1218,6 +1218,24 @@ input {
   letter-spacing: var(--spor-titel);
 }
 
+/*
+ * "Ballade · tirsdag" under navnet.
+ *
+ * Den stod før i skallens header, sammen med kanalnavnet — to lag titel
+ * oven på hinanden, hvor mockuppen har ét. Headeren er nu skjult på denne
+ * fane (se App.tsx), og linjen er flyttet herned, hvor design/Main.dc.html
+ * har den. Intet er forsvundet: kanalnavnet står her, og kanalskifteren
+ * bliver på Kanal-fanen, hvor man skifter kanal.
+ */
+.profiltop .undernavn {
+  display: block;
+  /* Mockuppen har 2px. Der er ingen 2'er i skalaen, og en undtagelse her
+     ville koste mere end de to pixels er værd — se regel 3. */
+  margin-top: var(--luft-1);
+  font-size: var(--tekst-s);
+  color: var(--tekst-svag);
+}
+
 /* Tandhjulet. Indstillinger var en knap i bunken forneden; nu er den dér,
    hvor man kigger efter sig selv. */
 .profilhandling {
@@ -1327,10 +1345,81 @@ input {
  * boks: tre bokse ved siden af hinanden ville veje tungere end tre tal, der
  * hører sammen. "Fjern før du tilføjer" — se docs/redesign-prompt.md.
  */
+/*
+ * Mig-fanens tre kort er STORE i hjørnerne — 22px, ikke systemets 14.
+ *
+ * Det er ikke pynt, og det er heller ikke en ny beslutning: mockuppen gør
+ * det. Stillingens rækker er 14px (design/Stilling.dc.html), Migs kort
+ * 22px (design/Main.dc.html). Forskellen er, hvad kortet ER: en række i en
+ * liste af mange, eller ét af tre felter, der fylder skærmen. Begge tal
+ * findes allerede som `--radius` og `--radius-stor`.
+ */
+.ringraekker,
+.stime,
+.taettest {
+  border-radius: var(--radius-stor);
+}
+
 .ringraekker {
   display: flex;
   flex-direction: column;
   margin: var(--luft-5) 0;
+
+  /*
+   * Ringenes farver som variabler frem for som inline-stil.
+   *
+   * `farveForNiveau` i Mig.tsx returnerede før en rigtig farve — "grøn ved
+   * ædru, rød ved fare" — sat direkte på SVG'en. Det virkede, så længe
+   * kortet var neutralt. Fyldes kortet med accentfarven, holder ingen af de
+   * farver: `--medgang` er #1b6b4a på et #1b4d3e-kort. Farven afhænger nu af
+   * FLADEN, og den ved kun CSS noget om.
+   */
+  --ringspor: var(--kant);
+  --ringneutral: var(--accent);
+  --ringrolig: var(--medgang);
+  --ringvarsel: var(--accent);
+  --ringfare: var(--fare);
+}
+
+/*
+ * Det FYLDTE hero-kort — kun i lys, og kun uden festivaltema.
+ *
+ * Mockuppen fylder det ikke begge steder, og det er ikke en forglemmelse:
+ * i design/Main.dc.html er kortet #1B4D3E, i design/Moerk.dc.html er det
+ * #14161b med accenten kun på promilletallet. Det er rigtigt. På en pale
+ * creme-side er ét mørkt felt dét, der holder skærmen sammen; i mørke ville
+ * et fyldt ravgult kort være en projektør.
+ *
+ * `:root:not([data-tema])` holder festivaltemaerne udenfor. De er mørke i
+ * sig selv, og ringfarverne herunder er valgt mod flaskegrøn — ikke mod
+ * Copenhells rød.
+ */
+@media (prefers-color-scheme: light) {
+  :root:not([data-tema]) .ringraekker {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-tekst);
+
+    /* Sporet kan ikke være `--kant` her: en creme streg på flaskegrøn er
+       lysere end buen selv skulle være. Hvid med lav dækning i stedet, som
+       fremdriftsbjælken i mockuppens hero. */
+    --ringspor: rgb(255 255 255 / 0.2);
+    --ringneutral: var(--accent-tekst);
+    /* Mockuppens egen dæmpede creme-grøn på det fyldte kort. */
+    --ringrolig: #a8c4b4;
+    --ringvarsel: #f2c14e;
+    --ringfare: #ffa48f;
+  }
+
+  /* Skillelinjen mellem rækkerne og den dæmpede tekst skal begge lyse OP
+     fra fladen her, ikke ned i den. */
+  :root:not([data-tema]) .ringraekker .ringraekke + .ringraekke {
+    border-top-color: rgb(255 255 255 / 0.16);
+  }
+
+  :root:not([data-tema]) .ringraekker .hjaelp {
+    color: #c2d6c9;
+  }
 }
 
 .ringraekke {
