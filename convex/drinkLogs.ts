@@ -99,7 +99,24 @@ export const logDrink = mutation({
 
     await ctx.db.patch(user._id, {
       totalPoints: (user.totalPoints ?? 0) + points,
-      ...(checkerInd ? { checkInStatus: true, lastCheckIn: now } : {}),
+      /*
+       * `checkInCount` tælles OP her nu.
+       *
+       * Den blev kun talt op af `checkIn` i convex/checkIns.ts, og den
+       * mutation havde ét kaldested: formularen under Kortet. Den formular
+       * er fjernet — aftenens første genstand gør allerede det samme — og
+       * uden denne linje ville "CHECK INS" på Mig stå stille for evigt.
+       *
+       * `checkerInd` er sand præcis én gang per drikkedag, så tallet
+       * betyder stadig det samme som før: aftener, man var ude.
+       */
+      ...(checkerInd
+        ? {
+            checkInStatus: true,
+            lastCheckIn: now,
+            checkInCount: (user.checkInCount ?? 0) + 1,
+          }
+        : {}),
       currentDayStreak: streak.currentDayStreak,
       longestStreak: streak.longestStreak,
       // `lastDrinkAt` og `lastDrinkDayStart` flyttes kun af rigtige

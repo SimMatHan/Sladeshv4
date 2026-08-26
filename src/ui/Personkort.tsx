@@ -2,9 +2,19 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { fejltekst, genstande } from "../lib/visning";
+import { DRINK_CATEGORIES, getDrinkDayStart } from "../../convex/constants";
+import { fejltekst, genstande, klokken } from "../lib/visning";
 import { Ark } from "./Ark";
 import { Avatar } from "./Avatar";
+
+/**
+ * Hvor mange logninger der hentes for at finde aftenens.
+ *
+ * Hentes desc og filtreres på drikkedagen herude. 60 er rigeligt til én
+ * aften — også en lang en — og billigere end en ny query på serveren, som
+ * kontrakten i øvrigt heller ikke tillader.
+ */
+const LOGGRAENSE = 60;
 
 /**
  * Personkortet.
@@ -110,32 +120,146 @@ export function Personkort({
         />
       )}
 
+      <IAften userId={userId} navn={bruger.displayName} />
+
       {achievements !== undefined && (
         <div className="arkgruppe">
           <h3>
             Achievements · {oplaaste.length} af {achievements.length}
           </h3>
-          <div className="medaljer">
-            {achievements.map((achievement) => (
-              <span
-                key={achievement.achievementId}
-                className={achievement.unlocked ? undefined : "laast"}
-                // Titlen er den eneste forklaring på en emoji-række. Uden den
-                // er den pæn og uforståelig.
-                title={
-                  achievement.unlocked
-                    ? `${achievement.title}${achievement.count > 1 ? ` ×${achievement.count}` : ""}`
-                    : `${achievement.title} — ${achievement.howToGet}`
-                }
-              >
-                {achievement.emoji ?? "🏆"}
-              </span>
-            ))}
-          </div>
+
+          {/*
+            De OPTJENTE med billede og navn, ikke som en stribe emoji.
+            Striben var en række på 5-6 grå og farvede tegn med `title` som
+            eneste forklaring — og `title` er en tooltip, altså noget der
+            kræver en mus. På en telefon var rækken dermed pæn og
+            fuldstændig ulæselig: man kunne se, at der VAR mærker, men ikke
+            hvilke. Billederne findes allerede i hylden.
+          */}
+          {oplaaste.length === 0 ? (
+            <p className="hjaelp">Ingen endnu.</p>
+          ) : (
+            <div className="maerkeliste">
+              {oplaaste.map((achievement) => (
+                <span key={achievement.achievementId} className="maerkebrik">
+                  <span className="badgebillede lille">
+                    <img src={achievement.image} alt="" loading="lazy" />
+                    {achievement.count > 1 && (
+                      <span className="antal">×{achievement.count}</span>
+                    )}
+                  </span>
+                  <span className="titel">{achievement.title}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* De låste tælles, men vises ikke. En liste over hvad en ANDEN
+              ikke har opnået, er ikke en oplysning, man kan bruge til noget
+              — og på ens egen hylde står de i forvejen, med hvordan man
+              får dem. */}
+          {oplaaste.length < achievements.length && (
+            <p className="hjaelp">
+              {achievements.length - oplaaste.length} mangler
+            </p>
+          )}
         </div>
       )}
     </Ark>
   );
+}
+
+/**
+ * Hvad personen har drukket i aften.
+ *
+ * Kortet åbnes fra stillingen, altså fra en liste over, hvem der er ude
+ * LIGE NU — og det første, man vil vide, når man har trykket på et navn,
+ * er hvad det tal på syv er lavet af.
+ *
+ * Fortrydelser vises som fortrudte frem for at forsvinde, præcis som i
+ * Historikkens dagliste: forskellen mellem "har ikke drukket noget" og "har
+ * fortrudt tre" er ikke ligegyldig, og en række, der bare var væk, ville
+ * skjule den. Modposterne selv vises ikke — de er bogholderi, ikke
+ * genstande.
+ */
+function IAften({ userId, navn }: { userId: Id<"users">; navn: string }) {
+  const logs = useQuery(api.drinkLogs.getDrinkLogsForUser, {
+    userId,
+    limit: LOGGRAENSE,
+  });
+
+  if (logs === undefined) {
+    return (
+      <div className="arkgruppe">
+        <h3>I aften</h3>
+        <p className="hjaelp">Henter …</p>
+      </div>
+    );
+  }
+
+  const dagStart = getDrinkDayStart(Date.now());
+  const idag = logs.filter((log) => log.timestamp >= dagStart);
+
+  // Hvilke logninger er trukket tilbage. Modposten peger på sin original med
+  // `removesLogId` — samme form, som convex/historik.ts læser.
+  const fortrudte = new Set(
+    idag
+      .filter((log) => log.action === "remove")
+      .map((log) => log.removesLogId)
+      .filter((id): id is Id<"drinkLogs"> => id !== undefined),
+  );
+
+  const raekker = idag.filter(
+    (log) => log.isReset !== true && log.action !== "remove",
+  );
+
+  if (raekker.length === 0) {
+    return (
+      <div className="arkgruppe">
+        <h3>I aften</h3>
+        <p className="hjaelp">{navn} har ikke logget noget endnu.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="arkgruppe">
+      <h3>I aften</h3>
+      {/* Genbruger Historikkens dagliste — det er den samme slags liste, og
+          den skal se ens ud de to steder, man møder den. `fritstaaende`,
+          fordi den her ikke hænger under en udfoldet dagrække. */}
+      <div className="dagliste fritstaaende">
+        {[...raekker].reverse().map((log) => {
+          const fortrudt = fortrudte.has(log._id);
+          return (
+            <div
+              key={log._id}
+              className={fortrudt ? "logning fortrudt" : "logning"}
+            >
+              <span className="emoji">{emojiFor(log.categoryId)}</span>
+              <span className="midt">
+                <span className="navn">{log.variationName}</span>
+                {(log.sizeLabel !== undefined || fortrudt) && (
+                  <span className="under">
+                    {/* `sizeLabel` findes kun på gamle rækker — størrelserne
+                        er ude af logningen, se convex/constants.ts. */}
+                    {log.sizeLabel}
+                    {log.sizeLabel !== undefined && fortrudt && " · "}
+                    {fortrudt && "fortrudt"}
+                  </span>
+                )}
+              </span>
+              <span className="tid">{klokken(log.timestamp)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function emojiFor(categoryId: string): string {
+  return DRINK_CATEGORIES.find((k) => k.id === categoryId)?.emoji ?? "🥤";
 }
 
 /**

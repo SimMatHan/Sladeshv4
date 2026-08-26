@@ -232,6 +232,8 @@
   /* Historikkens søjlediagram — én chart, ét sted, men stadig et rigtigt
      designmål, ikke en glemt værdi. */
   --soejlehoejde: 92px;
+  /* Søjlens loft. Se `.soejleplads` for hvorfor der er et. */
+  --soejlebredde: 26px;
   /* Kortets egen højde. `dvh` er lovligt i en custom property. */
   --kort-hoejde: 58dvh;
   --kort-min-hoejde: 320px;
@@ -2177,20 +2179,50 @@ input {
   height: 100%;
   display: flex;
   align-items: flex-end;
+  /* Søjlerne står MIDT i deres spalte og har et loft på bredden. Uden det
+     bliver syv søjler til syv brede plader på en bred telefon, og figuren
+     læses som et bånd frem for som en kurve. Mockuppens mål. */
+  justify-content: center;
 }
 
+/*
+ * Søjlerne er GRØNNE, ikke grå.
+ *
+ * De var `--kant`, altså stregfarven — og på creme betød det en bleg tan
+ * søjle på en bleg tan flade. Man kunne se, at der var en figur, men ikke
+ * hvad den sagde.
+ *
+ * Skrevet som `color-mix` mod `--accent` frem for som en hex, så den følger
+ * med i mørk tilstand og i festivaltemaerne — dér bliver søjlerne dæmpet
+ * ravgul og dæmpet rød af sig selv.
+ *
+ * MERE accent end mockuppen. Dens #C3D6C9 ligger på 1,46:1 mod kortet, og
+ * det er for lidt på en telefon i en bar — omtrent lige så lidt som den
+ * `--kant`, den afløser. 45% giver 2,30:1 i lys og 2,64:1 i mørk, og
+ * holder samtidig afstand nok til den fulde accent (4,02:1) til, at dagens
+ * søjle stadig springer ud af rækken.
+ *
+ * Det er stadig under 3:1. Det er acceptabelt HER og kun her, fordi
+ * figuren ikke bærer et tal alene: summen står under den, og hver dag står
+ * med sit eget tal i listen nedenunder. Søjlerne er en form, man læser
+ * hurtigt, ikke den eneste kilde til, hvad der skete.
+ */
 .soejle {
   width: 100%;
+  max-width: var(--soejlebredde);
   /* En dag uden aktivitet skal stadig kunne ses som en dag. */
   min-height: 3px;
-  /* Rundet foroven, spids foroven — en søjles egen form, ikke systemets
-     radius-skala. */
-  border-radius: 4px 4px 2px 2px;
-  background: var(--kant);
+  /* Rundet foroven, flad forneden — en søjles egen form, ikke systemets
+     radius-skala. Den står PÅ aksen og skal ikke se ud til at svæve. */
+  border-radius: 5px 5px 0 0;
+  background: color-mix(in srgb, var(--accent) 45%, var(--flade));
   transition: background var(--fart) ease;
 }
 
-.soejle.valgt {
+/* I dag OG den valgte dag står i fuld accent. Den valgte, fordi man lige
+   har peget på den; i dag, fordi det er den, aksen handler om. */
+.soejle.valgt,
+.soejle.idag {
   background: var(--accent);
 }
 
@@ -2290,6 +2322,27 @@ input {
   border-bottom-right-radius: 0;
 }
 
+/*
+ * I DAG er den eneste række, man kan se uden at læse.
+ *
+ * Kun datobrikken var markeret; selve rækken lignede alle de andre. I en
+ * liste, hvor hver anden dag er tom, er "hvor er jeg henne" det første, man
+ * spørger om. Blød accentflade og accentkant, som mockuppens øverste
+ * `.dagraekke`.
+ *
+ * Skrevet FØR `[aria-expanded="true"]`-reglen ville lade udfoldningen
+ * vinde over den; her står den efter, så en udfoldet dag i dag beholder
+ * begge dele — fladen herfra og de flade hjørner derfra.
+ */
+.dagraekke.idag {
+  background: color-mix(in srgb, var(--accent) 12%, var(--flade));
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--kant));
+}
+
+.dagraekke.idag .tal {
+  color: var(--accent);
+}
+
 .dagraekke .midt {
   flex: 1;
   min-width: 0;
@@ -2315,6 +2368,13 @@ input {
   text-align: right;
 }
 
+/*
+ * Listen af logninger.
+ *
+ * Formen herunder er den UDFOLDEDE: den hænger under en `.dagraekke` i
+ * Historikken, så den har ingen overkant og kun runde hjørner forneden —
+ * de to skal læses som ét felt.
+ */
 .dagliste {
   display: flex;
   flex-direction: column;
@@ -2324,6 +2384,19 @@ input {
   border-top: none;
   border-bottom-left-radius: var(--radius);
   border-bottom-right-radius: var(--radius);
+}
+
+/*
+ * Samme liste, men FRITSTÅENDE — "I aften" på personkortet hænger ikke
+ * under noget. Uden dette ville den stå med en åben overkant og to skarpe
+ * hjørner op mod ingenting, hvilket ligner en fejl frem for en liste.
+ * Kanten er samtidig neutral her: accentkanten i Historikken hører til
+ * udfoldningen, ikke til listen.
+ */
+.dagliste.fritstaaende {
+  border-top: 1px solid var(--kant);
+  border-color: var(--kant);
+  border-radius: var(--radius);
 }
 
 p.dagliste {
@@ -2694,6 +2767,39 @@ p.dagliste {
   width: var(--badge-lille);
   height: var(--badge-lille);
   border-radius: var(--radius-lille);
+}
+
+/*
+ * De optjente mærker på personkortet.
+ *
+ * Her stod `.medaljer`: en stribe emoji med `title` som eneste forklaring.
+ * `title` er en tooltip og kræver en mus, så på en telefon kunne man se, at
+ * der VAR mærker, men ikke hvilke. Billede og navn i stedet — de samme
+ * billeder, hylden bruger.
+ *
+ * `.medaljer` bliver, hvor den hører hjemme: på Mig, under "tættest på",
+ * hvor stribens opgave netop ER at være en antydning, man selv kan folde
+ * ud ved at åbne hylden. Se Mig.tsx.
+ */
+.maerkeliste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--luft-2);
+}
+
+.maerkebrik {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-2);
+  padding: var(--luft-2) var(--luft-3) var(--luft-2) var(--luft-2);
+  background: var(--flade-brik);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius-rund);
+}
+
+.maerkebrik .titel {
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
 }
 
 .badgebillede.stor {
