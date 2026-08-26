@@ -49,7 +49,7 @@ export function Stilling({
   }
 
   return (
-    <div className="raekker">
+    <div className="raekker skaerm-ind">
       {raekker.map((raekke, plads) => (
         <button
           key={raekke.userId}

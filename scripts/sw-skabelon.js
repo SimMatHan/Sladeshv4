@@ -81,7 +81,12 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  if (url.hostname.endsWith("tile.openstreetmap.org")) {
+  // Kortfliserne. Værten skiftede fra tile.openstreetmap.org til CARTOs
+  // Positron/Dark Matter, da kortet blev gråtone — se `FLISER` i
+  // src/ui/Kort.tsx. Uden denne linje ville fliserne falde igennem til
+  // "alt andet udefra" nedenfor og holde op med at blive gemt, og et kort
+  // i en kælder ville blive tomt igen.
+  if (url.hostname.endsWith("basemaps.cartocdn.com")) {
     event.respondWith(fliseSvar(request));
     return;
   }

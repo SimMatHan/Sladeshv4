@@ -35,9 +35,8 @@ import { gradientFor, klokken } from "../lib/visning";
  * Derfor bruges `divIcon` med almindelig HTML hele vejen — det giver samtidig
  * den samme avatar som resten af appen frem for en generisk knappenål.
  *
- * Baggrundsfliserne kommer fra OpenStreetMap. De er gratis og kræver ingen
- * nøgle, men de kræver kildeangivelse — den står nederst i kortet og skal
- * blive der.
+ * Baggrundsfliserne er gråtone og følger appens tema. De er gratis og
+ * kræver ingen nøgle, men de kræver kildeangivelse — se `FLISER` nedenfor.
  *
  * Filen har et DEFAULT-eksport, fordi skallen henter den dovent: Leaflet og
  * dets CSS fylder omkring 45 kB gzippet, og det skal ikke koste noget for de
@@ -68,6 +67,45 @@ const KORTNAAL_STOERRELSE = 38;
  * derfor stå som en literal streng. Skal MATCHE `--fare` i index.css.
  */
 const BEACON_FARVE = "#ef4444";
+
+/**
+ * Kortfliserne — CARTOs Positron og Dark Matter.
+ *
+ * OpenStreetMaps egne fliser er FARVEDE: grønne parker, gule veje, blå
+ * vand. På en skærm hvor alt andet er creme og én accent, var kortet det
+ * eneste sted, appen tabte sin egen palet — og de farvede veje trak øjet
+ * væk fra det, kortet handler om, nemlig prikkerne.
+ *
+ * Positron og Dark Matter er praktisk talt gråtone og er tegnet netop til
+ * at ligge UNDER data. De er bygget på de samme OSM-data, så det er ikke
+ * et andet kort — kun en anden tegning af det.
+ *
+ * `{r}` bliver til "@2x" på skærme med høj tæthed. Leaflet udfylder den
+ * selv, når `detectRetina` er sat.
+ *
+ * KILDEANGIVELSEN er et vilkår for begge, og de skal NAVNGIVES BEGGE TO:
+ * OpenStreetMap for dataene, CARTO for fliserne. Den står nederst i
+ * kortet og skal blive der.
+ */
+const FLISER = {
+  lys: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  moerk: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+} as const;
+
+const FLISEKILDE =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
+
+/**
+ * Er appen mørk lige nu?
+ *
+ * To ting kan gøre den mørk: systemets indstilling, og et festivaltema —
+ * de er mørke i sig selv, uanset hvad telefonen står på. Se
+ * docs/kanaltemaer.md og `:root[data-tema]` i index.css.
+ */
+function erMoerkt(): boolean {
+  if (document.documentElement.hasAttribute("data-tema")) return true;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
 
 export default function Kort({
   channelId,
@@ -133,15 +171,30 @@ export default function Kort({
       attributionControl: true,
     }).setView([55.6761, 12.5683], 12); // København, indtil vi ved bedre
 
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 19,
-      attribution: "© OpenStreetMap",
-    }).addTo(kort);
+    const byggFliser = () =>
+      L.tileLayer(erMoerkt() ? FLISER.moerk : FLISER.lys, {
+        maxZoom: 19,
+        detectRetina: true,
+        attribution: FLISEKILDE,
+      }).addTo(kort);
+
+    let fliser = byggFliser();
 
     kortet.current = kort;
     lag.current = L.layerGroup().addTo(kort);
 
+    // Skifter telefonen tema, mens kortet er åbent, skal fliserne følge med
+    // — ellers står et lyst kort tilbage på en mørk skærm. Festivaltemaer
+    // sættes derimod ved kanalskift, som alligevel bygger kortet forfra.
+    const tema = window.matchMedia("(prefers-color-scheme: dark)");
+    const skift = () => {
+      fliser.remove();
+      fliser = byggFliser();
+    };
+    tema.addEventListener("change", skift);
+
     return () => {
+      tema.removeEventListener("change", skift);
       kort.remove();
       kortet.current = undefined;
       lag.current = undefined;
@@ -201,7 +254,7 @@ export default function Kort({
   }, [svar, beacons, onVaelgPerson]);
 
   return (
-    <div className="kortvisning">
+    <div className="kortvisning skaerm-ind">
       <div className="kortflade" ref={kortRef} />
 
       <p className={svar?.mig.deler === true ? "kortstatus deler" : "kortstatus"}>

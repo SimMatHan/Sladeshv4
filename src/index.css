@@ -827,6 +827,40 @@ input {
   box-shadow: var(--skygge-hoej);
   padding-bottom: var(--bund-sikker);
   animation: op var(--fart-lang) var(--kurve);
+  /* Springer tilbage på plads, når man slipper et halvt træk. */
+  transition: transform var(--fart-lang) var(--kurve);
+}
+
+/*
+ * Mens fingeren holder fat, er der ingen overgang og ingen indkørsel.
+ * En overgang på `transform` ville lade arket HALTE efter fingeren — det
+ * er den ene situation, hvor en animation gør noget langsommere i stedet
+ * for blødere.
+ */
+.ark.traekkes {
+  animation: none;
+  transition: none;
+}
+
+/*
+ * Trækfladen: grebet og titlen.
+ *
+ * `touch-action: none` er det, der gør trækket muligt. Uden den ejer
+ * browseren den lodrette bevægelse — den ruller siden eller udløser
+ * træk-for-at-genindlæse — og vores `pointermove` får aldrig fingeren at
+ * se. Den står KUN her, ikke på hele arket: i indholdet skal browseren
+ * blive ved med at rulle.
+ */
+.arkgreb {
+  flex: 0 0 auto;
+  touch-action: none;
+  cursor: grab;
+  /* Trækket må ikke markere titlen som tekst undervejs. */
+  user-select: none;
+}
+
+.arkgreb:active {
+  cursor: grabbing;
 }
 
 @keyframes op {
@@ -839,10 +873,125 @@ input {
   to { opacity: 1; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .ark, .dug, .kvittering { animation: none; }
+/* ------------------------------------------------------------- bevægelse */
+
+/*
+ * Appen havde bevægelse ét sted: arket, der gled op. Alt andet SKIFTEDE —
+ * en fane blev til en anden uden overgang, en liste var der bare. Det er
+ * dét, der får en webside til at føles som en webside.
+ *
+ * To greb, og ikke flere:
+ *
+ * 1. SKÆRMEN kommer ind. Hver af de fire visninger under Kanal monteres
+ *    frisk, når man skifter segment (App.tsx bytter komponenten ud), så en
+ *    indkørsel på deres rod er nok — ingen ekstra tilstand, ingen
+ *    biblioteker.
+ * 2. LISTEN falder på plads, én række ad gangen. Det er dét, der gør, at
+ *    en stilling ligner noget, der ANKOM, frem for noget, der stod der i
+ *    forvejen.
+ *
+ * Bevidst fravalgt: bevægelse på rækker, der FLYTTER sig, når stillingen
+ * ændrer rækkefølge. Det ville være den flotteste af dem alle og også den,
+ * der kan gå galt midt i en optimistisk opdatering — man logger en øl,
+ * rækken springer, serveren svarer, og den springer igen.
+ */
+
+.skaerm-ind {
+  animation: skaerm-ind var(--fart-lang) var(--kurve);
 }
 
+@keyframes skaerm-ind {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Rækkerne kommer ind forskudt.
+ *
+ * Forsinkelsen står som `nth-child` og ikke som en inline-stil per række:
+ * så er der ingen React-kode, der skal vide noget om animationen, og
+ * listen kan skifte længde uden at nogen regner på det.
+ *
+ * KUN de første otte. En kanal med tredive medlemmer ville ellers bruge
+ * halvandet sekund på at tegne sig selv færdig, og de sidste tyve ville
+ * ankomme, længe efter man var holdt op med at kigge.
+ */
+.raekker > *,
+.dage > *,
+.kanalliste > * {
+  animation: skaerm-ind var(--fart) var(--kurve) backwards;
+}
+
+.raekker > :nth-child(1),
+.dage > :nth-child(1),
+.kanalliste > :nth-child(1) { animation-delay: 0ms; }
+.raekker > :nth-child(2),
+.dage > :nth-child(2),
+.kanalliste > :nth-child(2) { animation-delay: 30ms; }
+.raekker > :nth-child(3),
+.dage > :nth-child(3),
+.kanalliste > :nth-child(3) { animation-delay: 60ms; }
+.raekker > :nth-child(4),
+.dage > :nth-child(4),
+.kanalliste > :nth-child(4) { animation-delay: 90ms; }
+.raekker > :nth-child(5),
+.dage > :nth-child(5),
+.kanalliste > :nth-child(5) { animation-delay: 120ms; }
+.raekker > :nth-child(6),
+.dage > :nth-child(6),
+.kanalliste > :nth-child(6) { animation-delay: 150ms; }
+.raekker > :nth-child(7),
+.dage > :nth-child(7),
+.kanalliste > :nth-child(7) { animation-delay: 180ms; }
+.raekker > :nth-child(n + 8),
+.dage > :nth-child(n + 8),
+.kanalliste > :nth-child(n + 8) { animation-delay: 210ms; }
+
+/*
+ * En NY besked glider op nedefra, som den gør i enhver chat. Kun den
+ * nyeste bevæger sig — de andre har allerede stået der, og en hel tråd,
+ * der hopper, hver gang nogen skriver, er uudholdelig.
+ *
+ * `:last-child` rammer netop den, fordi tråden er ældst først.
+ */
+.beskeder > .besked:last-child {
+  animation: skaerm-ind var(--fart) var(--kurve);
+}
+
+/*
+ * ÉN blok for reduceret bevægelse, ikke fire spredt ud over filen.
+ *
+ * `!important` er der, fordi den skal slå igennem uanset hvor specifik en
+ * regel har sat animationen. Det er den ene undtagelse, filen tillader —
+ * "brugeren har bedt om det" slår alt andet.
+ *
+ * Bemærk `transition` er MED. En overgang er også bevægelse, og arket, der
+ * springer tilbage efter et halvt træk, er præcis den slags, der gør folk
+ * utilpasse.
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * Selve stregen. 40×4px er ikke en trykflade — den er et SKILT om, at
+ * `.arkgreb` ovenfor kan trækkes, og den flade er hele toppen af arket,
+ * greb og titel tilsammen. Se regel 5: kravet gælder det, man rammer,
+ * ikke det, man ser.
+ */
 .greb {
   width: 40px;
   height: 4px;
@@ -1270,15 +1419,6 @@ input {
   place-items: center;
   min-height: 60dvh;
   color: var(--tekst-daempet);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bjaelke .fyld,
-  .knap,
-  .chip,
-  .segment {
-    transition: none;
-  }
 }
 
 /* ==========================================================================
@@ -2639,11 +2779,50 @@ p.dagliste {
 }
 
 /* Ens egen naal skal kunne findes paa ét blik i en klynge. */
+/*
+ * EGEN nål pulser.
+ *
+ * Kortet kan have ti prikker på sig, og den ene, man leder efter, er sin
+ * egen. Den havde en accentkant og en svag ring — nok til at finde, hvis
+ * man vidste hvad man kiggede efter, og ikke nok hvis man ikke gjorde.
+ *
+ * Pulsen er en RING, der vokser og toner ud, ikke selve nålen der ændrer
+ * størrelse: nålen skal blive stående præcis dér, hvor man er, og en nål
+ * der puster sig op, flytter sit eget midtpunkt for øjet.
+ */
 .kortnaal.mig {
   border-color: var(--accent);
   box-shadow:
     0 2px 8px rgb(0 0 0 / 0.4),
     0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+  position: relative;
+}
+
+.kortnaal.mig::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 2px solid var(--accent);
+  animation: puls 2.4s var(--kurve) infinite;
+  /* Ringen er pynt og må ikke stjæle trykket fra nålen under. */
+  pointer-events: none;
+}
+
+@keyframes puls {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  /* Toner ud LÆNGE før den er færdig med at vokse, så den forsvinder som
+     en bølge frem for at blinke ud på sit største. */
+  70% {
+    opacity: 0;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
 }
 
 .kortstatus {
@@ -3156,12 +3335,6 @@ p.dagliste {
   border-radius: var(--radius-stor);
   box-shadow: var(--skygge-hoej);
   animation: op var(--fart-lang) var(--kurve);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .oplaasning {
-    animation: none;
-  }
 }
 
 .oplaasningsetiket {
