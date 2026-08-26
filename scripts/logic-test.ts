@@ -48,7 +48,9 @@ import {
   BEACON_MAX_RUNDER,
   BEACON_STANDARD_TITEL,
   afstandIMeter,
+  BEACON_UKENDT_OPRETTER,
   beaconTitel,
+  beaconVarsling,
   beslutVarsling,
   erBeaconUdloebet,
   erPositionForaeldet,
@@ -745,6 +747,26 @@ console.log("\n[Logic] beacon-regler");
     BEACON_STANDARD_TITEL,
   );
   check("angivet titel vinder", beaconTitel("Stress!", "Baren"), "Stress!");
+
+  // Varslingens TEKST. Den var indtil videre kun et felt i et svar, ingen
+  // læste — evalueringen fandt modtagerne og sendte aldrig noget. Nu er den
+  // nyttelasten i en rigtig push, så den fortjener at være låst fast:
+  // brugerne kender ordlyden fra den gamle app.
+  const varsling = beaconVarsling("Frederik");
+  check("titlen er den kendte", varsling.titel, "🚨 STRESS BEACON AKTIVERET! 🚨");
+  check("opretterens navn står i teksten", varsling.tekst.startsWith("Frederik "), true);
+  check(
+    "teksten lover næste tjek om 5 minutter",
+    varsling.tekst.includes("næste tjek er om 5 minutter"),
+    true,
+  );
+  // Cron-kadencen i convex/crons.ts SKAL matche det, teksten lover. Står de
+  // to hver sit sted, er det teksten, brugeren tror på.
+  check(
+    "et navnløst kald falder tilbage på standarden",
+    beaconVarsling(BEACON_UKENDT_OPRETTER).tekst.startsWith("En admin "),
+    true,
+  );
 
   // Varslingsbeslutningen. Beaconen står på Brøndby Stadion.
   const beacon = { beaconLat: 55.6533, beaconLng: 12.4194, radius: 50, now: nu };

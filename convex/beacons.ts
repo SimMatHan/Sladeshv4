@@ -1,4 +1,5 @@
 import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
 import { internalMutation, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
@@ -27,12 +28,18 @@ import {
  * praksis: admin-portalen og kortets admin-tilstand var de eneste to
  * skriveveje, og spærren lå i UI'et. Her er den en serverregel.
  *
- * VIGTIGT om varsling: selve push-LEVERINGEN findes ikke i denne app endnu.
- * Den gik gennem Web Push og collectionen `pushSubscriptions`, som ligger
- * uden for migreringens afgrænsning (docs/eksisterende-datamodel.md, 7.6).
- * `evaluerBeacons` udfører derfor hele udvælgelsen — radius, forældede
- * positioner, deduplikering, runder, udløb — og returnerer modtagerne, men
- * sender ingenting. Se kommentaren ved `evaluerAlleBeacons`.
+ * VARSLINGEN LEVERES NU. Det gjorde den ikke før: `evaluerAlleBeacons`
+ * udførte hele udvælgelsen — radius, forældede positioner, deduplikering,
+ * runder, udløb — og RETURNEREDE modtagerne, men sendte ingenting, fordi
+ * push-leveringen ikke fandtes i appen på det tidspunkt. Cron-jobbet kaldte
+ * funktionen og smed svaret væk.
+ *
+ * Det var værre end bare "ingen notifikation": udvælgelsen skriver
+ * `notifiedUsers[bruger] = true` og tæller `notificationsSent` op, så en
+ * beacon brændte sine seks runder af og slukkede sig selv — uden at nogen
+ * havde hørt et pip. Beaconen så brugt ud og var aldrig brugt.
+ *
+ * Nu planlægges `push.sendTilBrugere` i samme mutation. Se `evaluerAlleBeacons`.
  */
 
 /**
@@ -214,6 +221,11 @@ export type Evalueringsresultat = {
  * Skrevet som en almindelig funktion frem for kun en mutation-handler, så
  * både cron-jobbet og smoke-testens indpakning kan kalde præcis den samme
  * kode. Ingen personoplysninger logges — kun tal og beacon-id'er.
+ *
+ * `varslinger` i svaret er nu en KVITTERING, ikke en opgave til kalderen:
+ * push er allerede planlagt, når funktionen returnerer. Feltet bliver,
+ * fordi smoke-testen læser det — den kan ikke se en planlagt action, men
+ * den kan se, hvem der blev valgt.
  */
 export async function evaluerAlleBeacons(
   ctx: MutationCtx,
@@ -337,6 +349,22 @@ export async function evaluerAlleBeacons(
       titel: varsling.titel,
       tekst: varsling.tekst,
       modtagere,
+    });
+
+    // LEVERINGEN. Planlagt frem for afventet, som alle andre push i appen:
+    // runden er talt og `notifiedUsers` skrevet uanset om telefonerne kan
+    // nås, og en mutation kan ikke vente på en action.
+    //
+    // Taggen er per BEACON, ikke per bruger. Kommer der en runde mere om
+    // fem minutter, skal den erstatte den forrige på telefonen frem for at
+    // lægge sig oven på — teksten lover selv "næste tjek er om 5 minutter",
+    // og seks stablede kopier af den er ikke en påmindelse, det er en
+    // alarm, der ikke kan slukkes.
+    await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+      userIds: modtagere,
+      title: varsling.titel,
+      body: varsling.tekst,
+      tag: `beacon-${beacon._id}`,
     });
 
     console.log("[Beacon] varslingsrunde", {
