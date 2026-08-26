@@ -1,11 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { NAVN_MAX } from "../../convex/constants";
-import { fejltekst, gradientFor, klokken } from "../lib/visning";
+import { gradientFor, klokken } from "../lib/visning";
 
 /**
  * Kortet.
@@ -19,13 +18,16 @@ import { fejltekst, gradientFor, klokken } from "../lib/visning";
  * ingenting. Denne skærm kan altså ikke omgå den — men den skal FORTÆLLE om
  * den, for en tom prik uden forklaring ligner en fejl.
  *
- * ## Check In
+ * ## Der er ingen Check In-knap
  *
- * `logDrink` checker én selv ind ved første genstand — men "ude" og "har
- * drukket" er ikke det samme. Check In (`convex/checkIns.ts`) findes for dem,
- * der vil markere "jeg er ude", FØR de har logget noget. Formularen står
- * derfor lige her, hvor fraværet af en prik allerede forklares — samme sted
- * som problemet, ikke en ny skærm for sig.
+ * Her stod en formular: skriv hvor du er, tryk Check ind. Den er væk. Den
+ * fandtes for dem, der ville markere "jeg er ude", FØR de havde logget
+ * noget — men aftenens første genstand gør allerede præcis det samme, og
+ * så var formularen et ekstra sted at gøre en ting, appen selv gør.
+ *
+ * `checkIn` i convex/checkIns.ts står stadig; den kaldes bare ikke herfra
+ * længere. `logDrink` tæller nu `checkInCount` op, så tallet på Mig ikke
+ * fryser, når den ene, der talte det, ikke længere kaldes.
  *
  * ## Om Leaflet
  *
@@ -206,12 +208,6 @@ export default function Kort({
         {gpsFejl ?? forklaring(svar)}
       </p>
 
-      {/* Kun når grunden reelt er "ikke checket ind" — de to andre grunde
-          (ingen position, position for gammel) løses ikke af et Check In. */}
-      {svar !== undefined && !svar.mig.deler && svar.mig.grund === "ikke_ude" && (
-        <CheckInFormular channelId={channelId} />
-      )}
-
       {svar !== undefined && svar.mig.deler === true && <CheckOutKnap />}
 
       {svar !== undefined && svar.personer.length === 0 && (
@@ -221,66 +217,6 @@ export default function Kort({
         </p>
       )}
     </div>
-  );
-}
-
-/**
- * Marker "jeg er ude" — uden at have logget noget endnu.
- *
- * Beder bevidst ikke om position her: Kortets egen GPS-loop (ovenfor)
- * sender og deler den automatisk, i det øjeblik `checkInStatus` bliver
- * sand — at spørge om adgang to steder ville være at bede to gange om det
- * samme.
- */
-function CheckInFormular({ channelId }: { channelId: Id<"kanaler"> }) {
-  const checkIn = useMutation(api.checkIns.checkIn);
-  const [sted, setSted] = useState("");
-  const [arbejder, setArbejder] = useState(false);
-  const [fejl, setFejl] = useState<string | undefined>();
-
-  const send = async (event: FormEvent) => {
-    event.preventDefault();
-    const raa = sted.trim();
-    if (raa.length === 0) return;
-
-    setArbejder(true);
-    setFejl(undefined);
-    try {
-      await checkIn({ venue: raa, channelId });
-      setSted("");
-    } catch (error) {
-      setFejl(fejltekst(error));
-    } finally {
-      setArbejder(false);
-    }
-  };
-
-  return (
-    <form className="kortaktion" onSubmit={(event) => void send(event)}>
-      <input
-        className="felt"
-        value={sted}
-        placeholder="Hvor er du? Fx Ballade"
-        maxLength={NAVN_MAX}
-        aria-label="Hvor er du?"
-        onChange={(event) => setSted(event.target.value)}
-      />
-      <button
-        className="knap primaer"
-        type="submit"
-        disabled={arbejder || sted.trim().length === 0}
-      >
-        Check ind
-      </button>
-      {/* Hvad man køber for de to tryk. Uden den er "Check ind" bare et ord
-          på en knap — og stedet ligner noget, appen vil vide om én, frem
-          for noget, de andre skal kunne se. */}
-      <p className="hjaelp">
-        Så står du på stillingen og på kortet, og de andre kan se, hvor du
-        er. Aftenens første genstand gør det samme af sig selv.
-      </p>
-      {fejl !== undefined && <p className="fejl">{fejl}</p>}
-    </form>
   );
 }
 
@@ -329,7 +265,7 @@ function CheckOutKnap() {
       </button>
       <p className="hjaelp">
         Du forsvinder fra kortet. Har du logget noget i aften, bliver du
-        stående på stillingen — og du kan checke ind igen når som helst.
+        stående på stillingen — og næste genstand sætter dig på kortet igen.
       </p>
     </div>
   );
@@ -348,7 +284,7 @@ function forklaring(svar: { mig: { deler: boolean; grund?: string } } | undefine
 
   switch (svar.mig.grund) {
     case "ikke_ude":
-      return "Din position deles ikke. Log en genstand — eller check ind herunder, hvis du ikke skal drikke endnu.";
+      return "Din position deles ikke. Log en genstand, så kommer du på kortet.";
     case "position_foraeldet":
       return "Din position er for gammel til at vises. Den opdaterer sig selv.";
     default:

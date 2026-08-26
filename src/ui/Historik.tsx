@@ -30,7 +30,10 @@ export function Historik({
   channelId: Id<"kanaler">;
   onVaelgPerson: (userId: Id<"users">) => void;
 }) {
-  const dage = useQuery(api.historik.getKanalHistorik, { channelId, dage: DAGE });
+  const dage = useQuery(api.historik.getKanalHistorik, {
+    channelId,
+    dage: DAGE,
+  });
   const [udfoldet, setUdfoldet] = useState<number | undefined>();
 
   if (dage === undefined) {
@@ -57,13 +60,16 @@ export function Historik({
           en tommelfinger. */}
       <div className="kort soejlekort">
         <div className="soejler" aria-hidden="true">
-          {dage.map((dag) => (
+          {dage.map((dag, nummer) => (
             <div key={dag.dayStart} className="soejleplads">
               <div
-                className={
-                  dag.dayStart === udfoldet ? "soejle valgt" : "soejle"
-                }
-                style={{ height: `${Math.round((dag.genstande / maks) * 100)}%` }}
+                className={soejleklasse(
+                  dag.dayStart === udfoldet,
+                  nummer === dage.length - 1,
+                )}
+                style={{
+                  height: `${Math.round((dag.genstande / maks) * 100)}%`,
+                }}
               />
             </div>
           ))}
@@ -75,7 +81,9 @@ export function Historik({
         <div
           className="soejledage"
           aria-hidden="true"
-          style={{ gridTemplateColumns: `repeat(${dage.length}, minmax(0, 1fr))` }}
+          style={{
+            gridTemplateColumns: `repeat(${dage.length}, minmax(0, 1fr))`,
+          }}
         >
           {dage.map((dag, nummer) => (
             <span
@@ -108,55 +116,69 @@ export function Historik({
       <div className="dage">
         {/* Nyeste øverst. Aksen læses venstre mod højre, men en liste læses
             oppefra — og det, man leder efter, er som regel i går. */}
-        {[...dage].reverse().map((dag) => (
-          <div key={dag.dayStart}>
-            <button
-              className="dagraekke"
-              aria-expanded={dag.dayStart === udfoldet}
-              onClick={() =>
-                setUdfoldet(dag.dayStart === udfoldet ? undefined : dag.dayStart)
-              }
-            >
-              {/* Datobrikken giver listen noget fast at scanne ned ad —
-                  samme rolle som avataren i stillingen. */}
-              <span
-                className={
-                  dag.dayStart === dage[dage.length - 1].dayStart
-                    ? "datobrik idag"
-                    : "datobrik"
+        {[...dage].reverse().map((dag) => {
+          // Aksen er ældst-først, så den SIDSTE dag i `dage` er i dag. Testen
+          // stod to gange herunder — på rækken og på brikken — og to kopier af
+          // "hvilken dag er i dag" er to steder, den kan komme til at flytte
+          // sig hver for sig.
+          const erIDag = dag.dayStart === dage[dage.length - 1].dayStart;
+          return (
+            <div key={dag.dayStart}>
+              <button
+                className={erIDag ? "dagraekke idag" : "dagraekke"}
+                aria-expanded={dag.dayStart === udfoldet}
+                onClick={() =>
+                  setUdfoldet(
+                    dag.dayStart === udfoldet ? undefined : dag.dayStart,
+                  )
                 }
-                aria-hidden="true"
               >
-                {new Date(dag.dayStart).getDate()}
-              </span>
-              <span className="midt">
-                <span className="navn">{datoLang(dag.dayStart)}</span>
-                <span className="under">
-                  {dag.deltagere === 0
-                    ? "ingen aktivitet"
-                    : dag.topNavn !== undefined
-                      ? `${dag.deltagere} med · ${dag.topNavn} førte`
-                      : `${dag.deltagere} med`}
+                {/* Datobrikken giver listen noget fast at scanne ned ad —
+                  samme rolle som avataren i stillingen. */}
+                <span
+                  className={erIDag ? "datobrik idag" : "datobrik"}
+                  aria-hidden="true"
+                >
+                  {new Date(dag.dayStart).getDate()}
                 </span>
-              </span>
-              <span className="talblok">
-                <span className="tal">{genstande(dag.genstande)}</span>
-                <span className="etiket">Genstande</span>
-              </span>
-            </button>
+                <span className="midt">
+                  <span className="navn">{datoLang(dag.dayStart)}</span>
+                  <span className="under">
+                    {dag.deltagere === 0
+                      ? "ingen aktivitet"
+                      : dag.topNavn !== undefined
+                        ? `${dag.deltagere} med · ${dag.topNavn} førte`
+                        : `${dag.deltagere} med`}
+                  </span>
+                </span>
+                <span className="talblok">
+                  <span className="tal">{genstande(dag.genstande)}</span>
+                  <span className="etiket">Genstande</span>
+                </span>
+              </button>
 
-            {dag.dayStart === udfoldet && (
-              <Dag
-                channelId={channelId}
-                dayStart={dag.dayStart}
-                onVaelgPerson={onVaelgPerson}
-              />
-            )}
-          </div>
-        ))}
+              {dag.dayStart === udfoldet && (
+                <Dag
+                  channelId={channelId}
+                  dayStart={dag.dayStart}
+                  onVaelgPerson={onVaelgPerson}
+                />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
+}
+
+/**
+ * Søjlens klasse. Både den valgte og dagens står i fuld accent — resten i
+ * den dæmpede tone, se `.soejle` i index.css.
+ */
+function soejleklasse(valgt: boolean, erIDag: boolean): string {
+  if (valgt) return "soejle valgt";
+  return erIDag ? "soejle idag" : "soejle";
 }
 
 /** Én dags logninger. Hentes først når dagen foldes ud. */
