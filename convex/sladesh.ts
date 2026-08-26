@@ -13,6 +13,7 @@ import {
   erCooldownAktiv,
   erFremadrettet,
   erUdloebet,
+  sladeshVarsling,
   type CooldownTilstand,
 } from "./sladeshRules";
 
@@ -312,6 +313,30 @@ export const sendSladesh = mutation({
     // transaktion: ruller indsættelsen tilbage, planlægges den heller ikke.
     await ctx.scheduler.runAt(deadlineAt, internal.sladesh.udloebSladesh, {
       challengeId,
+    });
+
+    /*
+     * VARSLINGEN. Uden den var Sladesh appens eneste funktion med en hård
+     * frist og ingen måde at få det at vide på: udfordringen dukkede op i
+     * skallen, næste gang modtageren åbnede appen, og de ti minutter løb
+     * imens. Lå telefonen i lommen, var den tabt, før den var set.
+     *
+     * Push kom til appen efter Sladesh blev skrevet, og modulet blev ikke
+     * koblet på — samme mangel som beacons havde.
+     *
+     * Planlagt frem for afventet, som alle andre push: udfordringen står, og
+     * fristen løber, uanset om telefonen kan nås.
+     */
+    const varsling = sladeshVarsling(afsender.displayName);
+    await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+      userIds: [args.recipientId],
+      title: varsling.titel,
+      body: varsling.tekst,
+      // Per UDFORDRING. To Sladesh til den samme person kan ikke være i
+      // gang samtidig — spærren ovenfor forhindrer det — så taggen kunne
+      // være per bruger. Den er per udfordring alligevel, så en ny efter en
+      // afsluttet ikke overskriver noget, modtageren stadig kigger på.
+      tag: `sladesh-${challengeId}`,
     });
 
     console.log("[Sladesh] sendt", {

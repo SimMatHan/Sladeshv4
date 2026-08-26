@@ -36,6 +36,7 @@ import {
   getBlockEnd,
   getBlockStart,
   SLADESH_TIME_LIMIT_MS,
+  sladeshVarsling,
 } from "../convex/sladeshRules.ts";
 import {
   BESKED_MAX_LAENGDE,
@@ -343,6 +344,31 @@ console.log("\n[Logic] er man ude i dag?");
   check("checket ud", erUdeIDag({ checkInStatus: false, lastCheckIn: fredag + 3600_000 }, fredag), false);
   check("aldrig checket ind", erUdeIDag({}, fredag), false);
   check("flag uden tidspunkt", erUdeIDag({ checkInStatus: true }, fredag), false);
+}
+
+console.log("\n[Logic] sladesh-varslingen");
+{
+  // Teksten er det eneste, modtageren ser, hvis telefonen ligger i lommen.
+  // Den var indtil videre ikke skrevet nogen steder: `sendSladesh` sendte
+  // ingen push overhovedet.
+  const varsling = sladeshVarsling("Frederik");
+  check("titlen siger hvad der er sket", varsling.titel, "🍺 Du er blevet sladeshet");
+  check("afsenderens navn står forrest", varsling.tekst.startsWith("Frederik "), true);
+
+  // Minuttallet REGNES af fristen. Står de to hver sit sted, kan appen
+  // komme til at love ti minutter og give noget andet.
+  check(
+    "minuttallet følger fristen",
+    varsling.tekst.includes(`${Math.round(SLADESH_TIME_LIMIT_MS / 60000)} minutter`),
+    true,
+  );
+  check("fristen er 10 minutter", SLADESH_TIME_LIMIT_MS, 10 * 60 * 1000);
+
+  check(
+    "et tomt navn falder tilbage",
+    sladeshVarsling("   ").tekst.startsWith("Nogen "),
+    true,
+  );
 }
 
 console.log("\n[Logic] fortrydelser (action: \"remove\", negativ sizeMultiplier)");

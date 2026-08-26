@@ -156,3 +156,30 @@ export function beregnCooldown(
 export function erUdloebet(deadlineAt: number, now: number): boolean {
   return now > deadlineAt;
 }
+
+/** Navnet der bruges, hvis afsenderen ikke har sat et. */
+export const SLADESH_UKENDT_AFSENDER = "Nogen";
+
+/**
+ * Varslingen til modtageren.
+ *
+ * Ligger HER og ikke inline i mutationen, af samme grund som
+ * `beaconVarsling` i convex/beaconRules.ts: teksten er det eneste, modtageren
+ * ser, hvis telefonen ligger i lommen, og så skal den kunne prøves uden et
+ * deployment.
+ *
+ * Minuttallet regnes af `SLADESH_TIME_LIMIT_MS` frem for at stå skrevet.
+ * Ændres fristen, ændres teksten med — ellers ville appen love ti minutter
+ * og give noget andet.
+ */
+export function sladeshVarsling(afsenderNavn: string): {
+  titel: string;
+  tekst: string;
+} {
+  const minutter = Math.round(SLADESH_TIME_LIMIT_MS / 60000);
+  const navn = afsenderNavn.trim() || SLADESH_UKENDT_AFSENDER;
+  return {
+    titel: "🍺 Du er blevet sladeshet",
+    tekst: `${navn} har sladeshet dig. Du har ${minutter} minutter.`,
+  };
+}
