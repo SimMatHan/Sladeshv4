@@ -8,6 +8,7 @@ import { useCachetQuery } from "../lib/oejebliksbillede";
 import { vaegtForGenstand } from "../lib/optimistisk";
 import { useLogDrink } from "../lib/optimistiskeKald";
 import { Ark } from "./Ark";
+import { tik } from "./haptik";
 
 /**
  * Log en genstand.
@@ -113,6 +114,11 @@ export function LogArk({
    * den, når der er hul igennem. Den optimistiske +1 bliver stående så længe.
    */
   const log = (categoryId: string, variationName: string) => {
+    // Telefonen kvitterer, INDEN serveren gør. Arket lukker på trykket, og
+    // et lille stød er den eneste bekræftelse, man får med telefonen løftet
+    // halvvejs ned i lommen igen. Kun Android — se haptik.ts.
+    tik();
+
     const svar = logDrink({ channelId, categoryId, variationName });
 
     onLogget(variationName, vaegtForGenstand(categoryId), svar);

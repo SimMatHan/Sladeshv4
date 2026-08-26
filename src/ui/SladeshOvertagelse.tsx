@@ -2,7 +2,21 @@ import { useEffect, useRef, useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
+import { SLADESH_TIME_LIMIT_MS } from "../../convex/sladeshRules";
 import { fejltekst, formatUr } from "../lib/visning";
+import { Fremdriftsring } from "./Fremdriftsring";
+import { slag } from "./haptik";
+
+/**
+ * Urets mål.
+ *
+ * 132px er stort nok til, at ringen kan ses som en ring på tværs af et
+ * bord, og lille nok til at der er plads til en knap under den på den
+ * korteste telefon. Tykkelsen er sat, så den tomme del stadig er en
+ * synlig bane, ikke en streg.
+ */
+const UR_STOERRELSE = 132;
+const UR_TYKKELSE = 10;
 
 /**
  * At modtage en Sladesh.
@@ -52,6 +66,18 @@ export function SladeshOvertagelse({
     "filled_captured",
   );
 
+  /*
+   * Telefonen banker, når skærmen overtages.
+   *
+   * Tom afhængighedsliste, altså KUN ved montering. Overtagelsen monteres i
+   * det øjeblik, udfordringen lander (se `jegErModtager` i App.tsx), og
+   * afmonteres når man minimerer — så ét stød per gang, ikke ét per
+   * fasetryk. Kun Android; se haptik.ts.
+   */
+  useEffect(() => {
+    slag();
+  }, []);
+
   const koer = async (handling: () => Promise<unknown>) => {
     if (arbejder) return;
     setArbejder(true);
@@ -98,6 +124,15 @@ export function SladeshOvertagelse({
 
   const udloebet = tilbage <= 0;
 
+  /*
+   * Hvor meget af ringen der er TILBAGE, ikke hvor meget der er gået.
+   *
+   * En fremdriftsring fyldes normalt op mod et mål. Her tælles der ned, så
+   * buen skal krympe: det er den tomme bane, der vokser, og det er dét, man
+   * skal blive utilpas af.
+   */
+  const andelTilbage = Math.min(Math.max(tilbage / SLADESH_TIME_LIMIT_MS, 0), 1);
+
   return (
     <div className="overtagelse">
       <input
@@ -117,7 +152,21 @@ export function SladeshOvertagelse({
         <button className="minimer" onClick={onMinimer} aria-label="Minimér">
           ▾
         </button>
-        <div className={udloebet ? "ur udloebet" : "ur"}>{formatUr(tilbage)}</div>
+        {/* Uret som en RING, der tømmes. Et tal, der tæller ned, læses;
+            en ring, der løber tom, mærkes — og det er dét, de ti minutter
+            skal føles som. Tallet står stadig inde i den: man skal kunne
+            se, at der er halvandet minut tilbage, ikke bare at der er lidt. */}
+        <div className={udloebet ? "urring udloebet" : "urring"}>
+          <Fremdriftsring
+            andel={andelTilbage}
+            stoerrelse={UR_STOERRELSE}
+            tykkelse={UR_TYKKELSE}
+            farve="var(--urfarve)"
+            srLabel={`${formatUr(tilbage)} tilbage`}
+          >
+            <span className="ringtal">{formatUr(tilbage)}</span>
+          </Fremdriftsring>
+        </div>
       </div>
 
       <div className="overtagelsesindhold">
