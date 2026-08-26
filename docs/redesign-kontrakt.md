@@ -40,6 +40,21 @@ workerens `push`-handler, og npm-pakken `web-push` (kun i en Convex
 efterspurgt skifte i scope, ikke en glidning under et redesign — se
 docs/notifikationer.md. Grænserne herover gælder fortsat for alt andet.
 
+**Bevidst undtagelse 2:** størrelserne (Lille · Mellem · Stor) er fjernet
+fra logningen efter eksplicit ønske. Én genstand tæller én. Det krævede
+`convex/constants.ts` og `convex/drinkLogs.ts`, fordi størrelsen var en
+del af MODELLEN og ikke af skærmen — den blev ganget på både point,
+stilling og promille.
+
+Det er gjort på den ene måde, der ikke rører de 32 migrerede brugeres
+data: `sizeMultiplier` gemmes på hver enkelt logrække og læses derfra ved
+optælling, ikke slås op i en tabel. Nye logninger skriver ingen
+størrelsesfelter; gamle rækker bliver ved med at tælle med deres egen
+vægt. **Der er ingen migrering, og ingen historiske tal ændrer sig.**
+Felterne i `schema.ts` er derfor bevaret — de skal stadig kunne læses, og
+`removeDrink` bruger stadig en negativ `sizeMultiplier` som fortegn på
+sin modpost.
+
 ---
 
 ## 2. Afhængigheder

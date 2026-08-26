@@ -6,7 +6,7 @@ import {
   AFSENDER_STANDARD_GRADIENT,
   AFSENDER_STANDARD_NAVN,
 } from "../../convex/messageRules";
-import { medGenstand, vaegtForStoerrelse } from "./optimistisk";
+import { medGenstand, vaegtForGenstand } from "./optimistisk";
 
 /**
  * Mutations, der viser resultatet med det samme.
@@ -59,7 +59,7 @@ export function useLogDrink() {
             profileEmoji: mig.profileEmoji,
             profileGradient: mig.profileGradient,
           },
-          vaegtForStoerrelse(args.categoryId, args.sizeId),
+          vaegtForGenstand(args.categoryId),
           Date.now(),
         ),
       );

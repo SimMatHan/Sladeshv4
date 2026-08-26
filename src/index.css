@@ -876,6 +876,108 @@ input {
   font-size: var(--tekst-m);
 }
 
+/*
+ * FYLDT chip — "dine sædvanlige" i logarket.
+ *
+ * De fire genveje er ikke fire muligheder blandt firs. De er dét, arket
+ * åbner for at gøre, og de skal kunne rammes uden at læses. Mockuppen
+ * fylder dem med accentfarven, mens katalogets chips står som omrids
+ * (design/LogArk.dc.html: `#1B4D3E` mod `.chip`s `#F2EEE4`) — forskellen
+ * på "det du plejer" og "alt det andet".
+ */
+.chip.fyldt {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-tekst);
+  font-weight: var(--vaegt-medium);
+}
+
+/*
+ * Søgefeltet i logarket. Står før alt andet, så det er dét, tommelfingeren
+ * finder, hvis genvejene ikke rammer.
+ */
+.soegefelt {
+  margin-bottom: var(--luft-5);
+}
+
+/* iOS tegner sit eget ryd-kryds i `type="search"`. Det er en trykflade,
+   der er mindre end de 44px, alt andet i appen overholder, og den sidder
+   oven i feltets egen. Vores egen tekst kan ryddes ved at slette. */
+.soegefelt::-webkit-search-decoration,
+.soegefelt::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+/* ----------------------------------------------------------- kanalvælger */
+
+.kanalliste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+}
+
+/*
+ * En Kanal er et STED, ikke en handling.
+ *
+ * Rækkerne var `.knap` — den samme grå omridsknap som "Log ud" og "Opret
+ * Kanal". Et sted, man kan gå hen, så altså ud som en knap, der gør noget
+ * ved noget. De har deres egen række nu: navnet i brødtekst, medlemstal og
+ * invitationskode i hjælpelinjen under.
+ */
+.kanalrk {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-3);
+  width: 100%;
+  min-height: var(--tryk);
+  padding: var(--luft-3) var(--luft-4);
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.kanalrk:active {
+  transform: scale(0.99);
+}
+
+/* Den man står i. Accentkanten er nok — en fyldt række ville gøre "hvor du
+   er" til den mest larmende ting i et ark, man kun åbner for at komme
+   videre. */
+.kanalrk.aktiv {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--flade));
+}
+
+.kanalmidt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+}
+
+.kanalflueben {
+  flex: 0 0 auto;
+  color: var(--accent);
+  font-weight: var(--vaegt-fed);
+}
+
+/* Feltet og knappen deles af "meld dig ind" og "opret ny". */
+.kanaltilfoej .segmenter {
+  margin-top: 0;
+}
+
+.kanalfelt {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+}
+
 .chip[aria-pressed="true"] {
   background: var(--accent);
   border-color: var(--accent);

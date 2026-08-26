@@ -236,9 +236,19 @@ export default defineSchema({
     categoryId: v.string(), // "beer" | "cider" | "wine" | "cocktail" | "shot" | "other"
     variationName: v.string(), // dansk variantnavn, fx "Cigaret", "Vermouth Tonic"
 
-    // Størrelse — jf. DRINK_SIZES i det gamle repo
+    /*
+     * Størrelse — HISTORISK. Skrives ikke længere på nye logninger.
+     *
+     * Lille/Mellem/Stor er væk fra logningen; én genstand tæller én. Se
+     * kommentaren, hvor `DRINK_SIZES` stod, i convex/constants.ts.
+     *
+     * Felterne bliver stående af to grunde: de rækker, der ALLEREDE har
+     * dem, skal stadig kunne læses og tælles med deres egen vægt, og
+     * `removeDrink` skriver stadig en negativ `sizeMultiplier` som
+     * fortegn på sin modpost.
+     */
     sizeId: v.optional(v.string()), // "small" | "medium" | "large"
-    sizeMultiplier: v.optional(v.number()), // 1.0 | 1.5 | 2.0
+    sizeMultiplier: v.optional(v.number()), // 1.0 | 1.5 | 2.0, eller negativ på en modpost
     sizeLabel: v.optional(v.string()), // "Lille" | "Mellem" | "Stor"
     sizeVolume: v.optional(v.string()), // "33cl" | "50cl" | "75cl"
 

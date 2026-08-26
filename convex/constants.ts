@@ -73,39 +73,32 @@ export function isAvatarColor(navn: string): boolean {
   return AVATAR_COLOR_NAMES.includes(navn);
 }
 
-/** Størrelser. Overtaget uændret fra src/lib/drinkSizes.ts. */
-export const DRINK_SIZES = [
-  { id: "small", label: "Lille", volumeLabel: "33cl", multiplier: 1.0 },
-  { id: "medium", label: "Mellem", volumeLabel: "50cl", multiplier: 1.5 },
-  { id: "large", label: "Stor", volumeLabel: "75cl", multiplier: 2.0 },
-] as const;
-
-export type DrinkSize = (typeof DRINK_SIZES)[number];
-
-/** Default når intet er valgt: Lille (33cl), jf. DEFAULT_SIZE i det gamle repo. */
-export const DEFAULT_SIZE: DrinkSize = DRINK_SIZES[0];
-
-/**
- * Kun rigtige drikkevarer har en størrelse — "Andet" (fx Cigaret) har ingen.
- * Svarer til SIZE_SUPPORTED_CATEGORIES i det gamle repo.
+/*
+ * STØRRELSERNE ER VÆK. Én logning er én genstand.
+ *
+ * Her stod `DRINK_SIZES` med Lille 1,0 · Mellem 1,5 · Stor 2,0, og
+ * multiplikatoren blev ganget på både point, stillingen og promillen.
+ *
+ * Den kostede mere, end den var værd. Hver eneste logning krævede et valg,
+ * man skulle tage stilling til FØR man trykkede på sin øl — og valget sad
+ * i en segmentvælger, der huskede sig selv, så man kunne stå og logge
+ * "store" øl uden at vide det. Til gengæld gav den et tal, ingen kunne
+ * bruge: "7,5 genstande".
+ *
+ * Nu tæller en genstand én. Det er også, hvad ordet betyder: en genstand
+ * ER en fast mængde alkohol. Prisen er, at en 75cl'er tæller som en
+ * almindelig — og det er en pris, der er taget bevidst.
+ *
+ * HISTORIKKEN RØRES IKKE. `sizeMultiplier` gemmes på hver enkelt logrække
+ * (se convex/drinkLogs.ts) og læses derfra ved optælling, ikke slås op her.
+ * De rækker, der allerede står med 1,5 og 2,0, bliver ved med at tælle
+ * sådan. Der er ingen migrering, og gamle tal ændrer sig ikke bagud.
+ *
+ * Felterne `sizeId`, `sizeMultiplier`, `sizeLabel` og `sizeVolume` bliver
+ * derfor stående i schemaet. De skrives ikke længere på nye logninger —
+ * med én undtagelse: `removeDrink` bruger stadig en NEGATIV
+ * `sizeMultiplier` som fortegn på sin modpost. Se convex/drinkLogs.ts.
  */
-export function categorySupportsSize(categoryId: string): boolean {
-  return isDrinkCategory(categoryId);
-}
-
-/**
- * Slår størrelsen op for en logning. Returnerer `undefined` for kategorier
- * uden størrelse, så felterne udelades helt frem for at få en misvisende
- * "Lille" på en cigaret. Ukendt `sizeId` falder tilbage til Lille.
- */
-export function getSize(
-  sizeId: string | undefined,
-  categoryId: string,
-): DrinkSize | undefined {
-  if (!categorySupportsSize(categoryId)) return undefined;
-  if (sizeId === undefined) return DEFAULT_SIZE;
-  return DRINK_SIZES.find((size) => size.id === sizeId) ?? DEFAULT_SIZE;
-}
 
 /**
  * Vægurets tid i dansk lokaltid for et givet epoch-ms-tidspunkt.

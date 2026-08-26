@@ -404,17 +404,17 @@ async function main(): Promise<void> {
       channelId,
       categoryId: "beer",
       variationName: "Tuborg",
-      sizeId: "small",
     });
     await klientA.mutation(api.drinkLogs.logDrink, {
       channelId,
       categoryId: "beer",
       variationName: "Tuborg",
-      sizeId: "large",
     });
 
     profil = await klientA.query(api.users.getMe, {});
-    check("totalPoints (1.0 + 2.0)", profil?.totalPoints, 3);
+    // Én genstand tæller én. Der er ikke længere en størrelse at gange med
+    // — se kommentaren, hvor `DRINK_SIZES` stod, i convex/constants.ts.
+    check("totalPoints (1 + 1)", profil?.totalPoints, 2);
     check("currentDayStreak", profil?.currentDayStreak, 1);
     check("longestStreak", profil?.longestStreak, 1);
 
@@ -766,7 +766,6 @@ async function main(): Promise<void> {
       channelId,
       categoryId: "cocktail",
       variationName: "Vermouth Tonic",
-      sizeId: "small",
     };
     const foerste = await klientA.mutation(api.drinkLogs.logDrink, vermouth);
     check("logningen låser Feinschmecker op", foerste.nyeAchievements, [
@@ -845,7 +844,6 @@ async function main(): Promise<void> {
       channelId,
       categoryId: "beer",
       variationName: "Tuborg",
-      sizeId: "large",
     });
 
     const foerFortryd = await klientA.query(api.users.getMe, {});
@@ -855,9 +853,9 @@ async function main(): Promise<void> {
 
     const efterFortryd = await klientA.query(api.users.getMe, {});
     check(
-      "en stor øl trækker 2 point fra igen",
+      "en fortrydelse trækker genstanden fra igen",
       efterFortryd?.totalPoints,
-      (foerFortryd?.totalPoints ?? 0) - 2,
+      (foerFortryd?.totalPoints ?? 0) - 1,
     );
 
     await checkRejected("samme logning kan ikke fortrydes to gange", () =>
