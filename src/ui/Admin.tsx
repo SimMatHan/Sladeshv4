@@ -997,7 +997,7 @@ function Broadcast() {
                 <span className="adminnavn">
                   {broadcast.title}
                   {broadcast.active ? (
-                    <span className="maerkat optjent">Aktiv</span>
+                    <span className="maerkat aktiv">Aktiv</span>
                   ) : (
                     <span className="maerkat">Slukket</span>
                   )}
