@@ -53,6 +53,26 @@ export function TandhjulIkon() {
 }
 
 /**
+ * Skift Kanal — dobbeltvinklen op og ned.
+ *
+ * IKKE en ▾. En enkelt pil nedad betyder "her folder noget sig ud" og er
+ * det, en overskrift får, når den også er en knap; det var præcis dét, der
+ * ikke var tydeligt nok. To vinkler, der peger fra hinanden, er
+ * styresystemernes egen figur for "vælg mellem flere" — den samme, en
+ * `<select>` og en iOS-picker bruger — og den siger, at der er noget at
+ * skifte MELLEM, ikke bare noget at folde ud.
+ *
+ * Se design/Stilling.dc.html, knappen i højre side af toppen.
+ */
+export function SkiftIkon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...streg}>
+      <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />
+    </svg>
+  );
+}
+
+/**
  * ( + ) — tykkere streg end de to andre, fordi den sidder på en fyldt
  * flade og skal bære lige så meget som dem på afstand.
  */

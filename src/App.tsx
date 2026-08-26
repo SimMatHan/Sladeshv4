@@ -11,7 +11,7 @@ import { AchievementOplaasning } from "./ui/AchievementOplaasning";
 import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
 import { Faner } from "./ui/Faner";
-import { KanalIkon, MigIkon, PlusIkon } from "./ui/Ikoner";
+import { KanalIkon, MigIkon, PlusIkon, SkiftIkon } from "./ui/Ikoner";
 import { Sideundertekst } from "./ui/Sideundertekst";
 import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
@@ -220,10 +220,14 @@ function Appen() {
       {fane !== "mig" && (
         <header className="top">
           <div className="sidetitel">
-            <button className="kanalknap" onClick={() => setKanalAabent(true)}>
-              {harKanal ? <KanalNavn channelId={channelId} /> : "Vælg Kanal"}
-              <span className="pil">▾</span>
-            </button>
+            {/* TITLEN ER EN TITEL. Den var selv knappen, med en ▾ efter sig
+                — men en overskrift, der også er en kontrol, ligner mest af
+                alt en overskrift, og ▾'en var for lille til at læses som
+                andet end pynt. Skiftet har sin egen knap nu, til højre.
+                Se design/Stilling.dc.html. */}
+            <h1 className="kanalnavn">
+              {harKanal ? <KanalNavn channelId={channelId} /> : "Ingen Kanal"}
+            </h1>
 
             {/* Skallen VÆLGER kun hvilken undertekst der monteres; hver af dem
                 henter sit eget tal. Se Sideundertekst.tsx. */}
@@ -231,6 +235,14 @@ function Appen() {
               <Sideundertekst skaerm={visning} channelId={channelId} />
             )}
           </div>
+
+          <button
+            className="kanalskift"
+            aria-label={harKanal ? "Skift Kanal" : "Meld dig ind i en Kanal"}
+            onClick={() => setKanalAabent(true)}
+          >
+            <SkiftIkon />
+          </button>
         </header>
       )}
 
@@ -264,9 +276,15 @@ function Appen() {
               <div className="stort">👋</div>
               <p>Du er ikke i en Kanal endnu.</p>
               <p className="hjaelp">
-                Tryk på <strong>Vælg Kanal</strong> foroven for at melde dig ind
-                med en kode — eller oprette din egen.
+                Du skal bruge en invitationskode. Den får du af en, der
+                allerede er med.
               </p>
+              {/* En rigtig knap frem for "tryk på knappen foroven". Den
+                  henvisning var kun rigtig, så længe titlen SELV var
+                  knappen — og selv da skulle man lede efter den. */}
+              <button className="knap primaer" onClick={() => setKanalAabent(true)}>
+                Meld dig ind i en Kanal
+              </button>
             </div>
           ) : (
             <>

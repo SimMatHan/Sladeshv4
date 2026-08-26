@@ -524,9 +524,17 @@ input {
 /*
  * Kanalens navn er skærmens TITEL, ikke en kontrol i en værktøjslinje.
  *
- * Den var en pille med flade, kant og 17px tekst — en knap blandt knapper.
- * Men den er det eneste i toppen, og den siger, hvor man er. Nu bærer den
- * som en overskrift, og ▾ er den lille del, der røber, at man kan skifte.
+ * Den var først en pille med flade, kant og 17px tekst — en knap blandt
+ * knapper. Så blev den en overskrift, der SELV var knappen, med en ▾ efter
+ * sig som det, der skulle røbe, at man kunne skifte.
+ *
+ * Det holdt ikke. En overskrift, der også er en kontrol, ligner mest af alt
+ * en overskrift, og ▾'en var for lille til at læses som andet end pynt —
+ * så skiftet var i praksis usynligt for den, der ikke vidste, det var der.
+ *
+ * Nu er de to ting to ting: titlen bærer, hvor man er, og `.kanalskift` er
+ * en rigtig knap ved siden af. Det er også, hvad mockuppen gør, se
+ * design/Stilling.dc.html.
  */
 /*
  * Titlen og dens undertekst. Underteksten hentes af skærmen selv — se
@@ -541,35 +549,57 @@ input {
   min-width: 0;
 }
 
-/*
- * Underteksten er IKKE en trykflade — man trykker på NAVNET for at skifte
- * Kanal. Knappen bærer derfor selv de 44px, uanset om linjen er der: ved
- * 28px er dens egen linjeboks kun ~41px, og regel 5 gælder også for en
- * overskrift, der er en knap.
- */
-.kanalknap {
-  display: flex;
-  align-items: center;
-  gap: var(--luft-2);
-  min-height: var(--tryk);
+/* Overskrift, ikke knap. Ingen trykflade at holde, og derfor heller ingen
+   `min-height` — regel 5 gælder kontroller, og den er der en af nu. */
+.kanalnavn {
+  margin: 0;
   font-size: var(--tekst-xl);
   font-weight: var(--vaegt-fed);
   letter-spacing: var(--spor-tal);
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/*
+ * Skift Kanal. En rund flade i højre side af toppen, 44px, som mockuppen.
+ *
+ * Den ligner en knap, fordi den ER en: flade, kant, og et ikon der siger
+ * "vælg mellem flere" frem for "fold ud". Se `SkiftIkon` i Ikoner.tsx.
+ *
+ * `--flade-hvaelvet`, ikke `--flade`: toppen er halvgennemsigtig og lader
+ * indholdet skinne igennem, og knappen skal blive ved med at være en flade,
+ * også når en søjle eller et kort ruller op bag den.
+ */
+.kanalskift {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--tryk);
+  height: var(--tryk);
+  border-radius: var(--radius-rund);
+  background: var(--flade-hvaelvet);
+  border: 1px solid var(--kant);
+  color: var(--tekst-daempet);
+  cursor: pointer;
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.kanalskift:active {
+  transform: scale(0.92);
+}
+
+.kanalskift svg {
+  width: var(--ikon);
+  height: var(--ikon);
+  display: block;
 }
 
 .undertekst {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.kanalknap:active {
-  opacity: 0.7;
-}
-
-.kanalknap .pil {
-  color: var(--tekst-svag);
-  font-size: var(--tekst-s);
 }
 
 .indhold {
@@ -741,6 +771,14 @@ input {
   padding: var(--luft-6) var(--luft-5);
   text-align: center;
   color: var(--tekst-daempet);
+}
+
+/* En tom tilstand med en vej ud af sig selv. Knappen får luft over sig og
+   må ikke fylde hele bredden — den er ét valg, ikke en formular. */
+.tom .knap {
+  width: auto;
+  margin: var(--luft-5) auto 0;
+  padding: var(--luft-3) var(--luft-5);
 }
 
 .tom .stort {
@@ -967,15 +1005,26 @@ input {
   font-weight: var(--vaegt-fed);
 }
 
-/* Feltet og knappen deles af "meld dig ind" og "opret ny". */
-.kanaltilfoej .segmenter {
-  margin-top: 0;
+/*
+ * Feltet, knappen og hjælpelinjen under listen.
+ *
+ * `.arkgruppe + .arkgruppe` bærer normalt afstanden mellem arkets afsnit,
+ * men `.kanalliste` er ikke en `.arkgruppe`, så gruppen efter den skal
+ * selv have luften.
+ */
+.kanalliste + .arkgruppe {
+  margin-top: var(--luft-6);
 }
 
 .kanalfelt {
   display: flex;
   flex-direction: column;
   gap: var(--luft-2);
+}
+
+/* Forældren har `gap`; `p`-standardmargenen ville lægge sig oveni. */
+.kanalfelt .hjaelp {
+  margin: 0;
 }
 
 .chip[aria-pressed="true"] {
@@ -990,12 +1039,30 @@ input {
 
 /* --------------------------------------------------------------- knapper */
 
+/*
+ * KNAPPER ER PILLER, ikke afrundede kasser.
+ *
+ * Det er ikke en smagssag, og det er ikke noget, jeg fandt på: tæller man
+ * de fyldte accentflader i design/*.dc.html, er der 19 af dem, og alle 19
+ * har `border-radius: 999px`. Ikke én bruger 14px eller 9px. Knappen var
+ * `--radius` og lignede derfor et kort, ikke noget man trykker på.
+ *
+ * Formen skiller nu de tre slags flader fra hinanden hele vejen igennem,
+ * og det er den samme regel, mockuppen følger:
+ *
+ *     KORT og ark        --radius / --radius-stor   (14 / 22px)
+ *     FELTER man skriver i --radius-lille           (9px)
+ *     KONTROLLER man trykker på --radius-rund       (pille)
+ *
+ * Chips og segmenter var piller i forvejen. Knappen var den sidste
+ * kontrol, der ikke var det.
+ */
 .knap {
   display: block;
   width: 100%;
   min-height: var(--tryk);
   padding: var(--luft-3) var(--luft-4);
-  border-radius: var(--radius);
+  border-radius: var(--radius-rund);
   background: var(--flade-hvaelvet);
   border: 1px solid var(--kant);
   font-size: var(--tekst-m);
@@ -1031,11 +1098,13 @@ input {
   margin-top: var(--luft-2);
 }
 
+/* Et felt, man skriver i, er hverken et kort eller en knap. Mockuppens
+   `.felt` er 9px hele vejen igennem — se reglen over `.knap`. */
 .felt {
   width: 100%;
   min-height: var(--tryk);
   padding: var(--luft-3) var(--luft-4);
-  border-radius: var(--radius);
+  border-radius: var(--radius-lille);
   background: var(--bund);
   border: 1px solid var(--kant);
   font-size: var(--tekst-m);
@@ -1135,6 +1204,20 @@ input {
 .maerkat.optjent {
   background: var(--accent);
   color: var(--accent-tekst);
+}
+
+/*
+ * "Aktiv" på en broadcast lånte `.optjent` — den fyldte accentflade, der
+ * betyder OPTJENT på et mærke i hylden. De to er ikke det samme: det ene
+ * er en belønning, det andet en tilstand, der kan slås fra igen, og en
+ * fyldt accent i en liste af rækker råber mere end tilstanden fortjener.
+ *
+ * Blød accent i stedet, som mockuppen (#DCE8E0 med #1B4D3E tekst).
+ */
+.maerkat.aktiv {
+  background: color-mix(in srgb, var(--accent) 16%, var(--flade));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--kant));
+  color: var(--accent);
 }
 
 /* ------------------------------------------------------------ fremdriften */
@@ -1386,6 +1469,14 @@ input {
 .talkort .etiket {
   display: block;
   margin-top: var(--luft-1);
+  /*
+   * Etiketten er versaler med spor, og i en spalte på en tredjedel af en
+   * telefon brydes de lange over tre linjer — "HAR LOGGET I DAG" i Admin.
+   * Standardlinjeafstanden fra `body` gav dem så meget luft, at de tre
+   * linjer læste som tre ting. Strammet, så et flerlinjet mærkat holder
+   * sammen som ét.
+   */
+  line-height: 1.25;
 }
 
 /*
@@ -2693,18 +2784,23 @@ p.dagliste {
   margin-top: var(--luft-3);
 }
 
+/*
+ * Admins rækker. Samme mål som mockuppens `.adminraekke`: 12px lodret,
+ * 16px vandret, 12px mellem indhold — og `--radius`, ikke `--radius-lille`.
+ * Den lille radius hører til felter, man skriver i; en række er et kort.
+ */
 .adminraekke {
   display: flex;
   align-items: center;
-  gap: var(--luft-2);
+  gap: var(--luft-3);
   width: 100%;
-  padding: var(--luft-3);
+  padding: var(--luft-3) var(--luft-4);
   text-align: left;
   font: inherit;
   color: inherit;
   background: var(--flade);
   border: 1px solid var(--kant);
-  border-radius: var(--radius-lille);
+  border-radius: var(--radius);
 }
 
 /*
@@ -2932,9 +3028,44 @@ p.dagliste {
  * ruller vandret frem for at pakke om på to linjer, så indholdet under den
  * ikke flytter sig, når man skifter fane.
  */
+/*
+ * INTET SPOR i et ark. Segmentvælgeren på forsiden har fire faner, der
+ * altid er der på én gang, og et sænket spor bag dem siger netop dét: her
+ * er alle valgene. Admin har otte, og de ruller ud over kanten — så lyver
+ * sporet, for det ender midt i en fane.
+ *
+ * Løse piller i stedet, og den valgte er FYLDT frem for hvid. På forsiden
+ * er en hvid pille på et sænket spor nok, fordi sporet indrammer den; uden
+ * spor er den bare et lysere felt blandt grå. Det er også, hvad mockuppen
+ * gør, se design/Admin.dc.html, `.fane`.
+ */
 .ark .segmenter {
   overflow-x: auto;
   scrollbar-width: none;
+  gap: var(--luft-2);
+  padding: 0;
+  background: none;
+}
+
+/*
+ * `flex: 0 0 auto`, ikke `flex: 1`. Med `flex: 1` deler fanerne den plads,
+ * der er, og otte faner klemmes sammen til deres min-content-bredde, før
+ * de overhovedet begynder at rulle — det var derfor striben så mast ud og
+ * alligevel var skåret over i højre side.
+ */
+.ark .segment {
+  flex: 0 0 auto;
+  padding: var(--luft-2) var(--luft-4);
+  background: var(--flade-saenket);
+  white-space: nowrap;
+}
+
+.ark .segment[aria-selected="true"] {
+  background: var(--accent);
+  color: var(--accent-tekst);
+  /* Fladen bærer nu valget. En skygge oveni ville løfte en pille, der
+     ikke ligger på noget. */
+  box-shadow: none;
 }
 
 .ark .segmenter::-webkit-scrollbar {
