@@ -15,7 +15,8 @@
     "smoke-test": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/smoke-test.ts",
     "datarevision": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/datarevision.ts",
     "migrer": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/migrer.ts",
-    "katalog": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/katalog.ts"
+    "katalog": "node --experimental-strip-types --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/katalog.ts",
+    "revision": "node --experimental-strip-types scripts/revision.ts"
   },
   "dependencies": {
     "convex": "^1.43.0",

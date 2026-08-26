@@ -429,17 +429,13 @@ input {
 /* ------------------------------------------------------------- typografi */
 
 /*
- * De fem trin som klasser. En skærm skal kunne skrive `.tal` frem for at
+ * Taltypografien som klasse. En skærm skal kunne skrive `.tal` frem for at
  * gentage tre linjer om størrelse, vægt og sporing hver gang et tal vises.
+ *
+ * Der var også en `.tal-stort` til `--tekst-xxl`. Ingen brugte den: de
+ * store tal på Mig har deres egne regler i `.hero` og `.livstid`, fordi de
+ * skal andet end at være store. Fjernet af `npm run revision`.
  */
-.tal-stort {
-  font-size: var(--tekst-xxl);
-  font-weight: var(--vaegt-fed);
-  letter-spacing: var(--spor-tal);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.05;
-}
-
 .tal {
   font-size: var(--tekst-xl);
   font-weight: var(--vaegt-fed);
@@ -487,9 +483,7 @@ input {
 
 /* Alle tal i appen er ensbrede. Et tal der hopper i bredden, mens det
    tæller op, ser i stykker ud. */
-.tal-stort,
-.tal,
-.tabel {
+.tal {
   font-variant-numeric: tabular-nums;
 }
 
@@ -3290,24 +3284,6 @@ p.dagliste {
   color: var(--medgang);
 }
 
-/*
- * Medaljekortet i Mig er en knap, ikke et kort. Uden dette ville browserens
- * standardknap trække sin egen baggrund, centrering og skriftstørrelse med
- * ind i `.kort`.
- */
-.medaljekort {
-  display: block;
-  width: 100%;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-
-.medaljekort:active {
-  transform: scale(0.99);
-}
-
 /* --------------------------------------------------- achievement låst op */
 
 /*
@@ -3377,8 +3353,17 @@ p.dagliste {
   --kant: #2e2e2e;
 
   --tekst: #f5f5f5;
-  --tekst-daempet: #9a9a9a;
-  --tekst-svag: #6e6e6e;
+  /*
+   * LYSNET. De to var #9a9a9a og #6e6e6e, hentet ordret fra det gamle repos
+   * ChannelThemeContext — designerens tal, som ingen siden havde MÅLT.
+   * `--tekst-svag` lå på 3,04:1 mod temaets egen `--flade-brik`, altså på
+   * de 11px versaler, der er appens mindste tekst.
+   *
+   * Fundet af `npm run revision`, som indtil den lærte at springe
+   * kommentarer over, slugte hele denne blok og meldte grønt.
+   */
+  --tekst-daempet: #a8a8a8;
+  --tekst-svag: #8b8b8b;
 
   --accent: #c41e1e;
   --accent-mork: #8f1616;
@@ -3394,8 +3379,10 @@ p.dagliste {
   --kant: #383838;
 
   --tekst: #f4f0ea;
-  --tekst-daempet: #8a8a8a;
-  --tekst-svag: #6a6a6a;
+  /* Samme rettelse som Copenhell ovenfor. Her faldt BEGGE: dæmpet på
+     4,38:1 og svag på 2,80:1 mod temaets egen `--flade-brik`. */
+  --tekst-daempet: #a8a8a8;
+  --tekst-svag: #8f8f8f;
 
   --accent: #3aa7b3;
   --accent-mork: #2a7f8a;
