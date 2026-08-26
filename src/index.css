@@ -2371,13 +2371,16 @@ p.dagliste {
    Meld-dig-ud-knappen, så de to tilstande sidder ens uanset hvilken der
    vises. */
 .kortaktion {
-  margin-top: var(--luft-3);
-}
-
-.checkindform {
   display: flex;
   flex-direction: column;
   gap: var(--luft-2);
+  margin-top: var(--luft-3);
+}
+
+/* Hjælpelinjen under Check ind og Check ud. `.hjaelp` sætter kun størrelse
+   og farve; margenen er `p`-standarden og skal væk, når forælderen har gap. */
+.kortaktion .hjaelp {
+  margin: 0;
 }
 
 /* ------------------------------------------------- profilfelter og onboarding */
@@ -2657,7 +2660,7 @@ p.dagliste {
  * i "Ny Kanal" rørte hinanden kant mod kant, og de øvrige formularer
  * lappede hullerne med `marginTop` sat direkte på hvert felt.
  *
- * Én beholder med `gap` i stedet — samme mønster som `.checkindform` i
+ * Én beholder med `gap` i stedet — samme mønster som `.kortaktion` i
  * Kortet. Overskriftens egen bundmargin nulstilles, så afstanden kun kommer
  * ét sted fra.
  */

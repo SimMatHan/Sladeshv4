@@ -1,7 +1,10 @@
 import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import { getDrinkDayStart } from "./constants";
+import { erUdeIDag } from "./drinkRules";
 import { requireCanViewUser, requireCurrentUser } from "./identity";
+import { varslingUdeIAften } from "./kanaler";
 
 /**
  * Check In.
@@ -38,6 +41,10 @@ export const checkIn = mutation({
     }
 
     const now = Date.now();
+
+    // Regnes FØR patchen — bagefter er `checkInStatus` sand under alle
+    // omstændigheder, og svaret ville altid være "ja, allerede ude".
+    const varUdeIForvejen = erUdeIDag(user, getDrinkDayStart(now));
 
     const checkInId = await ctx.db.insert("checkIns", {
       userId: user._id,
@@ -84,6 +91,16 @@ export const checkIn = mutation({
       medPosition: args.location !== undefined,
       antal: (user.checkInCount ?? 0) + 1,
     });
+
+    // Samme varsling som aftenens første genstand giver. De to er den
+    // samme begivenhed set fra Kanalen — nogen er gået ud — og skal ikke
+    // lyde forskelligt, fordi de kom ind ad hver sin dør.
+    //
+    // Kun hvis man ikke ALLEREDE var ude: checker man ind kl. 20 og igen
+    // kl. 23, er den anden ikke en nyhed.
+    if (!varUdeIForvejen && args.channelId !== undefined) {
+      await varslingUdeIAften(ctx, args.channelId, user._id, user.displayName);
+    }
 
     return checkInId;
   },

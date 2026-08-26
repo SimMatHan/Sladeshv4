@@ -66,6 +66,7 @@ import {
 import {
   beregnRunStart,
   byggAggregat,
+  erUdeIDag,
   nettoForVariant,
   variantNoegle,
 } from "../convex/drinkRules.ts";
@@ -318,6 +319,28 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] er man ude i dag?");
+{
+  // `erUdeIDag` afgør fem ting: hvem der står på stillingen, hvem der ses på
+  // kortet, om positionen gemmes, om aftenens første genstand checker dig
+  // ind — og om Kanalen får besked om, at du er gået ud. Den sidste er ny,
+  // og den er grunden til, at grænsen fortjener sine egne prøver: fyrer den
+  // to gange på én aften, får alle to notifikationer om den samme person.
+  const fredag = getDrinkDayStart(cest("2026-08-14T20:00:00"));
+
+  check("checket ind i aften", erUdeIDag({ checkInStatus: true, lastCheckIn: fredag + 3600_000 }, fredag), true);
+  check("checket ind præcis ved døgnskiftet", erUdeIDag({ checkInStatus: true, lastCheckIn: fredag }, fredag), true);
+
+  // Flaget bliver stående, til man checker ud. Uden tidsgrænsen ville et
+  // check-in fra i går stadig se sandt ud i aften — og så ville aftenens
+  // første genstand hverken checke én ind eller sige det til nogen.
+  check("checket ind i går tæller ikke", erUdeIDag({ checkInStatus: true, lastCheckIn: fredag - 1 }, fredag), false);
+
+  check("checket ud", erUdeIDag({ checkInStatus: false, lastCheckIn: fredag + 3600_000 }, fredag), false);
+  check("aldrig checket ind", erUdeIDag({}, fredag), false);
+  check("flag uden tidspunkt", erUdeIDag({ checkInStatus: true }, fredag), false);
 }
 
 console.log("\n[Logic] fortrydelser (action: \"remove\", negativ sizeMultiplier)");

@@ -46,8 +46,11 @@ export function beregnRunStart(
 /**
  * Er brugeren "ude" i den drikkedag, der begynder ved `dayStart`?
  *
- * Det ene kriterium, tre steder bruger: hvem der står på stillingen, hvem der
- * kan ses på kortet, og om ens position overhovedet gemmes.
+ * Det ene kriterium, fem steder bruger: hvem der står på stillingen, hvem der
+ * kan ses på kortet, om ens position overhovedet gemmes, om aftenens første
+ * genstand skal checke dig ind — og om Kanalen skal have besked om, at du er
+ * gået ud. Den sidste er grunden til, at `logDrink` og `checkIn` ikke længere
+ * skriver betingelsen ud i hånden hver for sig.
  *
  * Siden trin 1 checker `logDrink` selv brugeren ind ved første genstand, så
  * "har drukket i dag" medfører "checket ind i dag". Derfor er markeringen

@@ -1,6 +1,9 @@
 import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
+import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
+import type { Ctx } from "./identity";
 import { requireAdmin, requireCurrentUser, requireKanalMedlem } from "./identity";
 
 /**
@@ -336,3 +339,63 @@ export const genaktiverKanal = mutation({
     });
   },
 });
+
+/**
+ * Kanalens navn og alle ANDRE medlemmer end én selv.
+ *
+ * Til varslinger om, at der sker noget i Kanalen. Bevidst enklere end
+ * `beregnModtagere` i convex/messages.ts, som også springer dem over, der
+ * står med chatten åben — det er rigtigt for en besked, man kan se komme
+ * ind, og forkert for alt andet: at sidde i chatten betyder ikke, at man
+ * har set, at nogen er gået ud.
+ */
+export async function kanalOgAndreMedlemmer(
+  ctx: Ctx,
+  channelId: Id<"kanaler">,
+  undtagen: Id<"users">,
+): Promise<{ navn: string; modtagere: Id<"users">[] } | undefined> {
+  const kanal = await ctx.db.get(channelId);
+  if (kanal === null) return undefined;
+  return {
+    navn: kanal.name,
+    modtagere: kanal.members.filter((medlemId) => medlemId !== undtagen),
+  };
+}
+
+/**
+ * "Anders er ude i aften" til resten af Kanalen.
+ *
+ * Der er TO veje ind i den tilstand, og de skal give samme besked:
+ * aftenens første genstand (convex/drinkLogs.ts) og et manuelt Check In på
+ * Kortet (convex/checkIns.ts). Begge kalder herind, så teksten og reglen
+ * kun findes ét sted.
+ *
+ * KALDEREN afgør, om det er første gang i dag. Det er med vilje: begge
+ * steder har allerede regnet det ud af egne grunde — logningen skal vide
+ * det for at sætte `checkInStatus`, check-in for ikke at tælle dobbelt —
+ * og at regne det en tredje gang herinde ville være en tredje kopi af den
+ * samme grænse. Se `erUdeIDag` i convex/drinkRules.ts.
+ *
+ * Planlagt frem for afventet, som chatten: handlingen står, uanset om push
+ * lykkes. Slår VAPID-nøglerne fejl, springer `sendTilBrugere` stille over.
+ */
+export async function varslingUdeIAften(
+  ctx: MutationCtx,
+  channelId: Id<"kanaler">,
+  brugerId: Id<"users">,
+  navn: string,
+): Promise<void> {
+  const kanal = await kanalOgAndreMedlemmer(ctx, channelId, brugerId);
+  if (kanal === undefined || kanal.modtagere.length === 0) return;
+
+  await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+    userIds: kanal.modtagere,
+    title: kanal.navn,
+    body: `🍺 ${navn.trim() || "Nogen"} er ude i aften`,
+    // Per PERSON, ikke per Kanal. Med ét fælles tag ville "Mathias er ude"
+    // erstatte "Anders er ude" på telefonen, og man ville aldrig se, at
+    // der var to. Med et tag per person stables de, og et gentaget forsøg
+    // på den samme person erstatter sig selv.
+    tag: `ude-${channelId}-${brugerId}`,
+  });
+}
