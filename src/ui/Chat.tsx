@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { BESKED_MAX_LAENGDE } from "../../convex/messageRules";
 import { useSendMessage } from "../lib/optimistiskeKald";
+import { getDrinkDayStart } from "../../convex/constants";
 import { fejltekst, klokken } from "../lib/visning";
 import { Avatar } from "./Avatar";
+import { SendIkon } from "./Ikoner";
 
 /**
  * Kanalens chat.
@@ -110,7 +112,9 @@ export function Chat({
         <div className="tom">
           <div className="stort">💬</div>
           <p>Ingen har sagt noget endnu.</p>
-          <p className="hjaelp">Beskeder forsvinder af sig selv efter et døgn.</p>
+          <p className="hjaelp">
+            Beskeder forsvinder af sig selv efter et døgn.
+          </p>
         </div>
       ) : (
         <div className="beskeder">
@@ -120,42 +124,62 @@ export function Chat({
             const samlet =
               forrige !== undefined &&
               forrige.senderId === besked.senderId &&
-              besked.createdAt - forrige.createdAt < SAMLE_VINDUE_MS;
+              besked.createdAt - forrige.createdAt < SAMLE_VINDUE_MS &&
+              getDrinkDayStart(forrige.createdAt) ===
+                getDrinkDayStart(besked.createdAt);
+
+            // DRIKKEDAGEN, ikke kalenderdagen — kl. 02 hører til aftenen
+            // før, og det er den grænse, resten af appen regner efter.
+            const nyDag =
+              forrige === undefined ||
+              getDrinkDayStart(forrige.createdAt) !==
+                getDrinkDayStart(besked.createdAt);
 
             return (
-              <div
-                key={besked._id}
-                className={
-                  besked.senderId === minUserId
-                    ? samlet
-                      ? "besked min samlet"
-                      : "besked min"
-                    : samlet
-                      ? "besked samlet"
-                      : "besked"
-                }
-              >
-                {!samlet && besked.senderId !== minUserId && (
-                  <button
-                    className="afsender"
-                    onClick={() => onVaelgPerson(besked.senderId)}
-                  >
-                    <Avatar
-                      emoji={besked.senderEmoji}
-                      navn={besked.senderName}
-                      farve={undefined}
-                    />
-                    <span className="navn">{besked.senderName}</span>
-                  </button>
+              <Fragment key={besked._id}>
+                {nyDag && (
+                  <span className="dagsskel etiket">
+                    {dagsnavn(besked.createdAt)}
+                  </span>
                 )}
-                <div className="boble">
-                  {besked.text}
-                  <span className="tid">{klokken(besked.createdAt)}</span>
+                <div
+                  className={
+                    besked.senderId === minUserId
+                      ? samlet
+                        ? "besked min samlet"
+                        : "besked min"
+                      : samlet
+                        ? "besked samlet"
+                        : "besked"
+                  }
+                >
+                  {!samlet && besked.senderId !== minUserId && (
+                    <button
+                      className="afsender"
+                      onClick={() => onVaelgPerson(besked.senderId)}
+                    >
+                      <Avatar
+                        emoji={besked.senderEmoji}
+                        navn={besked.senderName}
+                        farve={undefined}
+                      />
+                      <span className="navn">{besked.senderName}</span>
+                    </button>
+                  )}
+                  <div className="boble">
+                    {besked.text}
+                    <span className="tid">{klokken(besked.createdAt)}</span>
+                  </div>
                 </div>
-              </div>
+              </Fragment>
             );
           })}
           <div ref={bunden} />
+          {/* Fodnoten stod kun i den TOMME tilstand — men det er, mens man
+              skriver, at det er værd at vide, at det forsvinder igen. */}
+          <p className="chatfod">
+            Beskeder forsvinder af sig selv efter et døgn.
+          </p>
         </div>
       )}
 
@@ -174,11 +198,37 @@ export function Chat({
           disabled={tekst.trim().length === 0}
           aria-label="Send"
         >
-          ↑
+          <SendIkon />
         </button>
       </form>
 
       {fejl !== undefined && <p className="fejl">{fejl}</p>}
     </div>
   );
+}
+
+/**
+ * "I dag", "I går" — eller datoen, hvis en besked mod forventning er ældre.
+ *
+ * Regnet på DRIKKEDAGEN, ikke kalenderdagen: kl. 02 er man stadig i aftenen
+ * før, og en skillelinje ved midnat ville dele én aften i to.
+ *
+ * Beskeder ryddes efter et døgn (se convex/crons.ts), så de to første
+ * tilfælde dækker i praksis alt. Den sidste er der, fordi "i praksis" ikke
+ * er det samme som "altid" — en cron, der ikke er kørt, må ikke give en
+ * skillelinje uden navn.
+ */
+function dagsnavn(tidspunkt: number): string {
+  const dag = getDrinkDayStart(tidspunkt);
+  const idag = getDrinkDayStart(Date.now());
+
+  if (dag === idag) return "I dag";
+
+  const etDoegn = 24 * 60 * 60 * 1000;
+  if (idag - dag <= etDoegn) return "I går";
+
+  return new Intl.DateTimeFormat("da-DK", {
+    day: "numeric",
+    month: "long",
+  }).format(new Date(dag));
 }

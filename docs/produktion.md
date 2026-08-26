@@ -326,8 +326,14 @@ telefonapp, og halvdelen af punkterne findes ikke på et skrivebord.
 
 - [ ] Chrome/Android: menuen tilbyder "Installer app" eller "Føj til
       startskærm". Safari/iOS: Del → Føj til hjemmeskærm.
-- [ ] Ikonet på hjemmeskærmen er den hvide shaka på koral — ikke et
+- [ ] Ikonet på hjemmeskærmen er den hvide shaka på flaskegrøn — ikke et
       skærmbillede af siden.
+
+      Baggrunden var koral indtil redesignet. Retning A valgte flaskegrøn
+      (`#1B4D3E`) som accent netop FRAVALGT koral, og ikonet blev
+      liggende — appen og dens eget ikon var to forskellige farver.
+      Håndens hvide og dens skygge er uændrede; kun baggrundens kulør er
+      byttet.
 - [ ] Åbnet fra hjemmeskærmen er der **ingen adresselinje**.
 
 **Holder den uden net**
