@@ -36,6 +36,8 @@ import {
   getBlockEnd,
   getBlockStart,
   SLADESH_TIME_LIMIT_MS,
+  sladeshUdfaldVarsling,
+  sladeshVarsling,
 } from "../convex/sladeshRules.ts";
 import {
   BESKED_MAX_LAENGDE,
@@ -48,7 +50,9 @@ import {
   BEACON_MAX_RUNDER,
   BEACON_STANDARD_TITEL,
   afstandIMeter,
+  BEACON_UKENDT_OPRETTER,
   beaconTitel,
+  beaconVarsling,
   beslutVarsling,
   erBeaconUdloebet,
   erPositionForaeldet,
@@ -341,6 +345,70 @@ console.log("\n[Logic] er man ude i dag?");
   check("checket ud", erUdeIDag({ checkInStatus: false, lastCheckIn: fredag + 3600_000 }, fredag), false);
   check("aldrig checket ind", erUdeIDag({}, fredag), false);
   check("flag uden tidspunkt", erUdeIDag({ checkInStatus: true }, fredag), false);
+}
+
+console.log("\n[Logic] sladesh-varslingen");
+{
+  // Teksten er det eneste, modtageren ser, hvis telefonen ligger i lommen.
+  // Den var indtil videre ikke skrevet nogen steder: `sendSladesh` sendte
+  // ingen push overhovedet.
+  const varsling = sladeshVarsling("Frederik");
+  check("titlen siger hvad der er sket", varsling.titel, "🍺 Du er blevet sladeshet");
+  check("afsenderens navn står forrest", varsling.tekst.startsWith("Frederik "), true);
+
+  // Minuttallet REGNES af fristen. Står de to hver sit sted, kan appen
+  // komme til at love ti minutter og give noget andet.
+  check(
+    "minuttallet følger fristen",
+    varsling.tekst.includes(`${Math.round(SLADESH_TIME_LIMIT_MS / 60000)} minutter`),
+    true,
+  );
+  check("fristen er 10 minutter", SLADESH_TIME_LIMIT_MS, 10 * 60 * 1000);
+
+  check(
+    "et tomt navn falder tilbage",
+    sladeshVarsling("   ").tekst.startsWith("Nogen "),
+    true,
+  );
+
+  // Og den anden vej: hvordan gik det. Afsenderen sad før tilbage med en
+  // venterbjælke, der bare forsvandt.
+  //
+  // De TRE udfald har hver sin tekst med vilje. "Gav op" og "nåede det
+  // ikke" er to forskellige ting at have gjort, og afsenderen sendte den
+  // for at vide hvilken — så en fælles "det gik ikke" ville tage netop den
+  // oplysning væk.
+  check(
+    "gennemført",
+    sladeshUdfaldVarsling("Mathias", "completed"),
+    { titel: "🍺 Sladesh gennemført", tekst: "Mathias klarede den." },
+  );
+  check(
+    "opgivet",
+    sladeshUdfaldVarsling("Mathias", "failed"),
+    { titel: "Sladesh opgivet", tekst: "Mathias gav op." },
+  );
+  check(
+    "udløbet nævner fristen",
+    sladeshUdfaldVarsling("Mathias", "expired"),
+    {
+      titel: "Sladesh udløbet",
+      tekst: `Mathias nåede det ikke inden for ${Math.round(SLADESH_TIME_LIMIT_MS / 60000)} minutter.`,
+    },
+  );
+
+  // De tre er FORSKELLIGE. Prøven findes, fordi en fælles tekst er præcis
+  // den forenkling, nogen ville lave en dag.
+  const udfald = (["completed", "failed", "expired"] as const).map(
+    (u) => sladeshUdfaldVarsling("Mathias", u).tekst,
+  );
+  check("tre udfald, tre tekster", new Set(udfald).size, 3);
+
+  check(
+    "et tomt navn falder også tilbage her",
+    sladeshUdfaldVarsling("  ", "completed").tekst,
+    "Nogen klarede den.",
+  );
 }
 
 console.log("\n[Logic] fortrydelser (action: \"remove\", negativ sizeMultiplier)");
@@ -745,6 +813,26 @@ console.log("\n[Logic] beacon-regler");
     BEACON_STANDARD_TITEL,
   );
   check("angivet titel vinder", beaconTitel("Stress!", "Baren"), "Stress!");
+
+  // Varslingens TEKST. Den var indtil videre kun et felt i et svar, ingen
+  // læste — evalueringen fandt modtagerne og sendte aldrig noget. Nu er den
+  // nyttelasten i en rigtig push, så den fortjener at være låst fast:
+  // brugerne kender ordlyden fra den gamle app.
+  const varsling = beaconVarsling("Frederik");
+  check("titlen er den kendte", varsling.titel, "🚨 STRESS BEACON AKTIVERET! 🚨");
+  check("opretterens navn står i teksten", varsling.tekst.startsWith("Frederik "), true);
+  check(
+    "teksten lover næste tjek om 5 minutter",
+    varsling.tekst.includes("næste tjek er om 5 minutter"),
+    true,
+  );
+  // Cron-kadencen i convex/crons.ts SKAL matche det, teksten lover. Står de
+  // to hver sit sted, er det teksten, brugeren tror på.
+  check(
+    "et navnløst kald falder tilbage på standarden",
+    beaconVarsling(BEACON_UKENDT_OPRETTER).tekst.startsWith("En admin "),
+    true,
+  );
 
   // Varslingsbeslutningen. Beaconen står på Brøndby Stadion.
   const beacon = { beaconLat: 55.6533, beaconLng: 12.4194, radius: 50, now: nu };

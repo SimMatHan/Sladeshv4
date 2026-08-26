@@ -156,3 +156,70 @@ export function beregnCooldown(
 export function erUdloebet(deadlineAt: number, now: number): boolean {
   return now > deadlineAt;
 }
+
+/** Navnet der bruges, hvis en part ikke har sat et. */
+export const SLADESH_UKENDT_AFSENDER = "Nogen";
+
+/**
+ * Varslingen til modtageren.
+ *
+ * Ligger HER og ikke inline i mutationen, af samme grund som
+ * `beaconVarsling` i convex/beaconRules.ts: teksten er det eneste, modtageren
+ * ser, hvis telefonen ligger i lommen, og så skal den kunne prøves uden et
+ * deployment.
+ *
+ * Minuttallet regnes af `SLADESH_TIME_LIMIT_MS` frem for at stå skrevet.
+ * Ændres fristen, ændres teksten med — ellers ville appen love ti minutter
+ * og give noget andet.
+ */
+export function sladeshVarsling(afsenderNavn: string): {
+  titel: string;
+  tekst: string;
+} {
+  const minutter = Math.round(SLADESH_TIME_LIMIT_MS / 60000);
+  const navn = afsenderNavn.trim() || SLADESH_UKENDT_AFSENDER;
+  return {
+    titel: "🍺 Du er blevet sladeshet",
+    tekst: `${navn} har sladeshet dig. Du har ${minutter} minutter.`,
+  };
+}
+
+/**
+ * Varslingen til AFSENDEREN, når udfordringen er afgjort.
+ *
+ * De tre udfald er de tre slutstatusser, `erAfsluttetStatus` kender. At de
+ * har hver sin tekst er ikke pynt: "gav op" og "nåede det ikke" er to
+ * forskellige ting at have gjort, og afsenderen sendte den for at vide
+ * hvilken.
+ *
+ * `expired` nævner fristen, fordi det er den, der afgjorde sagen — og
+ * minuttallet regnes af `SLADESH_TIME_LIMIT_MS`, som i `sladeshVarsling`.
+ */
+export type SladeshUdfald = "completed" | "failed" | "expired";
+
+export function sladeshUdfaldVarsling(
+  modtagerNavn: string,
+  udfald: SladeshUdfald,
+): { titel: string; tekst: string } {
+  const navn = modtagerNavn.trim() || SLADESH_UKENDT_AFSENDER;
+
+  if (udfald === "completed") {
+    return {
+      titel: "🍺 Sladesh gennemført",
+      tekst: `${navn} klarede den.`,
+    };
+  }
+
+  if (udfald === "failed") {
+    return {
+      titel: "Sladesh opgivet",
+      tekst: `${navn} gav op.`,
+    };
+  }
+
+  const minutter = Math.round(SLADESH_TIME_LIMIT_MS / 60000);
+  return {
+    titel: "Sladesh udløbet",
+    tekst: `${navn} nåede det ikke inden for ${minutter} minutter.`,
+  };
+}
