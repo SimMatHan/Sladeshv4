@@ -50,6 +50,7 @@ import {
   BEACON_MAX_RUNDER,
   BEACON_STANDARD_TITEL,
   afstandIMeter,
+  BEACON_STANDARD_BESKED,
   BEACON_UKENDT_OPRETTER,
   beaconTitel,
   beaconVarsling,
@@ -832,6 +833,46 @@ console.log("\n[Logic] beacon-regler");
     "et navnløst kald falder tilbage på standarden",
     beaconVarsling(BEACON_UKENDT_OPRETTER).tekst.startsWith("En admin "),
     true,
+  );
+
+  // Admins EGEN besked. Feltet har altid været i formularen og er altid
+  // blevet gemt — og nåede aldrig frem, fordi funktionen kun tog navnet.
+  check(
+    "admins besked bruges",
+    beaconVarsling("Frederik", "Sidste omgang inden vi går").tekst,
+    "Frederik: Sidste omgang inden vi går",
+  );
+  check(
+    "navnet står stadig med",
+    beaconVarsling("Frederik", "Alle til baren!").tekst.startsWith("Frederik: "),
+    true,
+  );
+
+  // STANDARDBESKEDEN er ikke "admins besked". `opretBeacon` gemmer den, når
+  // feltet står tomt, så den må ikke udløse den korte form — så ville alle,
+  // der ikke skriver noget, få "Frederik: Stress signal aktiveret!" i
+  // stedet for teksten, brugerne kender.
+  check(
+    "standardbeskeden giver den kendte tekst",
+    beaconVarsling("Frederik", BEACON_STANDARD_BESKED).tekst,
+    varsling.tekst,
+  );
+  check(
+    "tom besked giver den kendte tekst",
+    beaconVarsling("Frederik", "   ").tekst,
+    varsling.tekst,
+  );
+  check(
+    "ingen besked giver den kendte tekst",
+    beaconVarsling("Frederik").tekst,
+    varsling.tekst,
+  );
+
+  // Titlen er den samme uanset hvad. Den er alarmen; beskeden er indholdet.
+  check(
+    "titlen ændrer sig ikke af en egen besked",
+    beaconVarsling("Frederik", "Alle til baren!").titel,
+    varsling.titel,
   );
 
   // Varslingsbeslutningen. Beaconen står på Brøndby Stadion.

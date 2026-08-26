@@ -17,6 +17,15 @@ import { Avatar } from "./Avatar";
 const LOGGRAENSE = 60;
 
 /**
+ * Hvor mange afgjorte Sladesh personkortet viser.
+ *
+ * Ti er nok til at dække en aften og en weekend. Serveren henter de ti
+ * nyeste rækker og filtrerer de uafgjorte fra, så tallet er et loft, ikke
+ * et krav.
+ */
+const SLADESH_GRAENSE = 10;
+
+/**
  * Personkortet.
  *
  * Åbnes ved at trykke på et navn — i stillingen i dag, senere også i chatten
@@ -121,6 +130,8 @@ export function Personkort({
       )}
 
       <IAften userId={userId} navn={bruger.displayName} />
+
+      <Sladeshhistorik userId={userId} navn={bruger.displayName} />
 
       {achievements !== undefined && (
         <div className="arkgruppe">
@@ -256,6 +267,129 @@ function IAften({ userId, navn }: { userId: Id<"users">; navn: string }) {
       </div>
     </div>
   );
+}
+
+/**
+ * De afgjorte Sladesh — med beviserne.
+ *
+ * Billederne har ligget i Convex-storage, siden appen blev bygget, og ingen
+ * skærm har vist dem. To fotos per gennemført Sladesh, betalt for og aldrig
+ * set.
+ *
+ * Serveren afgør, om billederne følger med: de sendes kun til de to parter.
+ * Ser man en andens kort uden selv at have været med, får man rækken og
+ * udfaldet, men ingen fotos — feltet er `null`, og der er ingen knap at
+ * trykke på. Se `getSladeshHistorik` i convex/sladesh.ts for hvorfor.
+ */
+function Sladeshhistorik({ userId, navn }: { userId: Id<"users">; navn: string }) {
+  const historik = useQuery(api.sladesh.getSladeshHistorik, {
+    userId,
+    limit: SLADESH_GRAENSE,
+  });
+  const [aabent, setAabent] = useState<string | undefined>();
+
+  if (historik === undefined) {
+    return (
+      <div className="arkgruppe">
+        <h3>Sladesh</h3>
+        <p className="hjaelp">Henter …</p>
+      </div>
+    );
+  }
+
+  if (historik.length === 0) {
+    return (
+      <div className="arkgruppe">
+        <h3>Sladesh</h3>
+        <p className="hjaelp">{navn} har ingen afgjorte Sladesh endnu.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="arkgruppe">
+      <h3>Sladesh</h3>
+      <div className="adminliste">
+        {historik.map((raekke) => {
+          const beviser = [raekke.foerBillede, raekke.efterBillede].filter(
+            (url): url is string => url !== null,
+          );
+          const udfoldet = aabent === raekke.challengeId;
+
+          return (
+            <div key={raekke.challengeId} className="sladeshraekke">
+              <button
+                className="sladeshtop"
+                // Uden beviser er der intet at folde ud, og så skal rækken
+                // heller ikke se ud som om der er.
+                disabled={beviser.length === 0}
+                aria-expanded={beviser.length === 0 ? undefined : udfoldet}
+                onClick={() =>
+                  setAabent(udfoldet ? undefined : raekke.challengeId)
+                }
+              >
+                <span className={udfaldsklasse(raekke.status)} aria-hidden="true">
+                  {udfaldsikon(raekke.status)}
+                </span>
+                <span className="midt">
+                  <span className="navn">Fra {raekke.senderName}</span>
+                  <span className="under">
+                    {udfaldstekst(raekke.status)}
+                    {raekke.venue !== undefined && ` · ${raekke.venue}`}
+                    {" · "}
+                    {klokken(raekke.completedAt ?? raekke.createdAt)}
+                  </span>
+                </span>
+                {beviser.length > 0 && (
+                  <span className="hjaelp">
+                    {udfoldet ? "Skjul" : `${beviser.length} billeder`}
+                  </span>
+                )}
+              </button>
+
+              {udfoldet && (
+                <div className="beviser">
+                  {beviser.map((url, nummer) => (
+                    <figure key={url}>
+                      {/* `loading="lazy"`: billederne hentes først, når
+                          rækken er foldet ud og figuren er i syne. */}
+                      <img src={url} alt="" loading="lazy" />
+                      <figcaption className="etiket">
+                        {nummer === 0 ? "Fyldt" : "Tom"}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * De tre udfald har hver sin markering.
+ *
+ * Samme skelnen som varslingen til afsenderen gør: "gav op" og "nåede det
+ * ikke" er to forskellige ting at have gjort. Se `sladeshUdfaldVarsling` i
+ * convex/sladeshRules.ts.
+ */
+function udfaldsikon(status: string): string {
+  if (status === "completed") return "🍺";
+  if (status === "failed") return "🏳️";
+  return "⏳";
+}
+
+function udfaldstekst(status: string): string {
+  if (status === "completed") return "Gennemført";
+  if (status === "failed") return "Opgivet";
+  return "Løb ud";
+}
+
+function udfaldsklasse(status: string): string {
+  return status === "completed" ? "udfald gennemfoert" : "udfald";
 }
 
 function emojiFor(categoryId: string): string {

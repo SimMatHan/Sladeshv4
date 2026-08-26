@@ -343,7 +343,10 @@ export async function evaluerAlleBeacons(
 
     if (runder >= BEACON_MAX_RUNDER) resultat.deaktiveret++;
 
-    const varsling = beaconVarsling(await opretterNavn(beacon.createdBy));
+    const varsling = beaconVarsling(
+      await opretterNavn(beacon.createdBy),
+      beacon.message,
+    );
     resultat.varslinger.push({
       beaconId: beacon._id,
       titel: varsling.titel,

@@ -1091,6 +1091,110 @@ input {
   appearance: none;
 }
 
+/* ------------------------------------------------------- sladeshhistorik */
+
+/*
+ * De afgjorte Sladesh på personkortet, med bevisbillederne.
+ *
+ * Rækken genbruger `.adminliste`s stabling og `.adminraekke`s mål, men er
+ * sin egen klasse, fordi den kan FOLDE UD: billederne hænger under, og
+ * rækken skal derfor kunne have en åben og en lukket form.
+ */
+.sladeshraekke {
+  background: var(--flade);
+  border: 1px solid var(--kant);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.sladeshtop {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-3);
+  width: 100%;
+  min-height: var(--tryk);
+  padding: var(--luft-3) var(--luft-4);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+/* Uden beviser er der intet at folde ud. Rækken må så heller ikke se ud
+   som en knap — hverken for en finger eller for en markør. */
+.sladeshtop:disabled {
+  cursor: default;
+}
+
+.sladeshtop .midt {
+  flex: 1;
+  min-width: 0;
+}
+
+.sladeshtop .navn {
+  display: block;
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-medium);
+}
+
+.sladeshtop .under {
+  display: block;
+  font-size: var(--tekst-xs);
+  color: var(--tekst-svag);
+}
+
+/* Udfaldet som en brik i venstre side — samme rolle som datobrikken i
+   historikken og avataren i stillingen: noget fast at scanne ned ad. */
+.udfald {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: var(--avatar);
+  height: var(--avatar);
+  border-radius: var(--radius-lille);
+  background: var(--flade-brik);
+  font-size: var(--tekst-m);
+  line-height: 1;
+}
+
+.udfald.gennemfoert {
+  background: color-mix(in srgb, var(--accent) 16%, var(--flade));
+}
+
+/*
+ * Beviserne. To billeder side om side, aldrig flere.
+ *
+ * `aspect-ratio` og `object-fit: cover` frem for at lade billedet bestemme:
+ * telefonkameraer leverer både stående og liggende, og to figurer i
+ * forskellig højde ved siden af hinanden ligner en fejl.
+ */
+.beviser {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--luft-2);
+  padding: 0 var(--luft-3) var(--luft-3);
+}
+
+.beviser figure {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-1);
+}
+
+.beviser img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  border-radius: var(--radius-lille);
+  /* Baggrunden ses, mens billedet hentes. Uden den er der et hul i
+     kortets farve, indtil filen lander. */
+  background: var(--flade-brik);
+}
+
+.beviser figcaption {
+  text-align: center;
+}
+
 /* ----------------------------------------------------------- kanalvælger */
 
 .kanalliste {
