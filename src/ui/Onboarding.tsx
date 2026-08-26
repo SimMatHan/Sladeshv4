@@ -112,7 +112,6 @@ export function Onboarding({ mig }: { mig: Doc<"users"> }) {
             />
             <button
               className="knap primaer"
-              style={{ marginTop: 9 }}
               disabled={arbejder || kode.trim().length === 0}
               onClick={() =>
                 void koer(async () => {
@@ -136,7 +135,6 @@ export function Onboarding({ mig }: { mig: Doc<"users"> }) {
             />
             <button
               className="knap"
-              style={{ marginTop: 9 }}
               disabled={arbejder || nytNavn.trim().length === 0}
               onClick={() =>
                 void koer(async () => {
@@ -186,7 +184,23 @@ export function Onboarding({ mig }: { mig: Doc<"users"> }) {
   );
 }
 
-/** Samme form som kanalvælgerens — se kommentaren dér. */
+/**
+ * Invitationskoden til en Kanal, man opretter under onboarding.
+ *
+ * `SLA-` og fire cifre, fordi koden læses højt og tastes af med en tommel:
+ * fire cifre kan siges i ét åndedrag, og præfikset gør, at man kan se på en
+ * streng, at den ER en kanalkode.
+ *
+ * Den stod magen til i KanalVælgeren, indtil "Opret ny Kanal" blev taget ud
+ * derfra — nu findes den kun her, og onboarding er det eneste sted i appen,
+ * hvor en almindelig bruger kan lave en Kanal.
+ *
+ * Ingen kollisionskontrol. 9.000 muligheder er ikke mange, men koden er ikke
+ * en nøgle: `joinKanal` slår op på den, og to Kanaler med samme kode ville
+ * være et problem for admin at rydde op i, ikke en sikkerhedsbrist. Skal det
+ * gøres ordentligt, hører det hjemme i `convex/kanaler.ts` som en kontrol i
+ * `createKanal`, ikke som flere cifre her.
+ */
 function nyKode(): string {
   return `SLA-${Math.floor(1000 + Math.random() * 9000)}`;
 }

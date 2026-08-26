@@ -1340,6 +1340,29 @@ input {
   transform: scale(0.99);
 }
 
+/*
+ * Kvitteringen, der træder i stedet for en knap, når handlingen er sket.
+ *
+ * Den fylder præcis det samme som knappen, den afløser, så arket ikke
+ * hopper i det øjeblik, Sladeshen er sendt — men den er hverken en knap
+ * eller ser ud som en. Den stod som `<p className="knap">` med farven sat
+ * direkte i JSX, altså en pille med trykaffordans, man ikke kan trykke på.
+ *
+ * Ingen kant og ingen hvælvet flade: det er den samme plads, ikke den samme
+ * ting.
+ */
+.kvitteret {
+  display: block;
+  width: 100%;
+  min-height: var(--tryk);
+  margin: 0;
+  padding: var(--luft-3) var(--luft-4);
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  text-align: center;
+  color: var(--medgang);
+}
+
 .knap.primaer {
   background: var(--accent);
   border-color: var(--accent);
@@ -1378,6 +1401,26 @@ input {
 
 .felt:focus {
   border-color: var(--accent);
+}
+
+/*
+ * En kontrol lige under et felt eller et emojigitter.
+ *
+ * `.felt` og `.emojigitter` bærer med vilje ingen bundmargin: de fleste
+ * steder ligger de i en beholder med `gap`, der selv ejer AL afstand — se
+ * `.adminform` og `.kanalfelt`. De tre steder, hvor der ikke ER sådan en
+ * beholder, stod afstanden i stedet som `style={{ marginTop: 9 }}` direkte
+ * i JSX. Nøjagtig samme historie som de fem `marginTop: 0`, der blev til
+ * `.arkgruppe > h3 + p`, og samme svar: én regel ét sted.
+ *
+ * `:not(.adminform)`, af samme grund som ved `.adminliste` nedenfor: den
+ * beholder har `gap` og ville få både gap og margin.
+ *
+ * Bundet til `.arkgruppe >`, fordi `.login .felt` har sin egen
+ * bundmargin. Den skal ikke have denne oveni.
+ */
+.arkgruppe:not(.adminform) > :is(.felt, .emojigitter) + :is(.knap, .felt) {
+  margin-top: var(--luft-2);
 }
 
 /* ------------------------------------------------------------ kvittering */

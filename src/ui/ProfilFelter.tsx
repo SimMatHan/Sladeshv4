@@ -92,7 +92,6 @@ export function ProfilFelter({
         </div>
         <input
           className="felt"
-          style={{ marginTop: 9 }}
           value={vaerdier.emoji ?? ""}
           maxLength={EMOJI_MAX}
           placeholder="… eller skriv en anden"

@@ -147,7 +147,14 @@ export function Indstillinger({
 
         {promilleTil && (
           <>
-            <div className="segmenter" style={{ marginTop: 12 }}>
+            {/*
+             * Ingen margin her. `.segmenter` bærer selv 16 over og 20 under,
+             * og de to rå tal, der stod her og på feltet nedenfor, gjorde
+             * ingen af delene rigtigt: 12 skrev 16 ned til et tal, der ikke
+             * er på skalaen, og feltets 9 var helt død — nabomarginer
+             * lægger sig ikke sammen, så segmentrækkens 20 vandt alligevel.
+             */}
+            <div className="segmenter">
               {(
                 [
                   ["male", "Mand"],
@@ -167,7 +174,6 @@ export function Indstillinger({
 
             <input
               className="felt"
-              style={{ marginTop: 9 }}
               inputMode="decimal"
               value={vaegt}
               placeholder="Vægt i kg"
