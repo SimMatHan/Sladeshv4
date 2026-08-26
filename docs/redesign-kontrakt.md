@@ -62,6 +62,13 @@ VÆRTSNAVN. Uden den ville fliserne falde igennem til "alt andet udefra"
 og holde op med at blive gemt — og et kort i en kælder ville blive tomt
 igen. Ingen anden logik i service workeren er rørt.
 
+**Bevidst undtagelse 4:** `scripts/revision.ts` er NY og hører ikke til de
+scripts, forbudslisten beskytter — den rører hverken migrering, data eller
+deployment. Den LÆSER `src/index.css` og `src/**` og skriver ingenting.
+Forbudslisten står, fordi de eksisterende scripts kan ødelægge data; et
+script, der kun tæller efter, kan ikke. `package.json` fik én linje i
+`scripts`, og ingen afhængigheder er tilføjet — afsnit 2 gælder uændret.
+
 ---
 
 ## 2. Afhængigheder
