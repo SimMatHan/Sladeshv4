@@ -124,22 +124,22 @@ export function Mig({
         onAaben={() => setHyldeAaben(true)}
       />
 
-      {/* Livstidstallene stod som én dæmpet linje, man læste forbi. De er
-          ægte tal og tåler at blive vist som tal — men de er stadig ikke
-          skærmens hovedsag, så de står nederst og i den lille kortstørrelse,
-          `.talgitter` allerede bruger i Admin og på personkortet. */}
-      <div className="talgitter">
-        <div className="talkort">
-          <div className="vaerdi">{genstande(mig.totalPoints ?? 0)}</div>
+      {/* Livstidstallene BART på baggrunden — etiket over tal, ingen kasse.
+          De lånte `.talgitter` fra Admin, og tre hvide kort her oven på
+          ringkortet, stimekortet og mærkekortet gjorde skærmen til en
+          stak kasser. Se `.livstid` i index.css. */}
+      <div className="livstid">
+        <div>
           <span className="etiket">Point</span>
+          <div className="vaerdi">{genstande(mig.totalPoints ?? 0)}</div>
         </div>
-        <div className="talkort">
-          <div className="vaerdi">{mig.longestStreak ?? 0}</div>
+        <div>
           <span className="etiket">Længste</span>
+          <div className="vaerdi">{mig.longestStreak ?? 0}</div>
         </div>
-        <div className="talkort">
-          <div className="vaerdi">{mig.checkInCount ?? 0}</div>
+        <div>
           <span className="etiket">Check ins</span>
+          <div className="vaerdi">{mig.checkInCount ?? 0}</div>
         </div>
       </div>
 
