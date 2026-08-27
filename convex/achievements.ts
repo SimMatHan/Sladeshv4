@@ -383,3 +383,80 @@ export const genberegnForBruger = mutation({
     return await evaluerAchievements(ctx, bruger, args.now ?? Date.now());
   },
 });
+
+/**
+ * Loftet for `genberegnForAlle`.
+ *
+ * Det er en PROXY, ikke den rigtige grænse. Den rigtige er Convex' budget
+ * for én transaktion (16.384 læste dokumenter), og forbruget her afhænger af
+ * hvor mange logninger brugerne har, ikke af hvor mange brugere der er: hver
+ * bruger koster dagens logninger + livstidslogningerne i `wine` og
+ * `cocktail` + sine achievement-rækker. I dag er det omkring hundrede
+ * dokumenter per bruger, og med 32 brugere er der rigelig plads.
+ *
+ * Tallet står her, så kaldet fejler med en besked man kan handle på, frem
+ * for med Convex' egen "too many reads" — den siger ikke hvad man skal gøre
+ * i stedet. Vokser appen forbi det, er svaret ikke at hæve tallet, men at
+ * lade kaldet tage en portion brugere ad gangen, som
+ * `migrering.genberegnStats` gør med sin `userIds`.
+ */
+const GENBEREGN_ALLE_LOFT = 100;
+
+/**
+ * Genberegner ALLE brugeres achievements.
+ *
+ * Findes for at afvikle en pukkel i ét tryk. Den opstår, hver gang en regel
+ * ændrer sig — og opstod for alvor ved migreringen, hvor den gamle app aldrig
+ * havde kunnet tælle vin: alle bar rundt på oplåsninger, de havde optjent
+ * uden at få. Uden den her ville hver af dem få puklen i hovedet som en
+ * tilfældig popup, næste gang de loggede en øl.
+ *
+ * Den TILFØJER kun, præcis som `genberegnForBruger`: en achievement, en
+ * bruger allerede har, mister de aldrig her. Derfor er den heller ikke
+ * destruktiv og spørger ikke en ekstra gang.
+ *
+ * At den kører alle i ÉN transaktion er med vilje: enten er alle
+ * genberegnet, eller også er ingen, og så kan man trykke igen uden at gætte
+ * på hvor langt den nåede.
+ */
+export const genberegnForAlle = mutation({
+  args: { now: v.optional(v.number()) },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ brugere: number; opdaterede: number; oplaasninger: number }> => {
+    await requireAdmin(ctx);
+
+    const alle = await ctx.db.query("users").collect();
+
+    if (alle.length > GENBEREGN_ALLE_LOFT) {
+      throw new ConvexError({
+        code: "FOR_MANGE_BRUGERE",
+        message:
+          `Der er ${alle.length} brugere, og genberegningen kører dem alle i ` +
+          `én transaktion. Over ${GENBEREGN_ALLE_LOFT} er der risiko for at ` +
+          `ramme Convex' læsegrænse midt i. Brug Genberegn på den enkelte ` +
+          `bruger, eller del kaldet op.`,
+      });
+    }
+
+    const now = args.now ?? Date.now();
+    let opdaterede = 0;
+    let oplaasninger = 0;
+
+    for (const bruger of alle) {
+      const nye = await evaluerAchievements(ctx, bruger, now);
+      if (nye.length === 0) continue;
+      opdaterede += 1;
+      oplaasninger += nye.length;
+    }
+
+    console.log("[Achievement] genberegnet for alle", {
+      brugere: alle.length,
+      opdaterede,
+      oplaasninger,
+    });
+
+    return { brugere: alle.length, opdaterede, oplaasninger };
+  },
+});

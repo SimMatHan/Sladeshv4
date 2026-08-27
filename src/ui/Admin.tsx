@@ -829,6 +829,8 @@ function Beacons({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
  */
 function Oversigt() {
   const stats = useQuery(api.stats.getAdminStats, {});
+  const genberegnAlle = useMutation(api.achievements.genberegnForAlle);
+  const { arbejder, koer, besked } = useHandling();
 
   if (stats === undefined) return <p className="midtstillet">Henter …</p>;
 
@@ -873,6 +875,37 @@ function Oversigt() {
             <div className="etiket">donationer</div>
           </div>
         </div>
+      </div>
+
+      {/* Den ene handling der gælder ALLE, og derfor hører hjemme her frem
+          for under Brugere, hvor alt andet vedrører den ene valgte. */}
+      <div className="arkgruppe">
+        <h3>Achievements</h3>
+
+        <button
+          className="knap"
+          disabled={arbejder}
+          onClick={() =>
+            void koer("genberegnForAlle", async () => {
+              const svar = await genberegnAlle({});
+              return svar.oplaasninger === 0
+                ? `Genberegnet ${svar.brugere} brugere — der var intet nyt at låse op.`
+                : `Genberegnet ${svar.brugere} brugere — låste ${svar.oplaasninger} op ` +
+                  `fordelt på ${svar.opdaterede}.`;
+            })
+          }
+        >
+          Genberegn for alle brugere
+        </button>
+
+        {besked}
+
+        <p className="hjaelp">
+          Afvikler den pukkel, en regelændring efterlader. Uden den får hver
+          bruger sine manglende oplåsninger som en tilfældig popup, næste gang
+          de logger noget. Kan kun låse op, aldrig fjerne — så den er sikker
+          at trykke på igen.
+        </p>
       </div>
 
       {/* Drikkedagen starter kl. 10:00, ikke ved midnat. Uden dette ville
