@@ -45,6 +45,7 @@ nulstillede altså ikke stillingen. Det gør den nu.
 | `achievements.getDefinitions` | query | De statiske definitioner. |
 | `achievements.tildelManuelt` | mutation | Admin. Kun for `manual`-typen. |
 | `achievements.genberegnForBruger` | mutation | Admin. Tilføjer kun, fjerner aldrig. |
+| `achievements.genberegnForAlle` | mutation | Admin. Samme, for hele brugertabellen i én transaktion. |
 
 Motoren kaldes fra `logDrink` og `resetRun` i **samme transaktion**. I det
 gamle repo lå den i en React-context, som kørte 300 ms efter at
@@ -103,9 +104,15 @@ Er der en pukkel til gode — flere hele tærskler end oplåsninger — vises de
 som fuld ("5 af 5"), ikke som "27 af 5". Bjælken er fyldt, og det passer:
 oplåsningen ligger og venter på den næste logning.
 
-> **Efter en ændring i reglerne:** kør Admin → Brugere →
-> `genberegnForBruger` på hver bruger. Den afvikler puklen stille, uden at
-> nogen får en oplåsning i hovedet, næste gang de logger en øl.
+> **Efter en ændring i reglerne:** tryk Admin → Oversigt → **Genberegn for
+> alle brugere**. Den afvikler puklen stille, uden at nogen får en oplåsning
+> i hovedet, næste gang de logger en øl. Skal det kun gælde én, ligger
+> `genberegnForBruger` stadig under Brugere.
+>
+> Begge kan kun låse op, aldrig fjerne, så de er sikre at trykke på igen.
+> `genberegnForAlle` kører alle i ÉN transaktion — enten er alle
+> genberegnet, eller ingen — og afviser over 100 brugere frem for at ramme
+> Convex' læsegrænse midtvejs. Se `GENBEREGN_ALLE_LOFT`.
 
 ### Alt måles på `drinkLogs`
 
