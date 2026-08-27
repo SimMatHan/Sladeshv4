@@ -377,11 +377,31 @@
   box-sizing: border-box;
 }
 
+/*
+ * INGEN `height: 100%` her, og det er hele pointen.
+ *
+ * Der stod `height: 100%` på html og body, `min-height: 100%` på #root og
+ * `min-height: 100dvh` på `.skal` — tre højdesystemer stablet oven på
+ * hinanden, og to af dem måler ikke det samme.
+ *
+ * `100%` på html måles mod det oprindelige indeholdende blok, som på en
+ * telefon svarer til viewporten UDEN browserens adresselinje. `100dvh` er
+ * viewporten som den er LIGE NU, altså MED adresselinjen, mens man endnu
+ * ikke har rullet.
+ *
+ * Ved indlæsning var body derfor højere end det, man kunne se — præcis så
+ * meget højere som adresselinjen er høj. Resultatet var et stykke tomt,
+ * rulbart gulv under den faste navigation, som forsvandt igen i det øjeblik
+ * man rullede og linjen klappede sammen. Det lignede en fejl i
+ * navigationens afstand, men navigationen stod stille; det var siden under
+ * den, der var for lang.
+ *
+ * Nu måler alt i `dvh`, og så kan de ikke være uenige.
+ */
 html,
 body {
   margin: 0;
   padding: 0;
-  height: 100%;
 }
 
 body {
@@ -413,8 +433,13 @@ body {
   overscroll-behavior-y: none;
 }
 
+/*
+ * `dvh`, ikke `%`. Uden en højde på body ville `100%` her ikke have noget
+ * at måle mod og blive ignoreret — og `.login` er den ene skærm, der ikke
+ * selv sætter en højde og derfor lever af den her.
+ */
 #root {
-  min-height: 100%;
+  min-height: 100dvh;
 }
 
 button {

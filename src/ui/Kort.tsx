@@ -122,10 +122,38 @@ export default function Kort({
   const opdaterPosition = useMutation(api.users.opdaterPosition);
 
   const [gpsFejl, setGpsFejl] = useState<string | undefined>();
+
+  /**
+   * Telefonens EGEN position — uafhængig af, om serveren kender den.
+   *
+   * Her lå fejlen: kortet blev udelukkende rammet ind efter de punkter,
+   * serveren svarede med, altså beacons og de personer der er ude. Og din
+   * egen position når kun serveren, hvis du er ude — `users.opdaterPosition`
+   * skriver ingenting og svarer `{ delt: false }`, når du ikke er.
+   *
+   * Konsekvensen var, at "tillad position" ikke flyttede kortet en meter.
+   * Var der ingen beacons, blev det stående på standardvisningen (København);
+   * var der en enkelt beacon oprettet fra en telefon i England, sad kortet i
+   * Chester, uanset hvor i verden man selv stod.
+   *
+   * Browseren har hele tiden haft koordinaterne i `watchPosition` nedenfor —
+   * de blev bare kastet væk, hvis hjerteslaget ikke lige skulle sende.
+   *
+   * Kun det FØRSTE fix gemmes (`forrige ?? …`). Det er alt, indramningen
+   * skal bruge, og det holder antallet af gentegninger på præcis én: GPS'en
+   * rapporterer flere gange i sekundet, og en `setState` per fix ville
+   * gentegne kortet lige så ofte.
+   */
+  const [minPosition, setMinPosition] = useState<
+    { lat: number; lng: number } | undefined
+  >();
   const kortRef = useRef<HTMLDivElement>(null);
   const kortet = useRef<L.Map | undefined>(undefined);
   const lag = useRef<L.LayerGroup | undefined>(undefined);
+  /** Er kortet rammet ind overhovedet? Sat af den foreløbige indramning. */
   const harZoomet = useRef(false);
+  /** Er det rammet ind efter EGEN position? Så ligger det stille for altid. */
+  const rammetEfterEgen = useRef(false);
 
   // --- Egen position ------------------------------------------------------
   // Sendes med et fast mellemrum, mens kortet er åbent, frem for ved hver
@@ -142,6 +170,17 @@ export default function Kort({
     const vagt = navigator.geolocation.watchPosition(
       (position) => {
         setGpsFejl(undefined);
+
+        // Gemmes FØR hjerteslagets spærre nedenfor. Indramningen må ikke
+        // vente på, at der er gået et helt interval, og den må slet ikke
+        // afhænge af, om positionen bliver delt — det er to forskellige
+        // ting, og det var netop sammenblandingen, der var fejlen.
+        setMinPosition((forrige) =>
+          forrige ?? {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+          },
+        );
 
         const nu = Date.now();
         if (nu - sidsteSendt < HJERTESLAG_MS) return;
@@ -240,14 +279,40 @@ export default function Kort({
         .addTo(gruppe);
     }
 
-    // Zoom kun ved FØRSTE indhold. Gjorde vi det hver gang nogen flytter sig,
+    // Ram kortet ind ÉN gang. Gjorde vi det, hver gang nogen flytter sig,
     // ville kortet rykke sig under fingeren, mens man kigger.
+    //
+    // EGEN POSITION VINDER, når telefonen har givet os en. Den er det, man
+    // åbner kortet for at få svar på, og den kan ikke trækkes skæv af data
+    // et helt andet sted: en enkelt beacon oprettet fra en telefon i England
+    // sendte tidligere hele visningen til Chester. De andres nåle og
+    // beacons er der stadig — de skal bare ikke bestemme, hvor man lander.
+    //
+    // Uden et GPS-fix er det som før: ét punkt centreres, flere rammes ind.
+    // Så er alternativet nemlig standardvisningen over København, og et
+    // vilkårligt punkt i Kanalen er bedre end et vilkårligt punkt i Danmark.
+    //
+    // TO flag, ikke ét. Convex svarer typisk hurtigere, end GPS'en får fat,
+    // så en beacon nåede at ramme kortet ind, før positionen fandtes — og
+    // et enkelt `harZoomet` ville så spærre for den rigtige indramning et
+    // sekund senere. Det er præcis den rækkefølge, der efterlod kortet i
+    // Chester. Derfor må egen position ramme ind ÉN gang oven i en
+    // foreløbig indramning; bagefter ligger kortet stille.
+    if (rammetEfterEgen.current) return;
+
+    if (minPosition !== undefined) {
+      rammetEfterEgen.current = true;
+      harZoomet.current = true;
+      kort.setView([minPosition.lat, minPosition.lng], ENKELT_ZOOM);
+      return;
+    }
+
     if (!harZoomet.current && punkter.length > 0) {
       harZoomet.current = true;
       if (punkter.length === 1) kort.setView(punkter[0], ENKELT_ZOOM);
       else kort.fitBounds(L.latLngBounds(punkter), { padding: [50, 50] });
     }
-  }, [svar, beacons, onVaelgPerson]);
+  }, [svar, beacons, minPosition, onVaelgPerson]);
 
   return (
     <div className="kortvisning skaerm-ind">
