@@ -3113,21 +3113,17 @@ p.dagliste {
   border-color: color-mix(in srgb, var(--medgang) 40%, var(--kant));
 }
 
-/* Afstanden fra statuslinjen ovenover, delt af Check In-formularen og
-   Meld-dig-ud-knappen, så de to tilstande sidder ens uanset hvilken der
-   vises. */
-.kortaktion {
-  display: flex;
-  flex-direction: column;
-  gap: var(--luft-2);
-  margin-top: var(--luft-3);
-}
-
-/* Hjælpelinjen under Check ind og Check ud. `.hjaelp` sætter kun størrelse
-   og farve; margenen er `p`-standarden og skal væk, når forælderen har gap. */
-.kortaktion .hjaelp {
-  margin: 0;
-}
+/*
+ * `.kortaktion` er VÆK sammen med Check ud-knappen, den bar.
+ *
+ * Den holdt afstanden fra statuslinjen for de to handlinger, Kortet
+ * engang havde: Check In-formularen og siden Check ud. Begge er nu
+ * fjernet, og en regel uden markup er en fælde — den ser ud som om noget
+ * bruger den.
+ *
+ * `.adminform` nedenfor henviste til den som mønster. Henvisningen peger nu
+ * på mønsteret selv frem for på en klasse, der ikke findes.
+ */
 
 /* ------------------------------------------------- profilfelter og onboarding */
 
@@ -3461,9 +3457,9 @@ p.dagliste {
  * i "Ny Kanal" rørte hinanden kant mod kant, og de øvrige formularer
  * lappede hullerne med `marginTop` sat direkte på hvert felt.
  *
- * Én beholder med `gap` i stedet — samme mønster som `.kortaktion` i
- * Kortet. Overskriftens egen bundmargin nulstilles, så afstanden kun kommer
- * ét sted fra.
+ * Én beholder med `gap` i stedet, frem for margener på hvert enkelt barn.
+ * Overskriftens egen bundmargin nulstilles, så afstanden kun kommer ét
+ * sted fra.
  */
 .adminform {
   display: flex;

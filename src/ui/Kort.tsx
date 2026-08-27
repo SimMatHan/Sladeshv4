@@ -46,8 +46,17 @@ import { gradientFor, klokken } from "../lib/visning";
 /** Hvor ofte egen position sendes, mens kortet er åbent. */
 const HJERTESLAG_MS = 30_000;
 
-/** Zoom når der kun er ét punkt at vise. */
-const ENKELT_ZOOM = 16;
+/**
+ * Zoom når der kun er ÉT punkt at ramme ind — egen position, eller den ene
+ * nål der er.
+ *
+ * Den var 16, altså få karréer. Det er for tæt på til det, kortet skal
+ * bruges til: man åbner det for at se, om de andre er i nærheden, og ved 16
+ * ligger de uden for kanten, uden at man kan se det. 14 rummer en bydel, og
+ * så kan man zoome IND, hvis man vil se en gade — det er den vej rundt, der
+ * er nem på en telefon.
+ */
+const ENKELT_ZOOM = 14;
 
 /**
  * Kortnålens diameter i pixels.
@@ -318,72 +327,39 @@ export default function Kort({
     <div className="kortvisning skaerm-ind">
       <div className="kortflade" ref={kortRef} />
 
-      <p className={svar?.mig.deler === true ? "kortstatus deler" : "kortstatus"}>
-        {gpsFejl ?? forklaring(svar)}
-      </p>
-
-      {svar !== undefined && svar.mig.deler === true && <CheckOutKnap />}
+      {/* Tomt betyder INGEN linje, ikke en tom linje: et `<p>` uden tekst
+          har stadig sin margin, og kortet ville få et spring under sig,
+          der ikke hørte til noget. Se `forklaring`. */}
+      {(gpsFejl ?? forklaring(svar)) !== "" && (
+        <p className={svar?.mig.deler === true ? "kortstatus deler" : "kortstatus"}>
+          {gpsFejl ?? forklaring(svar)}
+        </p>
+      )}
 
       {svar !== undefined && svar.personer.length === 0 && (
-        <p className="hjaelp">
-          Ingen deler deres position lige nu. Man kommer på kortet ved at være
-          ude — ikke ved at have appen åben.
-        </p>
+        <p className="hjaelp">Ingen deler deres position lige nu.</p>
       )}
     </div>
   );
 }
 
-/**
- * Ud af kortet igen.
+/*
+ * HER LÅ "CHECK UD".
  *
- * ## Knappen hed "Meld dig ud"
+ * En knap der kaldte `checkIns.checkOut`, ryddede `currentLocation` og tog
+ * dig af kortet med det samme. Den er fjernet efter ønske.
  *
- * Det er det samme ord, som Kanalvælgeren bruger om at melde sig IND i en
- * Kanal med en invitationskode — så "Meld dig ud" lige her læste som "forlad
- * Kanalen". På dansk er "at melde sig ud" af noget netop dét. Handlingen
- * hedder `checkOut` i convex/checkIns.ts, vejen tilbage hedder "Check ind",
- * og der var ingen grund til, at knappen skulle hedde en tredje ting.
+ * Det efterlader ingen manuel vej AF kortet — men heller ikke en blivende
+ * tilstand: `erUdeIDag` (convex/drinkRules.ts) kræver, at `lastCheckIn`
+ * ligger inde i den aktuelle drikkedag, så man falder af helt af sig selv
+ * ved næste dagsskifte kl. 10:00. Positionen deles altså aftenen ud og ikke
+ * længere.
  *
- * ## Hvad den faktisk gør
- *
- * `checkInStatus` bliver falsk, og `currentLocation` ryddes. Kortet kræver
- * `erUdeIDag` (se convex/kort.ts), så man forsvinder derfra med det samme.
- *
- * Stillingen gør IKKE det samme: den beholder alle, der har logget noget i
- * dag, uanset markeringen — `if (!checketIndIDag && !harLoggetIDag) continue`
- * i convex/scoreboard.ts. Har man drukket, bliver man altså stående på
- * listen og forsvinder kun fra kortet. Det er den forskel, hjælpelinjen
- * fortæller, for den er ikke til at gætte.
- *
- * Ingen bekræftelse — i modsætning til Nulstil run rører den ingen historik
- * og er trivielt at fortryde: man checker bare ind igen.
+ * `checkIns.checkOut` står stadig på serveren. Den er ikke fjernet med, for
+ * det er en anden beslutning end at tage knappen ud af skærmen — og skulle
+ * vejen ud vise sig at mangle, er den så et kald væk frem for en ny
+ * mutation.
  */
-function CheckOutKnap() {
-  const checkOut = useMutation(api.checkIns.checkOut);
-  const [arbejder, setArbejder] = useState(false);
-
-  const send = async () => {
-    setArbejder(true);
-    try {
-      await checkOut({});
-    } finally {
-      setArbejder(false);
-    }
-  };
-
-  return (
-    <div className="kortaktion">
-      <button className="knap" disabled={arbejder} onClick={() => void send()}>
-        Check ud
-      </button>
-      <p className="hjaelp">
-        Du forsvinder fra kortet. Har du logget noget i aften, bliver du
-        stående på stillingen — og næste genstand sætter dig på kortet igen.
-      </p>
-    </div>
-  );
-}
 
 /**
  * Hvorfor deler jeg (ikke) min position?
@@ -397,8 +373,13 @@ function forklaring(svar: { mig: { deler: boolean; grund?: string } } | undefine
   if (svar.mig.deler) return "📍 Din position deles med Kanalen";
 
   switch (svar.mig.grund) {
+    // TOM efter ønske. Her stod "Log en genstand, så kommer du på kortet" —
+    // en opfordring til at drikke, hver gang man åbnede kortet uden at være
+    // ude. De øvrige grene bliver: de melder om noget, der er GALT (adgang
+    // nægtet, position forældet), og som brugeren kan gøre noget ved. Den
+    // her meldte kun om en tilstand, der er helt i orden.
     case "ikke_ude":
-      return "Din position deles ikke. Log en genstand, så kommer du på kortet.";
+      return "";
     case "position_foraeldet":
       return "Din position er for gammel til at vises. Den opdaterer sig selv.";
     default:
