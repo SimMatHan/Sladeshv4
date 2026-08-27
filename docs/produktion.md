@@ -7,6 +7,13 @@ Læs afsnit 1 til ende, før du kører noget. Rækkefølgen er ikke tilfældig:
 backenden skal stå, før frontenden bygges mod den, og data skal ligge, før
 nogen logger ind.
 
+> Denne fil er en **rækkefølge**, der køres én gang.
+> [`deployment.md`](deployment.md) er **opslagsværket** ved siden af: hvilket
+> deployment `convex deploy` rammer, hvilke variabler der hører til hvilket
+> Vercel-miljø, og hvordan staging-underdomænet `beta.sladeshapp.dk` sættes
+> op uden at røre `sladeshapp.dk`. Gennemgangen i afsnit 6a har fået sin egen
+> liste i [`staging-test-checklist.md`](staging-test-checklist.md).
+
 ---
 
 ## 0. Hvad der allerede er gjort i koden
@@ -280,10 +287,10 @@ JSON kan ikke bære kommentarer, så valgene står her:
   bevisbilleder undervejs. `style-src` har `'unsafe-inline'`, fordi både
   Leaflet og Reacts `style`-attributter skriver stil direkte på elementer.
 
-  **Sådan strammes den til sidst:** brug appen igennem — log ind med både
-  adgangskode og Google, log en genstand, skriv i chatten, åbn kortet,
-  gennemfør en Sladesh med billede — og hold øje med konsollen. Er der ingen
-  `Report Only`-linjer, omdøbes nøglen i `vercel.json` til
+  **Sådan strammes den til sidst:** brug appen igennem — log ind, log en
+  genstand, skriv i chatten, åbn kortet, gennemfør en Sladesh med billede —
+  og hold øje med konsollen. Er der ingen `Report Only`-linjer, omdøbes
+  nøglen i `vercel.json` til
   `Content-Security-Policy`, og så håndhæver den. Er der linjer, siger de
   præcis hvilket direktiv der mangler hvad.
 - **`Cache-Control: immutable`** på `/assets/` er sikkert, fordi Vite giver
@@ -315,7 +322,8 @@ telefonapp, og halvdelen af punkterne findes ikke på et skrivebord.
 
 **Virker den overhovedet**
 
-- [ ] Log ind med en rigtig konto — både adgangskode og Google.
+- [ ] Log ind med en rigtig konto. Kun email og adgangskode — Google-knappen
+      er fjernet fra login.
 - [ ] Profilen kender sin historik, og stillingen viser noget.
 - [ ] Log en genstand. Stillingen flytter sig **med det samme**, ikke efter et
       øjebliks venten.

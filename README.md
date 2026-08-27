@@ -20,6 +20,8 @@ Domænet `sladeshapp.dk` peger stadig på det gamle site og skifter først, når
 appen kan det, brugerne bruger den til.
 
 - Udrulning og cutover: **[`docs/produktion.md`](docs/produktion.md)**
+- Hvilket deployment er hvilket, og staging: **[`docs/deployment.md`](docs/deployment.md)**
+- Gennemgangen på staging før skiftet: **[`docs/staging-test-checklist.md`](docs/staging-test-checklist.md)**
 - Beskeden til brugerne ved skiftet: **[`docs/besked-til-brugerne.md`](docs/besked-til-brugerne.md)**
 - Appen på dårligt net: **[`docs/offline.md`](docs/offline.md)**
 - Hvad UI'et skal dække: **[`docs/skaermkortlaegning.md`](docs/skaermkortlaegning.md)**
