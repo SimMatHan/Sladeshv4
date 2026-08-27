@@ -336,6 +336,15 @@ function Appen() {
         )}
       </main>
 
+      {/* Sløringen under navigationen. Rent udseende — den har intet
+          indhold og må aldrig tage et tryk fra knappen under sig, deraf
+          `aria-hidden` og `pointer-events: none` i CSS'en.
+
+          Den står her frem for i `.skal`, fordi den kun giver mening
+          sammen med navigationen: skærme uden den (login, onboarding) må
+          ikke få en sløret bund ud af ingenting. */}
+      <div className="bundsloer" aria-hidden="true" />
+
       <nav className="nav">
         <button
           className="navknap"
