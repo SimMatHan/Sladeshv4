@@ -171,6 +171,9 @@
   /* Chattens skriver sidder over hovedindholdet, men under navigationen og
      bunden — mellem --lag-top og --lag-nav, samme rækkefølge som skærmen. */
   --lag-skriver: 25;
+  /* Sløringen under navigationen: over indholdet, den slører, under pillen
+     selv. Se `.bundsloer`. */
+  --lag-bundsloer: 28;
   --lag-nav: 30;
   --lag-kvittering: 35;
   --lag-dug: 40;
@@ -697,6 +700,68 @@ input {
  * afsnit 4: Stilling, Chat, Kort og Historik er segmenter INDE i Kanal-fanen,
  * ikke punkter hernede.
  */
+/*
+ * Sløringen under navigationen.
+ *
+ * Pillen svæver, og indholdet render under den og videre ned til kanten.
+ * En knap som "Log ud" stod derfor knivskarpt HALVT under navigationen —
+ * to lag, der begge ville læses, oven i hinanden. Pillens egen
+ * `backdrop-filter` dækker kun sit eget areal; luften omkring den og
+ * strimlen under den var ubehandlet.
+ *
+ * Sløringen starter midt i pillen og går til bunden. Netop MIDT: begyndte
+ * den ved pillens overkant, ville man se en vandret kant på tværs af
+ * skærmen — og begyndte den ved underkanten, ville strimlen imellem stå
+ * skarp og afsløre, at der er to forskellige ting i gang.
+ *
+ * ## To lag, ikke ét
+ *
+ * Én `backdrop-filter` med en maske giver en sløring, der tændes gradvist,
+ * men med samme radius hele vejen — og det ligner en overgang i
+ * gennemsigtighed frem for i skarphed. To lag med hver sin radius og hver
+ * sin maske giver den rigtige fornemmelse: let sløret øverst, kraftigt
+ * nederst, uden en synlig grænse mellem dem.
+ *
+ * Der stoppes ved to. Hvert lag er en `backdrop-filter` mere at tegne per
+ * billede, og der ligger allerede to i appen (`.top` og `.nav`). Tre lag
+ * var ikke til at se forskel på, men kunne mærkes på en ældre telefon.
+ *
+ * ## Farven under
+ *
+ * `background` er nødvendig ved siden af sløringen. Sløring alene flytter
+ * ikke lysheden, så lys tekst under en lys bund forbliver læsbar-nok til
+ * at støje. Den svage tone af `--bund` lægger sig oven på og trækker
+ * kontrasten ned, uden at bunden bliver en flade.
+ */
+.bundsloer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  /* Pillens underkant + halvdelen af dens højde = dens midte. */
+  height: calc(var(--bund-sikker) + var(--luft-4) + var(--navhoejde) / 2);
+  z-index: var(--lag-bundsloer);
+  /* Den er ren pynt og må ALDRIG spise et tryk fra knappen under sig. */
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+  mask-image: linear-gradient(to bottom, transparent 0%, #000 60%);
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    color-mix(in srgb, var(--bund) 55%, transparent) 100%
+  );
+}
+
+/* Det kraftige lag. Sætter først ind i den nederste tredjedel, hvor det
+   lette lag allerede har taget kanten af overgangen. */
+.bundsloer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(14px);
+  mask-image: linear-gradient(to bottom, transparent 35%, #000 100%);
+}
+
 .nav {
   position: fixed;
   bottom: calc(var(--bund-sikker) + var(--luft-4));
