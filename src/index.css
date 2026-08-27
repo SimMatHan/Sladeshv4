@@ -2963,6 +2963,39 @@ p.dagliste {
   z-index: 0;
 }
 
+/*
+ * Gråtonen på kortet.
+ *
+ * Fliserne er OpenStreetMaps egne og altså FARVEDE — grønne parker, gule
+ * veje, blåt vand. Her var det CARTOs Positron og Dark Matter, der var grå
+ * fra fabrikken, men de kræver nu en API-nøgle. Se `FLISER` i Kort.tsx.
+ *
+ * Filteret ligger på FLISE-panelet alene, ikke på `.kortflade`. Lagde det
+ * sig på hele kortet, ville nålene, beacon-cirklen og kildeangivelsen blive
+ * grå med — og netop de tre er det eneste på skærmen, der SKAL have farve.
+ * Leaflets egne paneler er lavet til det her: fliserne har deres eget.
+ *
+ * Mørk er appens standardtilstand, så den står her, og lys er undtagelsen
+ * nedenfor — samme orden som resten af filen. `invert` oven på `grayscale`
+ * giver et mørkt kort med lyse veje, hvilket er den rigtige vej rundt:
+ * vejene er det, man skal kunne følge.
+ *
+ * `brightness`/`contrast` tager toppen af begge: uden dem er den mørke
+ * variant kulsort med skrigende hvide veje, og den lyse er så blegt, at
+ * gadenavne forsvinder.
+ */
+.kortflade .leaflet-tile-pane {
+  filter: grayscale(1) invert(1) brightness(0.92) contrast(0.86);
+}
+
+@media (prefers-color-scheme: light) {
+  /* `:root:not([data-tema])` holder festivaltemaerne udenfor. De er mørke i
+     sig selv, uanset hvad telefonen står på — se docs/kanaltemaer.md. */
+  :root:not([data-tema]) .kortflade .leaflet-tile-pane {
+    filter: grayscale(1) brightness(1.02) contrast(0.94);
+  }
+}
+
 /* Leaflets kontroller skal ligne resten af appen, ikke 2011. */
 .kortflade .leaflet-control-attribution {
   background: color-mix(in srgb, var(--bund) 78%, transparent);

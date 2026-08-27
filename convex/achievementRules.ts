@@ -306,9 +306,22 @@ export function beregnOplaasninger(
     const raekke = eksisterende[def.id];
 
     if (raekke === undefined) {
+      // FØRSTE gang. For en kumulativ gælder samme regnestykke som ved en
+      // gentagelse: hvor mange hele tærskler er der plads til? Stod der
+      // altid 1 her, ville en bruger med 32 vine og en tærskel på 5 få
+      // Like Fine Wine med tallet 1 — og næste gang de loggede HVAD SOM
+      // HELST, ville milepælsregningen nedenfor opdage de manglende fem og
+      // låse op igen. Det var netop det, der skete efter migreringen: den
+      // gamle app talte aldrig vin rigtigt (se `categoryId` ovenfor), så
+      // alle havde en pukkel, der udløste sig selv på den næste øl.
+      //
+      // Et run tæller altid som ÉN oplåsning, uanset hvor langt over
+      // tærsklen man kom — og en ikke-gentagelig kan pr. definition kun
+      // stå på 1.
+      const kumulativ = !runbaseret && def.repeatable === true;
       oplaasninger.push({
         achievementId: def.id,
-        nyCount: 1,
+        nyCount: kumulativ ? Math.floor(vaerdi / taerskelFor(def)) : 1,
         ...(runbaseret ? { lastRunStart: maal.runStart } : {}),
       });
       continue;
@@ -353,6 +366,38 @@ export type Fremdrift = {
   unlocked: boolean;
 };
 
+/**
+ * Hvor langt er brugeren mod den NÆSTE oplåsning?
+ *
+ * Den rå måling duer ikke som fremdrift for en kumulativ, gentagelig
+ * achievement. Med 32 vine og en tærskel på 5 stod der "32 af 5" på skærmen
+ * over en bjælke, der havde været fyldt siden den femte vin. Tallet var
+ * sandt og sagde ingenting: det, man vil vide, er hvor tæt man er på den
+ * SJETTE.
+ *
+ * Derfor trækkes de milepæle fra, der allerede er låst op — `count` er
+ * netop antallet af dem. 32 vine med seks oplåsninger bag sig giver 2 af 5.
+ *
+ * Kun for de kumulative. En run-baseret måler på et run, der starter forfra
+ * af sig selv, og dens `count` er antallet af runs gennem tiden — trak man
+ * den fra, ville Obeerma stå på 0 af 10 efter tre øl i aften.
+ *
+ * Loftet gælder begge slags: er der en pukkel til gode — flere hele tærskler
+ * end oplåsninger, som efter migreringen — vises "5 af 5" frem for "27 af 5".
+ * Bjælken er fyldt, og det er den også: oplåsningen ligger og venter på den
+ * næste logning.
+ */
+function fremdriftMod(
+  def: Achievement,
+  raa: number,
+  threshold: number,
+  count: number,
+): number {
+  const kumulativ = !erRunbaseret(def) && def.repeatable === true;
+  const rest = kumulativ ? raa - count * threshold : raa;
+  return Math.min(Math.max(rest, 0), threshold);
+}
+
 /** Fremdrift for alle automatiske achievements. Manuelle udelades. */
 export function beregnFremdrift(
   maal: Maalinger,
@@ -363,9 +408,9 @@ export function beregnFremdrift(
   for (const def of ACHIEVEMENTS) {
     if (def.type === "manual") continue;
 
-    const current = maalFor(def, maal);
     const threshold = taerskelFor(def);
     const count = eksisterende[def.id]?.count ?? 0;
+    const current = fremdriftMod(def, maalFor(def, maal), threshold, count);
 
     ud.push({
       achievementId: def.id,
