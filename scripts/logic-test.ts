@@ -77,6 +77,7 @@ import {
 } from "../convex/drinkRules.ts";
 import {
   ACHIEVEMENTS,
+  beregnFremdrift,
   beregnOplaasninger,
   erOpnaaet,
   findAchievement,
@@ -1269,6 +1270,81 @@ console.log("\n[Logic] achievements");
   );
   check("kumulative gemmer ikke lastRunStart", beregnOplaasninger(nulstillinger(3), {})[0]?.lastRunStart, undefined);
   check("manuelle låses aldrig op af motoren", beregnOplaasninger(maalinger({}), {}), []);
+
+  // Puklen fra migreringen. Den gamle app talte aldrig vin rigtigt, så en
+  // bruger kunne have 32 vine og ingen række — og den FØRSTE oplåsning skal
+  // derfor lande på seks milepæle, ikke på 1. Stod der 1, ville den næste
+  // logning af hvad som helst låse Like Fine Wine op igen, og brugeren fik
+  // en vin-achievement for at drikke en Guinness.
+  const vine = (antal: number) =>
+    maalinger({
+      livstid: { genstande: antal, perKategori: { wine: antal }, perVariant: {} },
+    });
+  check(
+    "32 vine uden række giver alle seks milepæle på én gang",
+    beregnOplaasninger(vine(32), {}).map((o) => o.nyCount),
+    [6],
+  );
+  check(
+    "og så er der ikke mere i kø",
+    beregnOplaasninger(vine(32), { like_fine_wine: { count: 6 } }),
+    [],
+  );
+  check(
+    "et run tæller stadig som én oplåsning, uanset hvor langt over",
+    beregnOplaasninger(
+      maalinger({ run: { genstande: 40, perKategori: { beer: 40 }, perVariant: {} } }),
+      {},
+    )
+      .filter((o) => o.achievementId === "obeerma")
+      .map((o) => o.nyCount),
+    [1],
+  );
+
+  // --- Fremdrift mod den NÆSTE oplåsning ----------------------------------
+  const fremdriftFor = (
+    id: string,
+    maal: Parameters<typeof beregnFremdrift>[0],
+    eksisterende: Parameters<typeof beregnFremdrift>[1],
+  ) => beregnFremdrift(maal, eksisterende).find((f) => f.achievementId === id);
+
+  check(
+    "kumulativ fremdrift trækker de opnåede milepæle fra",
+    fremdriftFor("like_fine_wine", vine(32), { like_fine_wine: { count: 6 } })?.current,
+    2,
+  );
+  check(
+    "og bjælken er så ikke fyldt",
+    fremdriftFor("like_fine_wine", vine(32), { like_fine_wine: { count: 6 } })
+      ?.percentage,
+    40,
+  );
+  check(
+    "en pukkel til gode vises som fuld, ikke som 27 af 5",
+    fremdriftFor("like_fine_wine", vine(32), { like_fine_wine: { count: 1 } })?.current,
+    5,
+  );
+  check(
+    "uden nogen oplåsning er fremdriften den rå optælling",
+    fremdriftFor("like_fine_wine", vine(3), {})?.current,
+    3,
+  );
+  check(
+    "præcis på en milepæl starter forfra",
+    fremdriftFor("like_fine_wine", vine(30), { like_fine_wine: { count: 6 } })?.current,
+    0,
+  );
+  // Run-baserede må IKKE trække count fra: den tæller runs gennem tiden, og
+  // runnet er allerede startet forfra af sig selv.
+  check(
+    "run-baseret fremdrift rører ikke count",
+    fremdriftFor(
+      "obeerma",
+      maalinger({ run: { genstande: 3, perKategori: { beer: 3 }, perVariant: {} } }),
+      { obeerma: { count: 4 } },
+    )?.current,
+    3,
+  );
 
   check(
     "resetConfirmed kan gentages",

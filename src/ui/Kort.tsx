@@ -69,43 +69,46 @@ const KORTNAAL_STOERRELSE = 38;
 const BEACON_FARVE = "#ef4444";
 
 /**
- * Kortfliserne — CARTOs Positron og Dark Matter.
+ * Kortfliserne — OpenStreetMaps egne, gjort grå i CSS.
  *
- * OpenStreetMaps egne fliser er FARVEDE: grønne parker, gule veje, blå
- * vand. På en skærm hvor alt andet er creme og én accent, var kortet det
- * eneste sted, appen tabte sin egen palet — og de farvede veje trak øjet
- * væk fra det, kortet handler om, nemlig prikkerne.
+ * ## Hvorfor ikke CARTO længere
  *
- * Positron og Dark Matter er praktisk talt gråtone og er tegnet netop til
- * at ligge UNDER data. De er bygget på de samme OSM-data, så det er ikke
- * et andet kort — kun en anden tegning af det.
+ * Her stod CARTOs Positron og Dark Matter. De var gråtone fra fabrikken og
+ * passede appens palet perfekt — men CARTO er begyndt at kræve en API-nøgle
+ * på `basemaps.cartocdn.com`, og fliser uden nøgle kommer nu tilbage med
+ * teksten "API KEY REQUIRED" BAGT IND I BILLEDET. Kortet var altså ikke i
+ * stykker på en måde, nogen fejl kunne fortælle om: det hentede fliser, fik
+ * 200 OK, og tegnede en reklame for en nøgle vi ikke har.
  *
- * `{r}` bliver til "@2x" på skærme med høj tæthed. Leaflet udfylder den
- * selv, når `detectRetina` er sat.
+ * `vercel.json` fangede det heller ikke: dens CSP tillader
+ * `https://tile.openstreetmap.org` og har ALDRIG tilladt cartocdn. Politikken
+ * kører som Report-Only og blokerer derfor ingenting — men den dag den
+ * strammes (docs/produktion.md, afsnit 4), ville kortet være gået fra
+ * "forkerte fliser" til "ingen fliser". Nu peger koden samme sted som
+ * politikken.
  *
- * KILDEANGIVELSEN er et vilkår for begge, og de skal NAVNGIVES BEGGE TO:
- * OpenStreetMap for dataene, CARTO for fliserne. Den står nederst i
- * kortet og skal blive der.
+ * ## Gråtonen er flyttet til CSS
+ *
+ * OSM's egne fliser er FARVEDE: grønne parker, gule veje, blåt vand. På en
+ * skærm hvor alt andet er creme og én accent, var det det eneste sted appen
+ * tabte sin palet — og de farvede veje trak øjet væk fra det, kortet handler
+ * om, nemlig prikkerne. Grunden til at vælge Positron var altså rigtig nok.
+ *
+ * `filter` på `.leaflet-tile-pane` gør det samme uden en nøgle: grå i lys,
+ * grå og inverteret i mørk. Se `.kortflade` i index.css. Filteret ligger på
+ * FLISE-panelet alene, så nåle, beacons og kildeangivelsen bliver ved med at
+ * have deres egne farver.
+ *
+ * Bonus: temaskiftet kræver ikke længere JavaScript. Fliserne er de samme i
+ * begge temaer, så CSS'en kan klare det selv, og lytteren på
+ * `prefers-color-scheme` kunne ryge ud.
+ *
+ * KILDEANGIVELSEN er et vilkår og står nederst i kortet. Den skal blive der.
  */
-const FLISER = {
-  lys: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-  moerk: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-} as const;
+const FLISER = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
 
 const FLISEKILDE =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
-
-/**
- * Er appen mørk lige nu?
- *
- * To ting kan gøre den mørk: systemets indstilling, og et festivaltema —
- * de er mørke i sig selv, uanset hvad telefonen står på. Se
- * docs/kanaltemaer.md og `:root[data-tema]` i index.css.
- */
-function erMoerkt(): boolean {
-  if (document.documentElement.hasAttribute("data-tema")) return true;
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
 
 export default function Kort({
   channelId,
@@ -171,30 +174,23 @@ export default function Kort({
       attributionControl: true,
     }).setView([55.6761, 12.5683], 12); // København, indtil vi ved bedre
 
-    const byggFliser = () =>
-      L.tileLayer(erMoerkt() ? FLISER.moerk : FLISER.lys, {
-        maxZoom: 19,
-        detectRetina: true,
-        attribution: FLISEKILDE,
-      }).addTo(kort);
-
-    let fliser = byggFliser();
+    // `detectRetina` er BEVIDST ude. Den beder om @2x-fliser, og
+    // tile.openstreetmap.org har dem ikke — Leaflet ville hente dobbelt op i
+    // zoom og få en 404 for hver flise. CARTO havde dem, deraf `{r}` i den
+    // gamle URL.
+    L.tileLayer(FLISER, {
+      maxZoom: 19,
+      attribution: FLISEKILDE,
+    }).addTo(kort);
 
     kortet.current = kort;
     lag.current = L.layerGroup().addTo(kort);
 
-    // Skifter telefonen tema, mens kortet er åbent, skal fliserne følge med
-    // — ellers står et lyst kort tilbage på en mørk skærm. Festivaltemaer
-    // sættes derimod ved kanalskift, som alligevel bygger kortet forfra.
-    const tema = window.matchMedia("(prefers-color-scheme: dark)");
-    const skift = () => {
-      fliser.remove();
-      fliser = byggFliser();
-    };
-    tema.addEventListener("change", skift);
+    // Ingen lytter på `prefers-color-scheme` længere: fliserne er de samme i
+    // begge temaer, og gråtonen sættes af CSS på `.leaflet-tile-pane`. Et
+    // temaskifte midt i en session følger derfor med af sig selv.
 
     return () => {
-      tema.removeEventListener("change", skift);
       kort.remove();
       kortet.current = undefined;
       lag.current = undefined;

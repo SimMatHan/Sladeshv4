@@ -53,6 +53,60 @@ ingenting, og to åbne faner kunne låse den samme achievement op to gange.
 Begge mutations returnerer nu `{ logId, nyeAchievements }`, så klienten kan
 vise en animation uden først at gætte hvad der ændrede sig.
 
+### Hvornår låses hvad op
+
+**Hver eneste logning evaluerer ALLE achievements.** Det er ikke en fejl, og
+det er værd at vide, før man læser en oplåsning som "den kom af det, jeg lige
+trykkede på": `evaluerAchievements` kører hele listen igennem ved hver
+`logDrink` og hver `resetRun`. En øl kan derfor godt udløse noget, der intet
+har med øl at gøre — Mr. Worldwide, fordi øllen var den femte kategori i
+runnet, eller en kumulativ, der havde en pukkel til gode.
+
+| Achievement | Måles på | Vindue | Igen? |
+|---|---|---|---|
+| Are you sure about that? | Antal nulstillinger | Livstid | Hver 3. |
+| Obeerma | Kategorien `beer` | Runnet | Ét pr. run |
+| Full Bender | Alle genstande | Runnet | Ét pr. run |
+| Like Fine Wine | Kategorien `wine` | **Livstid** | Hver 5. |
+| Mr. Worldwide | 5 kategorier med mindst én | Runnet | Ét pr. run |
+| Puffminister | Varianten `other::Cigaret` | Runnet | Ét pr. run |
+| Feinschmecker | Varianten `cocktail::Vermouth Tonic` | **Livstid** | Hver 1. |
+| Top Donor | — | — | Kun i hånden |
+
+De to livstids-baserede er dem, der kan overraske: de måler på ALT hvad
+brugeren nogensinde har logget, så de kan lande på en aften, hvor man ikke
+har rørt hverken vin eller vermouth.
+
+**"Vin-achievement for en Guinness".** Præcis det skete efter migreringen, og
+det var to fejl oven i hinanden:
+
+1. Den gamle app kunne aldrig tælle vin (se `variationType` nedenfor), så de
+   migrerede rækker stod på et tal, der intet havde med virkeligheden at
+   gøre. En bruger kunne have 32 vine bag sig og ingen oplåsning.
+2. Den **første** oplåsning satte altid `count` til 1 — også når 32 vine med
+   en tærskel på 5 var seks milepæle værd. Næste gang brugeren loggede hvad
+   som helst, opdagede milepælsregningen de manglende fem og låste op igen.
+
+Begge veje ind sætter nu `count` til antallet af passerede milepæle, så en
+pukkel afvikles i ét hug frem for at dryppe ud over de næste logninger.
+Run-baserede sættes stadig til 1: et run er én oplåsning, uanset hvor langt
+over tærsklen man kom.
+
+**Fremdriften viser vej mod den NÆSTE.** For en kumulativ, gentagelig
+achievement trækkes de allerede opnåede milepæle fra, før tallet vises. Uden
+det stod der "32 af 5" over en bjælke, der havde været fyldt siden den femte
+vin — sandt, og fuldstændig uden information. Med det står der "2 af 5".
+Run-baserede rører ikke `count`: den tæller runs gennem tiden, og runnet er
+allerede startet forfra af sig selv.
+
+Er der en pukkel til gode — flere hele tærskler end oplåsninger — vises den
+som fuld ("5 af 5"), ikke som "27 af 5". Bjælken er fyldt, og det passer:
+oplåsningen ligger og venter på den næste logning.
+
+> **Efter en ændring i reglerne:** kør Admin → Brugere →
+> `genberegnForBruger` på hver bruger. Den afvikler puklen stille, uden at
+> nogen får en oplåsning i hovedet, næste gang de logger en øl.
+
 ### Alt måles på `drinkLogs`
 
 Den gamle motor læste de denormaliserede tællere på brugerdokumentet
@@ -89,7 +143,8 @@ mangler den (migrerede rækker), tæller det som et nyt run.
 **Flere milepæle på én gang.** Kumulative achievements sættes til antallet af
 passerede milepæle frem for `count + 1`, så en stor logning der springer to
 milepæle ikke efterlader en oplåsning i kø til næste gang brugeren rører
-noget.
+noget. Det gælder nu også den **første** oplåsning — se "Hvornår låses hvad
+op" ovenfor for, hvad det kostede, da det kun gjaldt gentagelserne.
 
 ### Ikke porteret
 
