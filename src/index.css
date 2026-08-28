@@ -3403,6 +3403,60 @@ p.dagliste {
   font-variant-numeric: tabular-nums;
 }
 
+/*
+ * At kortet FØRER et sted hen.
+ *
+ * Det har altid været en knap, der åbner trofæhylden, men intet på det sagde
+ * det: man så et mærke, en bjælke og en stribe emoji, og der var ingen grund
+ * til at tro, at der var mere bag. Et kort, hvor alt kan læses uden at
+ * trykke, ligner en visning frem for en dør.
+ *
+ * To signaler, fordi ét ikke rakte. Vinklen er den, enhver telefonbruger
+ * læser uden at tænke; ledeteksten siger, hvad man får — striben af emoji
+ * lokker, men den navngiver ikke destinationen.
+ */
+.taettestled {
+  display: block;
+  margin-top: var(--luft-2);
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-medium);
+  letter-spacing: var(--spor-etiket);
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+/* Tallet og vinklen som ÉN søjle i højre kant, så de to ikke skubber til
+   hinanden, når tallet går fra ét til to cifre. */
+.taettesthoejre {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--luft-2);
+}
+
+.taettestvinkel {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--ikon);
+  height: var(--ikon);
+  /* Dæmpet: den skal FINDES, ikke læses først. Titlen og bjælken er det,
+     man kommer for. */
+  color: var(--tekst-svag);
+}
+
+.taettestvinkel svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Vinklen flytter sig en anelse ved tryk, så kortet svarer der, hvor øjet
+   er — `.taettest:active` skalerer allerede hele kortet. */
+.taettest:active .taettestvinkel {
+  transform: translateX(2px);
+}
+
 .badgegitter {
   display: grid;
   grid-template-columns: repeat(2, 1fr);

@@ -9,7 +9,7 @@ import { fejltekst, genstande, promille } from "../lib/visning";
 import { Achievements } from "./Achievements";
 import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
-import { TandhjulIkon } from "./Ikoner";
+import { TandhjulIkon, VinkelIkon } from "./Ikoner";
 import { Indstillinger } from "./Indstillinger";
 import { Stimestribe } from "./Stimestribe";
 
@@ -424,7 +424,12 @@ function AchievementRaekke({
             {oplaaste} af {achievements.length} optjent
           </span>
           <Medaljestribe achievements={achievements} />
+          <span className="taettestled">Se hele hylden</span>
         </div>
+
+        <span className="taettestvinkel" aria-hidden="true">
+          <VinkelIkon />
+        </span>
       </button>
     );
   }
@@ -454,10 +459,21 @@ function AchievementRaekke({
           <div className="fyld" style={{ width: `${naesteMilepael.percentage}%` }} />
         </div>
         <Medaljestribe achievements={achievements} />
+        {/* Navnet på det sted, knappen fører hen. Striben ovenover LOKKER,
+            men den siger ikke hvad man får — og et kort, hvor alt kan
+            læses uden at trykke, ligner en visning frem for en dør. */}
+        <span className="taettestled">
+          Se alle {achievements.length} mærker
+        </span>
       </div>
 
-      <span className="hjaelp taettesttal">
-        {naesteMilepael.current}/{naesteMilepael.threshold}
+      <span className="taettesthoejre">
+        <span className="hjaelp taettesttal">
+          {naesteMilepael.current}/{naesteMilepael.threshold}
+        </span>
+        <span className="taettestvinkel" aria-hidden="true">
+          <VinkelIkon />
+        </span>
       </span>
     </button>
   );

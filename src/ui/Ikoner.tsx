@@ -116,3 +116,22 @@ export function PlusIkon() {
     </svg>
   );
 }
+
+/**
+ * Vinkel til højre — "her kommer du videre".
+ *
+ * Findes, fordi "Tættest på"-kortet på Mig ALTID har været en knap, der
+ * åbner trofæhylden, men intet på det sagde det. Man kunne se et mærke,
+ * en bjælke og en stribe emoji og tro, at det var hele visningen. En
+ * vinkel i højre kant er den ene ting, enhver telefonbruger læser som
+ * "tryk her, der er mere".
+ *
+ * Samme 24-grid og stregtykkelse som de øvrige, så den vejer ens.
+ */
+export function VinkelIkon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...streg}>
+      <path d="m9 6 6 6-6 6" />
+    </svg>
+  );
+}
