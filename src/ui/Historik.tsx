@@ -3,6 +3,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { DRINK_CATEGORIES } from "../../convex/constants";
+import { useCachetQuery } from "../lib/oejebliksbillede";
 import { genstande, klokken } from "../lib/visning";
 
 /**
@@ -30,7 +31,12 @@ export function Historik({
   channelId: Id<"kanaler">;
   onVaelgPerson: (userId: Id<"users">) => void;
 }) {
-  const dage = useQuery(api.historik.getKanalHistorik, {
+  // Cachet, ikke rå `useQuery`. Historikken er en FANE, man skifter til og
+  // fra hele aftenen, og hvert skift afmelder queryen og starter den forfra
+  // — så stod der "Henter historikken …" i et øjeblik, hver eneste gang.
+  // Nøglen bærer Kanalen, ellers ville et kanalskift vise den forriges
+  // historik et øjeblik. Samme mønster som Stillingen.
+  const dage = useCachetQuery(`historik:${channelId}`, api.historik.getKanalHistorik, {
     channelId,
     dage: DAGE,
   });
