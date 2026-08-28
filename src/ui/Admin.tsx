@@ -849,6 +849,8 @@ function Oversigt() {
   const stats = useQuery(api.stats.getAdminStats, {});
   const genberegnAlle = useMutation(api.achievements.genberegnForAlle);
   const meldAlleInd = useMutation(api.kanaler.meldAlleIndIStandardKanal);
+  const startForfra = useMutation(api.achievements.startNyeMaerkerForfra);
+  const [bekraeftForfra, setBekraeftForfra] = useState(false);
   const { arbejder, koer, besked } = useHandling();
 
   if (stats === undefined) return <p className="midtstillet">Henter …</p>;
@@ -924,6 +926,49 @@ function Oversigt() {
           bruger sine manglende oplåsninger som en tilfældig popup, næste gang
           de logger noget. Kan kun låse op, aldrig fjerne — så den er sikker
           at trykke på igen.
+        </p>
+      </div>
+
+      {/* Destruktiv, og derfor med en bekræftelse — i modsætning til
+          Genberegn ovenfor, som kun kan tilføje. */}
+      <div className="arkgruppe">
+        <h3>Stamgæst og Ingen hviledag</h3>
+
+        {bekraeftForfra ? (
+          <>
+            <p className="hjaelp">
+              Alle mister de to mærker og starter på 0/25 og 0/7. Har nogen
+              optjent dem ærligt siden sidst, ryger de også.
+            </p>
+            <button
+              className="knap fare"
+              disabled={arbejder}
+              onClick={() =>
+                void koer("startNyeMaerkerForfra", async () => {
+                  const svar = await startForfra({ bekraeft: true });
+                  setBekraeftForfra(false);
+                  return `${svar.brugere} brugere sat til nulpunktet — ${svar.fjernede} oplåsninger fjernet.`;
+                })
+              }
+            >
+              Ja, start forfra
+            </button>
+            <button className="knap" onClick={() => setBekraeftForfra(false)}>
+              Fortryd
+            </button>
+          </>
+        ) : (
+          <button className="knap" onClick={() => setBekraeftForfra(true)}>
+            Start forfra for alle
+          </button>
+        )}
+
+        <p className="hjaelp">
+          De to måler på tællere, der havde talt op i årevis, før mærkerne
+          fandtes — så halvdelen havde dem fra dag ét. Denne sætter et
+          nulpunkt ved dagens tal og fjerner oplåsningerne, så de skal
+          optjenes forfra. Uden nulpunktet ville motoren tildele dem igen ved
+          næste genstand.
         </p>
       </div>
 

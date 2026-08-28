@@ -74,8 +74,8 @@ runnet, eller en kumulativ, der havde en pukkel til gode.
 | Feinschmecker | Varianten `cocktail::Vermouth Tonic` | **Livstid** | Hver 1. |
 | Han tog den aldrig | `sladeshFailedCount` | **Livstid** | Nej |
 | Sidste mand ud | Logninger kl. 04–06 | Runnet | Ét pr. run |
-| Stamgæst | `checkInCount` | **Livstid** | Nej |
-| Ingen hviledag | `longestStreak` | **Livstid** | Nej |
+| Stamgæst | `checkInCount` minus nulpunkt | Siden nulpunktet | Nej |
+| Ingen hviledag | `currentDayStreak` | Den aktuelle stime | Nej |
 | Top Donor | — | — | Kun i hånden |
 
 De livstids-baserede er dem, der kan overraske: de måler på ALT hvad brugeren
@@ -95,8 +95,33 @@ grænse — Convex kører i UTC, og kl. 04 dansk tid er kl. 02 eller 03 UTC alt
 efter årstid. Den er run-baseret, så tællingen sker kun på aftenens egne
 logninger og ikke på hele historikken.
 
-`longestStreak` og ikke `currentDayStreak`: et mærke for syv dage i træk skal
-blive stående, når den ottende dag udebliver.
+### Nulpunktet: mærker der ikke må deles ud af historikken
+
+"Stamgæst" og "Ingen hviledag" måler på tællere, der havde talt op i årevis,
+før mærkerne fandtes. Halvdelen af brugerne havde dem i det sekund,
+definitionerne blev udrullet — det er ikke mærker, man har optjent, det er
+mærker, der blev delt ud.
+
+**Stamgæst** har derfor et nulpunkt. `users.achievementNulpunkt.checkIns` er
+tælleren, som den stod, da mærket blev startet forfra, og fremdriften er
+`checkInCount - nulpunkt`. Fraværende nulpunkt betyder nul, hvilket er
+rigtigt for en ny bruger: deres tæller starter også dér.
+
+**Ingen hviledag kan ikke bruge et nulpunkt.** `longestStreak` er et
+MAKSIMUM, ikke en optælling: en bruger med nulpunkt 7 ville stå på nul for
+evigt, uanset hvor mange gange de siden lavede syv dage i træk. Den måler
+derfor `currentDayStreak`, som nulstiller sig selv efter en manglende dag.
+
+At mærket **bliver stående**, når den ottende dag udebliver, klares af rækken
+i `achievements` — den er ikke gentagelig, så `beregnOplaasninger` springer
+den over, så snart den findes én gang. Varigheden ligger altså i rækken, ikke
+i tallet.
+
+> **Start forfra:** Admin → Oversigt → *Start forfra for alle*. Den sætter
+> nulpunktet til dagens tal og sletter de to oplåsninger. Det er ikke nok at
+> slette rækkerne alene — tællerne står der stadig, og motoren ville tildele
+> mærkerne igen ved næste genstand. Kaldet er destruktivt og kræver derfor en
+> bekræftelse, i modsætning til `genberegnForAlle`, som kun kan tilføje.
 
 **"Vin-achievement for en Guinness".** Præcis det skete efter migreringen, og
 det var to fejl oven i hinanden:

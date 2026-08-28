@@ -291,8 +291,24 @@ export type Maalinger = {
    * læser dem frem for at regne dem ud igen.
    */
   sladeshFejlet: number;
+  /**
+   * Check ins SIDEN nulpunktet, ikke i alt. Se `achievementNulpunkt` i
+   * schema.ts: tælleren havde talt op i årevis, før "Stamgæst" fandtes.
+   */
   checkIns: number;
-  laengsteStime: number;
+  /**
+   * Den AKTUELLE stime, ikke den længste.
+   *
+   * `longestStreak` er et maksimum og kan ikke bære et nulpunkt: en bruger
+   * med syv i bagagen ville stå på nul for evigt, uanset hvor mange gange de
+   * siden lavede syv dage i træk. Den aktuelle nulstiller sig selv, og det
+   * er præcis den egenskab, "start forfra" har brug for.
+   *
+   * At mærket BLIVER STÅENDE, når den ottende dag udebliver, klares af
+   * rækken i `achievements`: den er ikke gentagelig, så `beregnOplaasninger`
+   * springer den over, så snart den findes én gang.
+   */
+  aktuelStime: number;
 
   /**
    * Logninger i det aktuelle run, der faldt inden for `NATTETIMER`.
@@ -366,11 +382,11 @@ export function maalFor(def: Achievement, maal: Maalinger): number {
     case "check_ins":
       return maal.checkIns;
 
-    // LÆNGSTE stime, ikke den aktuelle. Et mærke for syv dage i træk skal
-    // blive stående, når den ottende dag udebliver — ellers ville det
-    // forsvinde fra hylden, dagen efter man fik det.
+    // Den AKTUELLE stime, ikke den længste. Se `aktuelStime` i `Maalinger`
+    // for hvorfor — kort: den længste er et maksimum og kan ikke startes
+    // forfra, og mærkets varighed sikres af rækken, ikke af tallet.
     case "streak":
-      return maal.laengsteStime;
+      return maal.aktuelStime;
 
     case "time_specific":
       return maal.natteLogninger;

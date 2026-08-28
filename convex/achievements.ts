@@ -124,8 +124,20 @@ export async function hentMaalinger(
     run: byggAggregat(runLogs),
     livstid: byggAggregat(livstidsLogs),
     sladeshFejlet: user.sladeshFailedCount ?? 0,
-    checkIns: user.checkInCount ?? 0,
-    laengsteStime: user.longestStreak ?? 0,
+    // Nulpunktet trukket fra, så "Stamgæst" måles fra det øjeblik, mærket
+    // blev startet forfra, og ikke fra kontoens oprettelse. Fraværende
+    // nulpunkt betyder nul, hvilket er rigtigt for en ny bruger: deres
+    // tæller starter også på nul, og der er ingen historik at se bort fra.
+    //
+    // `Math.max(0, …)` er ikke pynt. Nulstiller en admin en brugers tællere
+    // (`admin.nulstilRunForBruger` sætter dem til 0), står nulpunktet
+    // tilbage som et tal, der er større end tælleren — og uden gulvet ville
+    // fremdriften blive negativ.
+    checkIns: Math.max(
+      0,
+      (user.checkInCount ?? 0) - (user.achievementNulpunkt?.checkIns ?? 0),
+    ),
+    aktuelStime: user.currentDayStreak ?? 0,
     natteLogninger,
   };
 }
@@ -401,6 +413,106 @@ export const genberegnForBruger = mutation({
     }
 
     return await evaluerAchievements(ctx, bruger, args.now ?? Date.now());
+  },
+});
+
+/**
+ * De mærker, `startNyeMaerkerForfra` rydder.
+ *
+ * De to nye, der måler på tællere med historik bag sig. "Han tog den aldrig"
+ * og "Sidste mand ud" er IKKE med: den ene måler en tæller, der reelt stod på
+ * nul for alle, og den anden måler kun på aftenens eget run — ingen af dem
+ * kunne blive delt ud af historikken.
+ */
+const MAERKER_MED_HISTORIK = ["stamgaest", "ingen_hviledag"] as const;
+
+/**
+ * Starter de to nye mærker forfra for alle.
+ *
+ * ## Hvorfor de skal startes forfra
+ *
+ * "Stamgæst" belønner 25 aftener ude og "Ingen hviledag" syv dage i træk —
+ * men `checkInCount` og stimen havde talt op i årevis, før mærkerne fandtes.
+ * Halvdelen af brugerne havde dem i det sekund, definitionerne blev udrullet.
+ * Det er ikke mærker, man har optjent; det er mærker, der blev delt ud.
+ *
+ * ## Hvorfor det ikke er nok at slette rækkerne
+ *
+ * Fordi motoren ville tildele dem igen ved næste evaluering: tællerne står
+ * der stadig, og 50 ≥ 25 er stadig sandt. Derfor sættes ET NULPUNKT i samme
+ * transaktion — `checkInCount` som den står lige nu — og fremdriften måles
+ * derfra. Uden nulpunktet ruller sletningen sig selv tilbage ved den næste
+ * genstand, nogen logger.
+ *
+ * Stimen har ikke brug for et nulpunkt og får ikke et: den måler nu
+ * `currentDayStreak`, som nulstiller sig selv efter en manglende dag. Se
+ * `aktuelStime` i achievementRules.ts.
+ *
+ * ## Den kan køres igen
+ *
+ * Nulpunktet flyttes til dagens tal, og rækkerne ryger. Det er ikke en
+ * engangsknap, men den er destruktiv: har nogen optjent mærket ÆRLIGT siden
+ * sidst, mister de det. Deraf `bekraeft`.
+ */
+export const startNyeMaerkerForfra = mutation({
+  args: {
+    /** Skal være `true`. Spærren findes, fordi kaldet sletter rækker. */
+    bekraeft: v.boolean(),
+  },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ brugere: number; fjernede: number }> => {
+    await requireAdmin(ctx);
+
+    if (!args.bekraeft) {
+      throw new ConvexError({
+        code: "IKKE_BEKRAEFTET",
+        message: "Kaldet sletter oplåsninger og kræver en bekræftelse.",
+      });
+    }
+
+    const alle = await ctx.db.query("users").collect();
+
+    if (alle.length > GENBEREGN_ALLE_LOFT) {
+      throw new ConvexError({
+        code: "FOR_MANGE_BRUGERE",
+        message:
+          `Der er ${alle.length} brugere, og kaldet kører dem alle i én ` +
+          `transaktion. Over ${GENBEREGN_ALLE_LOFT} er der risiko for at ` +
+          `ramme Convex' læsegrænse midt i.`,
+      });
+    }
+
+    const now = Date.now();
+    let fjernede = 0;
+
+    for (const bruger of alle) {
+      await ctx.db.patch(bruger._id, {
+        achievementNulpunkt: { checkIns: bruger.checkInCount ?? 0, taget: now },
+        updatedAt: now,
+      });
+
+      for (const achievementId of MAERKER_MED_HISTORIK) {
+        const raekke = await ctx.db
+          .query("achievements")
+          .withIndex("by_user_and_achievement", (q) =>
+            q.eq("userId", bruger._id).eq("achievementId", achievementId),
+          )
+          .unique();
+
+        if (raekke === null) continue;
+        await ctx.db.delete(raekke._id);
+        fjernede += 1;
+      }
+    }
+
+    console.log("[Achievement] nye maerker startet forfra", {
+      brugere: alle.length,
+      fjernede,
+    });
+
+    return { brugere: alle.length, fjernede };
   },
 });
 
