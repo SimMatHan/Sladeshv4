@@ -937,8 +937,10 @@ function Oversigt() {
         {bekraeftForfra ? (
           <>
             <p className="hjaelp">
-              Alle mister de to mærker og starter på 0/25 og 0/7. Har nogen
-              optjent dem ærligt siden sidst, ryger de også.
+              Hver bruger mister <strong>Stamgæst</strong> og{" "}
+              <strong>Ingen hviledag</strong> og starter på 0/25 og 0/7. Har
+              nogen optjent dem ærligt siden sidst, ryger de også. De øvrige
+              ti mærker røres ikke.
             </p>
             <button
               className="knap fare"
@@ -951,22 +953,25 @@ function Oversigt() {
                 })
               }
             >
-              Ja, start forfra
+              Ja, nulstil de to
             </button>
             <button className="knap" onClick={() => setBekraeftForfra(false)}>
               Fortryd
             </button>
           </>
         ) : (
+          // "Start forfra for alle" stod her og var til at læse som "nulstil
+          // ALLE achievements". `for alle` betød alle BRUGERE, men det er
+          // ikke det, øjet samler op på en knap, der sletter noget.
           <button className="knap" onClick={() => setBekraeftForfra(true)}>
-            Start forfra for alle
+            Nulstil de to for alle brugere
           </button>
         )}
 
         <p className="hjaelp">
-          De to måler på tællere, der havde talt op i årevis, før mærkerne
-          fandtes — så halvdelen havde dem fra dag ét. Denne sætter et
-          nulpunkt ved dagens tal og fjerner oplåsningerne, så de skal
+          Kun disse to. De måler på tællere, der havde talt op i årevis, før
+          mærkerne fandtes — så halvdelen havde dem fra dag ét. Denne sætter
+          et nulpunkt ved dagens tal og fjerner de to oplåsninger, så de skal
           optjenes forfra. Uden nulpunktet ville motoren tildele dem igen ved
           næste genstand.
         </p>
