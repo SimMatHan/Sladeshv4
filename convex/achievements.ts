@@ -8,11 +8,12 @@ import {
   beregnOplaasninger,
   findAchievement,
   naesteMilepael,
+  NATTETIMER,
   type EksisterendeRaekke,
   type Fremdrift,
   type Maalinger,
 } from "./achievementRules";
-import { getDrinkDayStart } from "./constants";
+import { getDrinkDayStart, localWallClock } from "./constants";
 import { beregnRunStart, byggAggregat, type LogLite } from "./drinkRules";
 import { requireAdmin, requireCanViewUser, requireCurrentUser } from "./identity";
 
@@ -102,11 +103,30 @@ export async function hentMaalinger(
     }
   }
 
+  // Nattetimerne tælles på RUNNETS logninger, ikke på livstiden. Et opslag
+  // over hver logning brugeren nogensinde har lavet, for at afgøre om én af
+  // dem faldt mellem fire og seks, ville koste hele historikken ved hver
+  // eneste genstand — og achievementet er run-baseret netop for at slippe
+  // for det.
+  //
+  // `localWallClock` og ikke `new Date(...).getHours()`: Convex kører i UTC,
+  // og kl. 04 dansk tid er kl. 02 eller 03 UTC alt efter årstid. Samme
+  // funktion som drikkedagens grænse bruger.
+  const natteLogninger = runLogs.filter((log) => {
+    if (log.isReset === true) return false;
+    const time = localWallClock(log.timestamp).hour;
+    return time >= NATTETIMER.fra && time < NATTETIMER.til;
+  }).length;
+
   return {
     totalRunResets: user.totalRunResets ?? 0,
     runStart,
     run: byggAggregat(runLogs),
     livstid: byggAggregat(livstidsLogs),
+    sladeshFejlet: user.sladeshFailedCount ?? 0,
+    checkIns: user.checkInCount ?? 0,
+    laengsteStime: user.longestStreak ?? 0,
+    natteLogninger,
   };
 }
 
