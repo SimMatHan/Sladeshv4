@@ -378,12 +378,40 @@ async function main(): Promise<void> {
     await checkRejected("B læser A's Kanal", () =>
       klientB.query(api.kanaler.getKanal, { channelId: channelId! }),
     );
-    await checkRejected("B læser A's profil (ingen delt Kanal)", () =>
-      klientB.query(api.users.getUser, { userId: userIdA }),
-    );
-    await checkRejected("B læser A's drikkelogninger", () =>
-      klientB.query(api.drinkLogs.getDrinkLogsForUser, { userId: userIdA }),
-    );
+    // De to næste afhænger af, om deploymentet har en standard-Kanal.
+    //
+    // `createUser` melder nye brugere ind i den, og A og B DELER den så. Det
+    // er hele meningen med Den Åbne Kanal — men det betyder også, at
+    // `requireCanViewUser` er opfyldt mellem to vilkårlige brugere, og at
+    // spærren derfor ikke KAN afprøves med to rigtige konti. Der findes
+    // ingen vej ud af en Kanal igen.
+    //
+    // Testen springer dem derfor over frem for at fejle, og siger hvorfor.
+    // Den afprøver til gengæld den nye invariant: at begge ER kommet med.
+    // De øvrige spærrer ovenfor er urørte — de handler om A's EGEN Kanal,
+    // som B ikke er i, uanset hvad standard-Kanalen gør.
+    const bsKanaler = await klientB.query(api.kanaler.getMineKanaler, {});
+    const standardDelt = bsKanaler.length > 0;
+
+    if (standardDelt) {
+      const asKanaler = await klientA.query(api.kanaler.getMineKanaler, {});
+      check(
+        "ny bruger meldes ind i standard-Kanalen",
+        asKanaler.length > 0 && bsKanaler.length > 0,
+        true,
+      );
+      console.log(
+        `  sprunget over: A og B deler "${bsKanaler[0]?.name}", så spærren ` +
+          `"ingen delt Kanal" kan ikke afprøves`,
+      );
+    } else {
+      await checkRejected("B læser A's profil (ingen delt Kanal)", () =>
+        klientB.query(api.users.getUser, { userId: userIdA }),
+      );
+      await checkRejected("B læser A's drikkelogninger", () =>
+        klientB.query(api.drinkLogs.getDrinkLogsForUser, { userId: userIdA }),
+      );
+    }
 
     // 5. Check In --------------------------------------------------------
     console.log("\n[Smoke] 5/12 logger Check In");

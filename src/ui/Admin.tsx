@@ -547,6 +547,7 @@ function Kanaler() {
   const opret = useMutation(api.kanaler.createKanal);
   const arkiver = useMutation(api.kanaler.arkiverKanal);
   const genaktiver = useMutation(api.kanaler.genaktiverKanal);
+  const saetStandard = useMutation(api.kanaler.saetStandardKanal);
   const { arbejder, koer, besked } = useHandling();
 
   const [navn, setNavn] = useState("");
@@ -673,12 +674,29 @@ function Kanaler() {
                       // meldes automatisk ind i den. Serveren afviser det
                       // også; knappen skjules, så man ikke prøver forgæves.
                       !kanal.isDefault && (
-                        <button
-                          className="knap fare"
-                          onClick={() => setBekraeftArkiv(kanal._id)}
-                        >
-                          Arkivér
-                        </button>
+                        <>
+                          {/* Indtil nu kunne standard-Kanalen KUN udpeges af
+                              migreringen. Et dev-miljø uden migrerede data
+                              havde ingen — og ingen måde at få en på. */}
+                          <button
+                            className="knap"
+                            disabled={arbejder}
+                            onClick={() =>
+                              void koer("saetStandardKanal", async () => {
+                                await saetStandard({ channelId: kanal._id });
+                                return `"${kanal.name}" er nu standard-Kanalen. Nye brugere meldes ind i den.`;
+                              })
+                            }
+                          >
+                            Gør til standard
+                          </button>
+                          <button
+                            className="knap fare"
+                            onClick={() => setBekraeftArkiv(kanal._id)}
+                          >
+                            Arkivér
+                          </button>
+                        </>
                       )
                     )}
                   </>
@@ -830,6 +848,7 @@ function Beacons({ channelId }: { channelId: Id<"kanaler"> | undefined }) {
 function Oversigt() {
   const stats = useQuery(api.stats.getAdminStats, {});
   const genberegnAlle = useMutation(api.achievements.genberegnForAlle);
+  const meldAlleInd = useMutation(api.kanaler.meldAlleIndIStandardKanal);
   const { arbejder, koer, besked } = useHandling();
 
   if (stats === undefined) return <p className="midtstillet">Henter …</p>;
@@ -905,6 +924,33 @@ function Oversigt() {
           bruger sine manglende oplåsninger som en tilfældig popup, næste gang
           de logger noget. Kan kun låse op, aldrig fjerne — så den er sikker
           at trykke på igen.
+        </p>
+      </div>
+
+      {/* Nye brugere meldes ind ved oprettelsen. De nuværende blev oprettet,
+          før reglen fandtes, og skal derfor hentes ind én gang. */}
+      <div className="arkgruppe">
+        <h3>Standard-Kanalen</h3>
+
+        <button
+          className="knap"
+          disabled={arbejder}
+          onClick={() =>
+            void koer("meldAlleIndIStandardKanal", async () => {
+              const svar = await meldAlleInd({});
+              return svar.tilfoejet === 0
+                ? `Alle ${svar.ialt} brugere var allerede med i "${svar.kanal}".`
+                : `${svar.tilfoejet} af ${svar.ialt} brugere meldt ind i "${svar.kanal}".`;
+            })
+          }
+        >
+          Meld alle brugere ind
+        </button>
+
+        <p className="hjaelp">
+          Nye brugere meldes ind i standard-Kanalen, når profilen oprettes.
+          Denne henter de eksisterende med. Tilføjer kun — ingen meldes ud, og
+          ingens aktive Kanal flyttes. Udpeg standard-Kanalen under Kanaler.
         </p>
       </div>
 

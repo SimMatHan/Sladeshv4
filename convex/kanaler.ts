@@ -238,6 +238,227 @@ export const getAlleKanaler = query({
  * Standard-Kanalen kan ikke arkiveres: nye brugere meldes automatisk ind i
  * den, så en arkiveret standard ville give hver ny bruger en død Kanal.
  */
+/**
+ * Melder en bruger ind i standard-Kanalen — i praksis Den Åbne Kanal.
+ *
+ * ## Hvorfor den her fandtes som en påstand, før den fandtes som kode
+ *
+ * `isDefault` har stået i skemaet siden migreringen med kommentaren "hvis
+ * true joiner nye brugere automatisk". `arkiverKanal` nægter at arkivere
+ * standard-Kanalen med begrundelsen, at nye brugere meldes ind i den. Admin
+ * skjuler arkivér-knappen af samme grund.
+ *
+ * Ingen af delene var sande. `by_default`-indekset blev aldrig slået op, og
+ * `createUser` indsatte `joinedChannelIds: []`. Tre steder beskrev en
+ * opførsel, der ikke var bygget — det her er den.
+ *
+ * ## Den fejler ikke opad
+ *
+ * Findes der ingen standard-Kanal, eller er den arkiveret, gør funktionen
+ * ingenting og siger det i loggen. Den kaldes fra `createUser`, og en profil,
+ * der ikke kan oprettes, fordi en Kanal mangler, ville låse folk ude af
+ * appen for at håndhæve en bekvemmelighed. Brugeren lander så i "Ingen
+ * Kanal", præcis som før.
+ *
+ * Idempotent: er man allerede medlem, røres ingenting.
+ */
+export async function meldIndIStandardKanal(
+  ctx: MutationCtx,
+  userId: Id<"users">,
+): Promise<Id<"kanaler"> | undefined> {
+  const standard = await ctx.db
+    .query("kanaler")
+    .withIndex("by_default", (q) => q.eq("isDefault", true))
+    .first();
+
+  if (standard === null) {
+    console.log("[Kanal] ingen standard-Kanal — bruger meldes ikke ind", { userId });
+    return undefined;
+  }
+
+  if (standard.archived === true) {
+    console.log("[Kanal] standard-Kanalen er arkiveret — bruger meldes ikke ind", {
+      userId,
+      kanal: standard.name,
+    });
+    return undefined;
+  }
+
+  const bruger = await ctx.db.get(userId);
+  if (bruger === null) return undefined;
+  if (bruger.joinedChannelIds.includes(standard._id)) return standard._id;
+
+  const now = Date.now();
+
+  // Begge sider af relationen i samme transaktion, som i `joinKanal`.
+  await ctx.db.patch(standard._id, {
+    members: [...standard.members, userId],
+    updatedAt: now,
+  });
+  await ctx.db.patch(userId, {
+    joinedChannelIds: [...bruger.joinedChannelIds, standard._id],
+    // Kun hvis brugeren ikke allerede står et sted. En bagudrettet
+    // indmeldelse må ikke flytte nogen væk fra den Kanal, de er i gang i.
+    ...(bruger.activeChannelId === undefined
+      ? { activeChannelId: standard._id }
+      : {}),
+    updatedAt: now,
+  });
+
+  console.log("[Kanal] meldt ind i standard-Kanalen", {
+    userId,
+    kanal: standard.name,
+    medlemmer: standard.members.length + 1,
+  });
+  return standard._id;
+}
+
+/**
+ * Udpeger standard-Kanalen.
+ *
+ * Indtil nu kunne `isDefault` KUN komme ind via migreringen fra Firestore:
+ * `createKanal` sætter den altid til `false`, og der fandtes ingen vej til at
+ * ændre den. Et deployment uden migrerede data — et nyt dev-miljø, en
+ * gendannelse — havde derfor ingen standard-Kanal og ingen måde at få en på.
+ *
+ * Præcis ÉN ad gangen. Den forrige nulstilles i samme transaktion, så to
+ * Kanaler ikke kan stå som standard og gøre det til et lotteri, hvilken en
+ * ny bruger havner i.
+ */
+export const saetStandardKanal = mutation({
+  args: { channelId: v.id("kanaler") },
+  handler: async (ctx, args): Promise<void> => {
+    await requireAdmin(ctx);
+
+    const kanal = await ctx.db.get(args.channelId);
+    if (kanal === null) {
+      throw new ConvexError({
+        code: "KANAL_NOT_FOUND",
+        message: "Kanalen findes ikke.",
+      });
+    }
+
+    // En arkiveret Kanal er ude af drift. Som standard ville den give hver ny
+    // bruger en død Kanal — og `arkiverKanal` nægter i forvejen den omvendte
+    // rækkefølge, så den her lukker det sidste hul.
+    if (kanal.archived === true) {
+      throw new ConvexError({
+        code: "KANAL_ARCHIVED",
+        message: `"${kanal.name}" er arkiveret og kan ikke være standard-Kanal.`,
+      });
+    }
+
+    const now = Date.now();
+
+    const nuvaerende = await ctx.db
+      .query("kanaler")
+      .withIndex("by_default", (q) => q.eq("isDefault", true))
+      .collect();
+
+    for (const tidligere of nuvaerende) {
+      if (tidligere._id === args.channelId) continue;
+      await ctx.db.patch(tidligere._id, { isDefault: false, updatedAt: now });
+    }
+
+    if (!kanal.isDefault) {
+      await ctx.db.patch(args.channelId, { isDefault: true, updatedAt: now });
+    }
+
+    console.log("[Kanal] standard-Kanal sat", { kanal: kanal.name });
+  },
+});
+
+/**
+ * Melder ALLE eksisterende brugere ind i standard-Kanalen.
+ *
+ * `createUser` melder nye brugere ind fra fødslen, men reglen kom til, længe
+ * efter de nuværende brugere blev oprettet. Uden den her ville "alle brugere
+ * er i Den Åbne Kanal" først være sandt om et år, når den sidste
+ * migrerede konto var udskiftet.
+ *
+ * Den reparerer BEGGE sider af relationen hver for sig. De to kan være ude af
+ * trit — en bruger kan stå i `members` uden at have Kanalen i
+ * `joinedChannelIds` eller omvendt — og en reparation, der kun kigger den ene
+ * vej, ville efterlade den anden halvdel af skævheden.
+ *
+ * Tilføjer kun. Ingen meldes ud af noget, og ingens aktive Kanal flyttes,
+ * hvis de allerede står et sted.
+ */
+export const meldAlleIndIStandardKanal = mutation({
+  args: {},
+  handler: async (
+    ctx,
+  ): Promise<{ kanal: string; tilfoejet: number; ialt: number }> => {
+    await requireAdmin(ctx);
+
+    const standard = await ctx.db
+      .query("kanaler")
+      .withIndex("by_default", (q) => q.eq("isDefault", true))
+      .first();
+
+    if (standard === null) {
+      throw new ConvexError({
+        code: "INGEN_STANDARD_KANAL",
+        message:
+          "Der er ingen standard-Kanal. Udpeg en under Kanaler, før du melder " +
+          "alle ind.",
+      });
+    }
+
+    if (standard.archived === true) {
+      throw new ConvexError({
+        code: "KANAL_ARCHIVED",
+        message: `Standard-Kanalen "${standard.name}" er arkiveret.`,
+      });
+    }
+
+    const alle = await ctx.db.query("users").collect();
+    const now = Date.now();
+
+    const iMedlemmer = new Set<string>(standard.members.map((id) => id as string));
+    const tilfoejTilMedlemmer: Id<"users">[] = [];
+    let tilfoejet = 0;
+
+    for (const bruger of alle) {
+      const harKanalen = bruger.joinedChannelIds.includes(standard._id);
+      const staarSomMedlem = iMedlemmer.has(bruger._id as string);
+
+      if (harKanalen && staarSomMedlem) continue;
+      tilfoejet += 1;
+
+      if (!harKanalen) {
+        await ctx.db.patch(bruger._id, {
+          joinedChannelIds: [...bruger.joinedChannelIds, standard._id],
+          ...(bruger.activeChannelId === undefined
+            ? { activeChannelId: standard._id }
+            : {}),
+          updatedAt: now,
+        });
+      }
+
+      if (!staarSomMedlem) tilfoejTilMedlemmer.push(bruger._id);
+    }
+
+    // ÉN patch af medlemslisten, ikke en per bruger. Et `members`-array der
+    // læses og skrives i en løkke er kvadratisk i antallet af brugere, og
+    // det er der ingen grund til, når listen kan samles først.
+    if (tilfoejTilMedlemmer.length > 0) {
+      await ctx.db.patch(standard._id, {
+        members: [...standard.members, ...tilfoejTilMedlemmer],
+        updatedAt: now,
+      });
+    }
+
+    console.log("[Kanal] alle meldt ind i standard-Kanalen", {
+      kanal: standard.name,
+      tilfoejet,
+      ialt: alle.length,
+    });
+
+    return { kanal: standard.name, tilfoejet, ialt: alle.length };
+  },
+});
+
 export const arkiverKanal = mutation({
   args: { channelId: v.id("kanaler") },
   handler: async (ctx, args): Promise<void> => {
