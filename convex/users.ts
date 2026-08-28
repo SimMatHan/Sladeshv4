@@ -10,6 +10,7 @@ import {
   isAvatarColor,
 } from "./constants";
 import { erUdeIDag } from "./drinkRules";
+import { meldIndIStandardKanal } from "./kanaler";
 import {
   getAuthId,
   getCurrentUser,
@@ -135,6 +136,15 @@ export const createUser = mutation({
       createdAt: now,
       updatedAt: now,
     });
+
+    // Den Åbne Kanal. Alle brugere skal være med i den, og indmeldelsen sker
+    // HER frem for ved onboardingens afslutning: forløbet kan springes over
+    // og appen kan lukkes midtvejs, og i begge tilfælde ville brugeren ellers
+    // stå uden Kanal. Fra det øjeblik profilen findes, er den sand.
+    //
+    // Fejler ikke opad — se `meldIndIStandardKanal`. Findes der ingen
+    // standard-Kanal, oprettes profilen alligevel.
+    await meldIndIStandardKanal(ctx, userId);
 
     console.log("[User] profil oprettet", { userId });
     return userId;
