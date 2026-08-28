@@ -3,6 +3,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
+import { evaluerAchievements } from "./achievements";
 import { requireCanViewUser, requireCurrentUser } from "./identity";
 import type { Ctx } from "./identity";
 import {
@@ -203,6 +204,21 @@ async function udloebHvisForaeldet(
       sladeshFailedCount: (modtager.sladeshFailedCount ?? 0) + 1,
       updatedAt: now,
     });
+
+    // "Han tog den aldrig" måler netop denne tæller, og det her er det ENESTE
+    // sted, den tælles op. Uden evalueringen her ville mærket først blive
+    // tildelt ved modtagerens næste genstand — altså timer eller dage efter
+    // det, det handler om, og med en popup, der ikke passede til noget, man
+    // lige havde gjort.
+    //
+    // Motoren har hidtil kun kørt fra `logDrink`, `removeDrink` og de to
+    // admin-kald, fordi alt den målte på KOM fra en logning. Det holder ikke
+    // længere, når en achievement hænger på Sladesh-livscyklussen.
+    //
+    // Dokumentet hentes igen: `evaluerAchievements` læser tælleren fra det,
+    // og den kopi vi har ovenfor er fra før vores egen patch.
+    const opdateret = await ctx.db.get(udfordring.recipientId);
+    if (opdateret !== null) await evaluerAchievements(ctx, opdateret, now);
   }
 
   await varslAfsender(ctx, udfordring, "expired");
