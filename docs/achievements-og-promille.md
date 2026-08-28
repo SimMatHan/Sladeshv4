@@ -72,11 +72,31 @@ runnet, eller en kumulativ, der havde en pukkel til gode.
 | Mr. Worldwide | 5 kategorier med mindst én | Runnet | Ét pr. run |
 | Puffminister | Varianten `other::Cigaret` | Runnet | Ét pr. run |
 | Feinschmecker | Varianten `cocktail::Vermouth Tonic` | **Livstid** | Hver 1. |
+| Han tog den aldrig | `sladeshFailedCount` | **Livstid** | Nej |
+| Sidste mand ud | Logninger kl. 04–06 | Runnet | Ét pr. run |
+| Stamgæst | `checkInCount` | **Livstid** | Nej |
+| Ingen hviledag | `longestStreak` | **Livstid** | Nej |
 | Top Donor | — | — | Kun i hånden |
 
-De to livstids-baserede er dem, der kan overraske: de måler på ALT hvad
-brugeren nogensinde har logget, så de kan lande på en aften, hvor man ikke
-har rørt hverken vin eller vermouth.
+De livstids-baserede er dem, der kan overraske: de måler på ALT hvad brugeren
+nogensinde har gjort, så de kan lande på en aften, hvor man ikke har rørt
+hverken vin eller vermouth.
+
+**Fire af dem måler ikke på `drinkLogs`.** "Han tog den aldrig", "Stamgæst" og
+"Ingen hviledag" læser tællere, der står på brugerdokumentet og
+vedligeholdes af den kode, der ejer dem — Sladesh-livscyklussen, check ind og
+stimeberegningen. Motoren regner dem ikke ud igen; den spørger. Det er en
+bevidst undtagelse fra reglen nedenfor om, at alt udledes af logrækkerne:
+de tre har ingen logrækker at udlede sig af.
+
+"Sidste mand ud" måler klokkeslæt frem for mængde. Vinduet (`NATTETIMER`,
+kl. 04–06) læses med `localWallClock`, samme funktion som drikkedagens
+grænse — Convex kører i UTC, og kl. 04 dansk tid er kl. 02 eller 03 UTC alt
+efter årstid. Den er run-baseret, så tællingen sker kun på aftenens egne
+logninger og ikke på hele historikken.
+
+`longestStreak` og ikke `currentDayStreak`: et mærke for syv dage i træk skal
+blive stående, når den ottende dag udebliver.
 
 **"Vin-achievement for en Guinness".** Præcis det skete efter migreringen, og
 det var to fejl oven i hinanden:

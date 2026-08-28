@@ -34,7 +34,37 @@ export type AchievementType =
   | "category_diversity"
   | "run_specific_variation"
   | "specific_drink_count"
+  /**
+   * De fire nedenfor måler IKKE på `drinkLogs`.
+   *
+   * De tre første læser tællere, der står på brugerdokumentet og
+   * vedligeholdes af den kode, der ejer dem — Sladesh-livscyklussen,
+   * check ind og stimeberegningen. Motoren regner dem ikke ud igen; den
+   * spørger. Det er en bevidst forskel fra alt det øvrige, hvor det netop
+   * ER en pointe, at tallene udledes af logrækkerne (se afsnittet om det
+   * gamle repos denormaliserede tællere ovenfor): disse tre har ingen
+   * logrækker at udlede sig af.
+   */
+  | "sladesh_fejlet"
+  | "check_ins"
+  | "streak"
+  /** Klokkeslæt frem for mængde. Måles på runnets logninger. */
+  | "time_specific"
   | "manual";
+
+/**
+ * Vinduet for "Sidste mand ud": fra og med kl. 04, til men ikke med kl. 06.
+ *
+ * Ét vindue for hele samlingen, ikke et per definition. Der er én
+ * `time_specific`-achievement, og et felt på `Achievement`, som kun én post
+ * udfylder, er en generalisering, der endnu ikke har fortjent sig selv.
+ * Kommer der en til med et andet vindue, flytter tallene ind i definitionen.
+ *
+ * Timerne er LOKALE (Europe/Copenhagen) og læses med `localWallClock`, som
+ * også drikkedagens grænse bruger. Convex kører i UTC, så det er ikke til at
+ * springe over — se tidszone-afsnittet i convex/constants.ts.
+ */
+export const NATTETIMER = { fra: 4, til: 6 } as const;
 
 export type Achievement = {
   id: string;
@@ -159,14 +189,81 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     emoji: "🍸",
     repeatable: true,
   },
+
+  // ---------------------------------------------------------------------
+  // De fire nye. Alle måler på noget, der ikke er "hvor meget har du
+  // drukket" — Full Bender på 20 genstande er toppen af den skala, og en
+  // ny oven på den bliver en opfordring frem for en spøg.
+  //
+  // BILLEDERNE MANGLER. Stierne peger på filer, der endnu ikke findes i
+  // public/assets/achievements/, og `<img>` viser et brudt ikon, indtil de
+  // lægges ind. Navnene er valgt, så de kan lægges ind uden at røre koden.
+  // ---------------------------------------------------------------------
+
+  {
+    id: "tog_den_aldrig",
+    type: "sladesh_fejlet",
+    threshold: 1,
+    title: "Han tog den aldrig",
+    description:
+      "En Sladesh løb ud, mens du kiggede den anden vej. Det tæller også.",
+    howToGet: "Lad en Sladesh, du har modtaget, løbe ud uden at gennemføre den.",
+    image: "/assets/achievements/togdenaldrig.png",
+    emoji: "🐔",
+    // IKKE gentagelig. Den kunne teknisk set tælle, hvor mange gange man har
+    // kylret ud — men et mærke, der står "×12", er en statistik, ikke en
+    // spøg, og appen har lige haft en omgang med tællere, der løb løbsk.
+  },
+  {
+    id: "sidste_mand_ud",
+    type: "time_specific",
+    threshold: 1,
+    title: "Sidste mand ud",
+    description: "Klokken var fire. Du var der stadig.",
+    howToGet: "Log en genstand mellem kl. 04 og kl. 06.",
+    image: "/assets/achievements/sidstemandud.png",
+    emoji: "🌅",
+    // Run-baseret, så en ny aften er en ny chance. Man kan ikke planlægge
+    // sig til den; man ender bare der.
+    repeatable: true,
+  },
+  {
+    id: "stamgaest",
+    type: "check_ins",
+    threshold: 25,
+    title: "Stamgæst",
+    description: "Femogtyve aftener. Personalet kender din bestilling.",
+    howToGet: "Vær ude 25 aftener i alt.",
+    image: "/assets/achievements/stamgaest.png",
+    emoji: "🍻",
+    // Den lange, rolige. Belønner at møde op, ikke at drikke meget — og den
+    // er det eneste sted, `checkInCount` på Mig-fanen får en betydning.
+  },
+  {
+    id: "ingen_hviledag",
+    type: "streak",
+    threshold: 7,
+    title: "Ingen hviledag",
+    description: "Syv drikkedage i træk. Selv søndag.",
+    howToGet: "Hav en stime på syv drikkedage i træk.",
+    image: "/assets/achievements/ingenhviledag.png",
+    emoji: "🔥",
+    // Den sværeste af de fire, og den eneste ingen får ved et tilfælde.
+    // Stimen står allerede på Mig-fanen som ugestribe, så fremdriften er
+    // synlig hele vejen.
+  },
 ] as const;
 
 /**
- * De typer der ikke er porteret: `total_all_drinks`, `time_specific` og
- * `streak`. De stod i det gamle repos type-union og havde hver sin gren i
- * klienten, men INGEN definition brugte dem — grenene kunne altså aldrig
- * køre. De er udeladt frem for at stå her som utestet kode. Skal en af dem
- * bruges, er det en ny gren i `maalFor` og en post i `ACHIEVEMENTS`.
+ * `total_all_drinks` er den sidste type fra det gamle repo, der ikke er
+ * porteret. Den stod i type-unionen og havde sin egen gren i klienten, men
+ * INGEN definition brugte den — grenen kunne altså aldrig køre, og den er
+ * udeladt frem for at stå her som utestet kode.
+ *
+ * `time_specific` og `streak` stod på samme liste og er nu bygget, fordi
+ * "Sidste mand ud" og "Ingen hviledag" fik brug for dem. Det er den
+ * rækkefølge, det skal ske i: en gren kommer til, når en definition
+ * bruger den, ikke før.
  */
 
 /** Slår en definition op. */
@@ -184,6 +281,27 @@ export type Maalinger = {
   run: Aggregat;
   /** Alle brugerens logninger, nogensinde. */
   livstid: Aggregat;
+
+  /**
+   * Tællere fra brugerdokumentet — livstid.
+   *
+   * `totalRunResets` ovenfor er af samme slags og har været der hele tiden;
+   * de tre her følger bare efter. De ejes af hver sin del af appen
+   * (`sladesh.ts`, `checkIns.ts`/`drinkLogs.ts`, `streaks.ts`), og motoren
+   * læser dem frem for at regne dem ud igen.
+   */
+  sladeshFejlet: number;
+  checkIns: number;
+  laengsteStime: number;
+
+  /**
+   * Logninger i det aktuelle run, der faldt inden for `NATTETIMER`.
+   *
+   * Et TAL og ikke et boolean: `maalFor` skal returnere noget, der kan
+   * sammenlignes med en tærskel, og et tal kan en fremtidig "tre genstande
+   * mellem fire og seks" bruge uden at ændre noget her.
+   */
+  natteLogninger: number;
 };
 
 /** Den tilstand der allerede står i `achievements`-tabellen. */
@@ -201,7 +319,10 @@ export function erRunbaseret(def: Achievement): boolean {
   return (
     def.type === "run_drinks" ||
     def.type === "run_specific_variation" ||
-    def.type === "category_diversity"
+    def.type === "category_diversity" ||
+    // Nattetimerne måles på runnet og nulstilles altså af sig selv. En ny
+    // aften er en ny chance — præcis som Obeerma.
+    def.type === "time_specific"
   );
 }
 
@@ -238,6 +359,21 @@ export function maalFor(def: Achievement, maal: Maalinger): number {
       return (def.requiredCategories ?? []).filter(
         (kategori) => (maal.run.perKategori[kategori] ?? 0) > 0,
       ).length;
+
+    case "sladesh_fejlet":
+      return maal.sladeshFejlet;
+
+    case "check_ins":
+      return maal.checkIns;
+
+    // LÆNGSTE stime, ikke den aktuelle. Et mærke for syv dage i træk skal
+    // blive stående, når den ottende dag udebliver — ellers ville det
+    // forsvinde fra hylden, dagen efter man fik det.
+    case "streak":
+      return maal.laengsteStime;
+
+    case "time_specific":
+      return maal.natteLogninger;
 
     case "manual":
       return 0;

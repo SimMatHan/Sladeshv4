@@ -80,6 +80,7 @@ import {
   beregnFremdrift,
   beregnOplaasninger,
   erOpnaaet,
+  erRunbaseret,
   findAchievement,
   maalFor,
   naesteMilepael,
@@ -1108,11 +1109,15 @@ console.log("\n[Logic] achievements");
     runStart,
     run: tomtAggregat,
     livstid: tomtAggregat,
+    sladeshFejlet: 0,
+    checkIns: 0,
+    laengsteStime: 0,
+    natteLogninger: 0,
     ...over,
   });
 
   // Definitionerne selv.
-  check("alle otte achievements er med", ACHIEVEMENTS.length, 8);
+  check("alle tolv achievements er med", ACHIEVEMENTS.length, 12);
   check("Top Donor er manuel", findAchievement("top_donor")?.type, "manual");
   check(
     "Mr. Worldwides tærskel er antallet af kategorier",
@@ -1299,6 +1304,71 @@ console.log("\n[Logic] achievements");
       .filter((o) => o.achievementId === "obeerma")
       .map((o) => o.nyCount),
     [1],
+  );
+
+  // --- De fire der ikke måler på drinkLogs --------------------------------
+  const togDenAldrig = findAchievement("tog_den_aldrig")!;
+  const sidsteMandUd = findAchievement("sidste_mand_ud")!;
+  const stamgaest = findAchievement("stamgaest")!;
+  const ingenHviledag = findAchievement("ingen_hviledag")!;
+
+  check(
+    "Han tog den aldrig måler fejlede Sladesh",
+    maalFor(togDenAldrig, maalinger({ sladeshFejlet: 3 })),
+    3,
+  );
+  check(
+    "og udløses af den første",
+    beregnOplaasninger(maalinger({ sladeshFejlet: 1 }), {}).map(
+      (o) => o.achievementId,
+    ),
+    ["tog_den_aldrig"],
+  );
+  check(
+    "men kun én gang — den kan ikke gentages",
+    beregnOplaasninger(maalinger({ sladeshFejlet: 9 }), {
+      tog_den_aldrig: { count: 1 },
+    }),
+    [],
+  );
+
+  check(
+    "Stamgæst måler check ins",
+    maalFor(stamgaest, maalinger({ checkIns: 24 })),
+    24,
+  );
+  check("og tærsklen er 25", erOpnaaet(stamgaest, 24), false);
+  check("nået ved 25", erOpnaaet(stamgaest, 25), true);
+
+  // LÆNGSTE stime, ikke den aktuelle: mærket skal blive stående, når den
+  // ottende dag udebliver.
+  check(
+    "Ingen hviledag måler den længste stime",
+    maalFor(ingenHviledag, maalinger({ laengsteStime: 7 })),
+    7,
+  );
+  check("seks dage er ikke nok", erOpnaaet(ingenHviledag, 6), false);
+
+  check(
+    "Sidste mand ud måler runnets nattelogninger",
+    maalFor(sidsteMandUd, maalinger({ natteLogninger: 2 })),
+    2,
+  );
+  check("den er run-baseret", erRunbaseret(sidsteMandUd), true);
+  check("de tre andre er ikke", erRunbaseret(stamgaest), false);
+  // Et run tæller som ÉN oplåsning, uanset hvor mange genstande der blev
+  // logget i vinduet.
+  check(
+    "to nattelogninger giver stadig kun én",
+    beregnOplaasninger(maalinger({ natteLogninger: 2 }), {}).map((o) => o.nyCount),
+    [1],
+  );
+  check(
+    "og ikke igen i samme run",
+    beregnOplaasninger(maalinger({ natteLogninger: 2 }), {
+      sidste_mand_ud: { count: 1, lastRunStart: runStart },
+    }),
+    [],
   );
 
   // --- Fremdrift mod den NÆSTE oplåsning ----------------------------------
