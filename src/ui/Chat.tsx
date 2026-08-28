@@ -1,9 +1,10 @@
 import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { BESKED_MAX_LAENGDE } from "../../convex/messageRules";
 import { useSendMessage } from "../lib/optimistiskeKald";
+import { useCachetQuery } from "../lib/oejebliksbillede";
 import { getDrinkDayStart } from "../../convex/constants";
 import { fejltekst, klokken } from "../lib/visning";
 import { Avatar } from "./Avatar";
@@ -37,7 +38,13 @@ export function Chat({
   minUserId: Id<"users"> | undefined;
   onVaelgPerson: (userId: Id<"users">) => void;
 }) {
-  const beskeder = useQuery(api.messages.getMessages, { channelId });
+  // Cachet, ikke rå `useQuery`: Chat er en FANE, og hvert skift væk afmelder
+  // queryen, så den startede forfra med "Henter beskeder …" hver gang man
+  // kom tilbage. Tråden tømmer sig selv hvert døgn, og øjebliksbilledet
+  // holder kun tolv timer, så der kan ikke stå noget gammelt og lyve.
+  const beskeder = useCachetQuery(`chat:${channelId}`, api.messages.getMessages, {
+    channelId,
+  });
   // Optimistisk: beskeden står i tråden, i det sekund man trykker send, og
   // erstattes af serverens, når den lander. Uden dækning bliver den stående,
   // indtil Convex faar sendt den — man har ikke tabt det, man skrev.

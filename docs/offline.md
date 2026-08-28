@@ -91,7 +91,8 @@ skeletter i stedet for tal.
 det, indtil det rigtige lander. Ét lag, ingen synkronisering: localStorage
 skrives **kun** af serverens svar og læses **kun**, når der endnu ikke er et.
 
-Fire queries er med — dem skallen ikke kan vise noget uden:
+Seks queries er med — dem skallen ikke kan vise noget uden, plus de faner
+man skifter mellem hele aftenen:
 
 | Query | Hvad det redder |
 |---|---|
@@ -99,6 +100,19 @@ Fire queries er med — dem skallen ikke kan vise noget uden:
 | `scoreboard.getScoreboard` | Stillingen, appens forside |
 | `kanaler.getKanal` | Kanalens navn i toppen |
 | `drinkVariations.getDrinkVariations` | ( + )-arket er fyldt ud, når det åbner |
+| `messages.getMessages` | Chat-fanen ved et fanenskift |
+| `historik.getKanalHistorik` | Historik-fanen ved et fanenskift |
+
+De to sidste kom til af en anden grund end koldstart. Fanerne monteres og
+afmonteres ved hvert skift, og Convex slipper abonnementet med
+komponenten — så stod der "Henter beskeder …" et øjeblik, hver eneste gang
+man kom tilbage til en fane, man havde været på ti sekunder før. Cachen
+gør skiftet øjeblikkeligt; det rigtige svar skriver henover, som altid.
+
+At chatbeskeder dermed ligger i klartekst på telefonen er værd at vide, men
+det er ikke en ny udveksling: de tre spærrer nedenfor gælder dem også, så
+de ryddes ved logud, kan ikke læses af en anden konto på samme telefon, og
+er væk efter tolv timer.
 
 Tre spærrer:
 

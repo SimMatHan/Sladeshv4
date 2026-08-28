@@ -163,6 +163,12 @@
   --fart-hurtig: 110ms;
   --fart: 160ms;
   --fart-lang: 220ms;
+  /*
+   * Til det, der skal føles som et SKIFT frem for en bevægelse: fanerne i
+   * Kanalen. Under ~150ms læses en overgang ikke længere som noget, der
+   * bevæger sig — den dækker bare udskiftningen. Se `.skaerm-ind`.
+   */
+  --fart-kort: 120ms;
   --kurve: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* ------------------------------------------------------------- lag */
@@ -996,8 +1002,26 @@ input {
  * rækken springer, serveren svarer, og den springer igen.
  */
 
+/*
+ * De fire faner i Kanalen: Stilling, Chat, Kort, Historik.
+ *
+ * Den var `skaerm-ind` over `--fart-lang` — altså 220 ms fade OG en glidning
+ * på 8px. Oven i den kom rækkernes forskudte indgang (se nedenfor), og
+ * tilsammen var der næsten en halv fjerdedel af et sekund, hvor skærmen
+ * stadig var i gang med at ankomme. Man skifter fane hele aftenen; en
+ * animation, der er dejlig første gang, er i vejen for tyvende gang.
+ *
+ * Nu: ren opacity, 120 ms. Glidningen er væk med vilje — det er DEN, der
+ * læses som træghed, fordi indholdet bogstavelig talt ikke står stille,
+ * mens man prøver at læse det. En fade dækker udskiftningen uden at gøre
+ * krav på tid.
+ *
+ * `skaerm-ind`-keyframen bliver: kanalvælgerens liste og den nyeste
+ * chatbesked bruger den stadig, og dér ER glidningen rigtig — begge er
+ * noget, der KOMMER, ikke noget, der skiftes ud.
+ */
 .skaerm-ind {
-  animation: skaerm-ind var(--fart-lang) var(--kurve);
+  animation: ton-ind var(--fart-kort) var(--kurve);
 }
 
 @keyframes skaerm-ind {
@@ -1012,45 +1036,40 @@ input {
 }
 
 /*
- * Rækkerne kommer ind forskudt.
+ * Rækkerne kommer ind forskudt — men KUN i kanalvælgeren.
  *
  * Forsinkelsen står som `nth-child` og ikke som en inline-stil per række:
  * så er der ingen React-kode, der skal vide noget om animationen, og
  * listen kan skifte længde uden at nogen regner på det.
  *
- * KUN de første otte. En kanal med tredive medlemmer ville ellers bruge
+ * KUN de første otte. En liste med tredive rækker ville ellers bruge
  * halvandet sekund på at tegne sig selv færdig, og de sidste tyve ville
  * ankomme, længe efter man var holdt op med at kigge.
+ *
+ * ## Hvorfor `.raekker` og `.dage` ikke er med længere
+ *
+ * De er Stillingen og Historikken, altså to af de fire FANER. Der løb den
+ * forskudte indgang hver eneste gang man skiftede fane, og med op til
+ * 210 ms forsinkelse plus rækkens egne 160 ms kunne man se listen tegne sig
+ * selv oppefra og ned. Præcis dét blev meldt som "den loader fra top til
+ * bund" og "klunky" — og det er svært at være uenig: en liste, man kigger
+ * på tyve gange på en aften, må ikke gøre et nummer ud af at komme frem.
+ *
+ * Kanalvælgeren beholder den. Den er et ARK, man åbner en sjælden gang, og
+ * dér er den forskudte indgang det, den var tænkt som — en detalje, der
+ * lønner sig, fordi man ikke ser den tit.
  */
-.raekker > *,
-.dage > *,
 .kanalliste > * {
   animation: skaerm-ind var(--fart) var(--kurve) backwards;
 }
 
-.raekker > :nth-child(1),
-.dage > :nth-child(1),
 .kanalliste > :nth-child(1) { animation-delay: 0ms; }
-.raekker > :nth-child(2),
-.dage > :nth-child(2),
 .kanalliste > :nth-child(2) { animation-delay: 30ms; }
-.raekker > :nth-child(3),
-.dage > :nth-child(3),
 .kanalliste > :nth-child(3) { animation-delay: 60ms; }
-.raekker > :nth-child(4),
-.dage > :nth-child(4),
 .kanalliste > :nth-child(4) { animation-delay: 90ms; }
-.raekker > :nth-child(5),
-.dage > :nth-child(5),
 .kanalliste > :nth-child(5) { animation-delay: 120ms; }
-.raekker > :nth-child(6),
-.dage > :nth-child(6),
 .kanalliste > :nth-child(6) { animation-delay: 150ms; }
-.raekker > :nth-child(7),
-.dage > :nth-child(7),
 .kanalliste > :nth-child(7) { animation-delay: 180ms; }
-.raekker > :nth-child(n + 8),
-.dage > :nth-child(n + 8),
 .kanalliste > :nth-child(n + 8) { animation-delay: 210ms; }
 
 /*
