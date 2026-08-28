@@ -636,10 +636,31 @@ input {
   display: block;
 }
 
+/*
+ * Underteksten under kanalnavnet — "3 ude i aften", "1 deler position".
+ *
+ * `min-height` er ikke pynt. Linjen er TOM, indtil dens query svarer, og de
+ * fire undertekster returnerede `null` imens: elementet fandtes ikke, og
+ * headeren var én linje plus `.sidetitel`s gap for lav. Når svaret så
+ * landede, voksede toppen, og hele skærmen under den hoppede nedad — ved
+ * hvert eneste fanenskift. Det samme skete, når den sidste person checkede
+ * ud og linjen forsvandt igen.
+ *
+ * Nu rendres elementet altid (se `Linje` i Sideundertekst.tsx), og pladsen
+ * er reserveret fra første tegning. Teksten lander i hullet frem for at
+ * skubbe noget.
+ *
+ * `1lh` er præcis én linje af DENNE tekst og følger derfor med, hvis
+ * `--tekst-s` eller linjehøjden ændrer sig. Rækkefølgen er en fallback:
+ * en browser uden `lh` beholder px-værdien ovenfor, som er det samme tal
+ * regnet i hånden (13px × 1.45).
+ */
 .undertekst {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-height: calc(var(--tekst-s) * 1.45);
+  min-height: 1lh;
 }
 
 .indhold {
