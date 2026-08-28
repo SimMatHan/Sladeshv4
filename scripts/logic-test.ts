@@ -1111,7 +1111,7 @@ console.log("\n[Logic] achievements");
     livstid: tomtAggregat,
     sladeshFejlet: 0,
     checkIns: 0,
-    laengsteStime: 0,
+    aktuelStime: 0,
     natteLogninger: 0,
     ...over,
   });
@@ -1340,14 +1340,30 @@ console.log("\n[Logic] achievements");
   check("og tærsklen er 25", erOpnaaet(stamgaest, 24), false);
   check("nået ved 25", erOpnaaet(stamgaest, 25), true);
 
-  // LÆNGSTE stime, ikke den aktuelle: mærket skal blive stående, når den
-  // ottende dag udebliver.
+  // Den AKTUELLE stime, ikke den længste. Den længste er et maksimum og kan
+  // ikke startes forfra: en bruger med syv i bagagen ville stå på nul for
+  // evigt, hvis man trak et nulpunkt fra. At mærket bliver STÅENDE, når den
+  // ottende dag udebliver, klares af rækken — den er ikke gentagelig.
   check(
-    "Ingen hviledag måler den længste stime",
-    maalFor(ingenHviledag, maalinger({ laengsteStime: 7 })),
+    "Ingen hviledag måler den AKTUELLE stime",
+    maalFor(ingenHviledag, maalinger({ aktuelStime: 7 })),
     7,
   );
   check("seks dage er ikke nok", erOpnaaet(ingenHviledag, 6), false);
+  check(
+    "en optjent stime forsvinder ikke, når stimen brydes",
+    beregnOplaasninger(maalinger({ aktuelStime: 1 }), {
+      ingen_hviledag: { count: 1 },
+    }),
+    [],
+  );
+  check(
+    "og den kan ikke optjenes to gange",
+    beregnOplaasninger(maalinger({ aktuelStime: 14 }), {
+      ingen_hviledag: { count: 1 },
+    }),
+    [],
+  );
 
   check(
     "Sidste mand ud måler runnets nattelogninger",

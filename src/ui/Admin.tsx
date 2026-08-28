@@ -849,6 +849,8 @@ function Oversigt() {
   const stats = useQuery(api.stats.getAdminStats, {});
   const genberegnAlle = useMutation(api.achievements.genberegnForAlle);
   const meldAlleInd = useMutation(api.kanaler.meldAlleIndIStandardKanal);
+  const startForfra = useMutation(api.achievements.startNyeMaerkerForfra);
+  const [bekraeftForfra, setBekraeftForfra] = useState(false);
   const { arbejder, koer, besked } = useHandling();
 
   if (stats === undefined) return <p className="midtstillet">Henter …</p>;
@@ -924,6 +926,54 @@ function Oversigt() {
           bruger sine manglende oplåsninger som en tilfældig popup, næste gang
           de logger noget. Kan kun låse op, aldrig fjerne — så den er sikker
           at trykke på igen.
+        </p>
+      </div>
+
+      {/* Destruktiv, og derfor med en bekræftelse — i modsætning til
+          Genberegn ovenfor, som kun kan tilføje. */}
+      <div className="arkgruppe">
+        <h3>Stamgæst og Ingen hviledag</h3>
+
+        {bekraeftForfra ? (
+          <>
+            <p className="hjaelp">
+              Hver bruger mister <strong>Stamgæst</strong> og{" "}
+              <strong>Ingen hviledag</strong> og starter på 0/25 og 0/7. Har
+              nogen optjent dem ærligt siden sidst, ryger de også. De øvrige
+              ti mærker røres ikke.
+            </p>
+            <button
+              className="knap fare"
+              disabled={arbejder}
+              onClick={() =>
+                void koer("startNyeMaerkerForfra", async () => {
+                  const svar = await startForfra({ bekraeft: true });
+                  setBekraeftForfra(false);
+                  return `${svar.brugere} brugere sat til nulpunktet — ${svar.fjernede} oplåsninger fjernet.`;
+                })
+              }
+            >
+              Ja, nulstil de to
+            </button>
+            <button className="knap" onClick={() => setBekraeftForfra(false)}>
+              Fortryd
+            </button>
+          </>
+        ) : (
+          // "Start forfra for alle" stod her og var til at læse som "nulstil
+          // ALLE achievements". `for alle` betød alle BRUGERE, men det er
+          // ikke det, øjet samler op på en knap, der sletter noget.
+          <button className="knap" onClick={() => setBekraeftForfra(true)}>
+            Nulstil de to for alle brugere
+          </button>
+        )}
+
+        <p className="hjaelp">
+          Kun disse to. De måler på tællere, der havde talt op i årevis, før
+          mærkerne fandtes — så halvdelen havde dem fra dag ét. Denne sætter
+          et nulpunkt ved dagens tal og fjerner de to oplåsninger, så de skal
+          optjenes forfra. Uden nulpunktet ville motoren tildele dem igen ved
+          næste genstand.
         </p>
       </div>
 

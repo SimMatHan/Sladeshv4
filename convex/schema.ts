@@ -95,6 +95,34 @@ export default defineSchema({
     lastStatusCheckedAt: v.optional(v.number()),
     checkInCount: v.optional(v.number()),
 
+    /**
+     * Nulpunkt for de achievements, der måler på kumulative tællere.
+     *
+     * "Stamgæst" belønner 25 aftener ude, men `checkInCount` havde talt op i
+     * årevis, før achievementet fandtes — så halvdelen af brugerne havde det
+     * i det sekund, definitionen blev udrullet. Det er ikke et mærke, man har
+     * optjent; det er et mærke, der blev delt ud.
+     *
+     * Nulpunktet er tælleren, som den stod, da mærket blev startet forfra.
+     * Fremdriften er `checkInCount - nulpunkt`, så alle begynder på 0.
+     *
+     * VALGFRI, og fraværende betyder nul. Det er rigtigt for en NY bruger,
+     * hvis tæller også starter på nul — der er ingen historik at se bort fra.
+     *
+     * Kun `checkIns` står her. Stimen kan ikke bruge et nulpunkt:
+     * `longestStreak` er et maksimum, ikke en optælling, så en bruger med
+     * nulpunkt 7 ville stå på 0 for evigt, uanset hvor mange gange de siden
+     * lavede syv dage i træk. "Ingen hviledag" måler derfor `currentDayStreak`,
+     * som nulstiller sig selv. Se `maalFor` i achievementRules.ts.
+     */
+    achievementNulpunkt: v.optional(
+      v.object({
+        checkIns: v.number(),
+        /** Hvornår nulpunktet blev taget. Kun til fejlsøgning. */
+        taget: v.number(),
+      }),
+    ),
+
     // Position
     location: v.optional(
       v.object({
