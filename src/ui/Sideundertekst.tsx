@@ -27,10 +27,22 @@ import { genstande } from "../lib/visning";
  * `getScoreboard` hentes én gang, uanset at både stillingen og dens
  * undertekst spørger.
  *
- * ## Vis intet, du ikke ved
+ * ## Vis intet, du ikke ved — men behold pladsen
  *
- * `useQuery` giver `undefined`, mens den henter. Så vises INGEN linje — ikke
+ * `useQuery` giver `undefined`, mens den henter. Så vises INGEN tekst — ikke
  * et gæt og ikke et nul. Se docs/redesign-kontrakt.md afsnit 7.
+ *
+ * LINJEN er der til gengæld altid. Før returnerede de fire undertekster
+ * `null`, mens de hentede, og så fandtes elementet slet ikke: headeren var
+ * lav i et øjeblik og voksede så med linjens højde PLUS `.sidetitel`s gap —
+ * og hele skærmen under den hoppede nedad, hver gang man skiftede fane.
+ *
+ * Nu rendres `<Linje>` altid, tom eller ej, og `.undertekst` har en
+ * `min-height` på én linje. Pladsen er reserveret fra første tegning, og
+ * teksten lander i den frem for at skubbe noget.
+ *
+ * Det gælder også de tomme TILSTANDE — nul ude, ingen på kortet. De havde
+ * samme problem: linjen forsvandt, når det sidste menneske checkede ud.
  */
 
 /*
@@ -59,13 +71,17 @@ export function Sideundertekst({
   }
 }
 
-function Linje({ children }: { children: React.ReactNode }) {
+/**
+ * Underteksten. Uden `children` er den en TOM linje, der holder sin plads —
+ * se `.undertekst` i index.css. Kald den frem for at returnere `null`.
+ */
+function Linje({ children }: { children?: React.ReactNode }) {
   return <span className="hjaelp undertekst">{children}</span>;
 }
 
 function StillingUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
   const stilling = useQuery(api.scoreboard.getScoreboard, { channelId });
-  if (stilling === undefined) return null;
+  if (stilling === undefined) return <Linje />;
 
   // Stillingen indeholder KUN dem, der er ude i dag — se linjen
   // `if (!checketIndIDag && !harLoggetIDag) continue;` i convex/scoreboard.ts.
@@ -75,7 +91,7 @@ function StillingUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
 
   // Ingen er ude endnu: den tomme tilstand under siger allerede hvorfor, og
   // "0 ude · 0 genstande" ville bare gentage det med tal.
-  if (ude === 0) return null;
+  if (ude === 0) return <Linje />;
 
   return (
     <Linje>
@@ -86,7 +102,7 @@ function StillingUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
 
 function ChatUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
   const kanal = useQuery(api.kanaler.getKanal, { channelId });
-  if (kanal === undefined) return null;
+  if (kanal === undefined) return <Linje />;
 
   const antal = kanal.members.length;
   return (
@@ -98,24 +114,24 @@ function ChatUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
 
 function KortUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
   const svar = useQuery(api.kort.getKanalPositioner, { channelId });
-  if (svar === undefined) return null;
+  if (svar === undefined) return <Linje />;
 
   const antal = svar.personer.length;
   // Ingen på kortet: skærmen forklarer det selv, og en nul-linje ville stå
   // som en fejl frem for en forklaring.
-  if (antal === 0) return null;
+  if (antal === 0) return <Linje />;
 
   return <Linje>{antal} deler position</Linje>;
 }
 
 function HistorikUndertekst({ channelId }: { channelId: Id<"kanaler"> }) {
   const historik = useQuery(api.historik.getKanalHistorik, { channelId });
-  if (historik === undefined) return null;
+  if (historik === undefined) return <Linje />;
 
   // Kun dage, hvor der SKETE noget. Aksen indeholder også tomme dage, og
   // "Seneste 7 drikkedage" ville være misvisende, hvis de fem var tomme.
   const dage = historik.filter((dag) => dag.genstande > 0).length;
-  if (dage === 0) return null;
+  if (dage === 0) return <Linje />;
 
   return (
     <Linje>
