@@ -11,6 +11,7 @@ import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
 import { TandhjulIkon, VinkelIkon } from "./Ikoner";
 import { Indstillinger } from "./Indstillinger";
+import { levendeStime } from "../../convex/streaks";
 import { Stimestribe } from "./Stimestribe";
 
 /**
@@ -119,7 +120,18 @@ export function Mig({
 
       {/* Rækkefølgen er tidsmæssig: heroet er I AFTEN, striben er UGEN,
           mærket er DET NÆSTE. */}
-      <Stimestribe stime={mig.currentDayStreak ?? 0} />
+      {/* Den LEVENDE stime, ikke tælleren. `currentDayStreak` opdateres kun,
+          når nogen logger noget, så striben sagde "2 dage" dagen efter man
+          havde misset — ikke forkert regnet, bare ikke sandt længere. Samme
+          funktion som "Ingen hviledag" måler med, så de to ikke kan komme
+          til at vise hver sit. */}
+      <Stimestribe
+        stime={levendeStime({
+          now: Date.now(),
+          currentDayStreak: mig.currentDayStreak,
+          lastDrinkDayStart: mig.lastDrinkDayStart,
+        })}
+      />
 
       <AchievementRaekke
         naesteMilepael={naesteMilepael}

@@ -131,3 +131,49 @@ export function pointsForDrink(
   if (!isDrinkCategory(categoryId)) return 0;
   return sizeMultiplier ?? 1;
 }
+
+/**
+ * Stimen SOM DEN ER LIGE NU, ikke som den var ved sidste genstand.
+ *
+ * `computeStreak` ovenfor kører kun, når nogen logger noget. `currentDayStreak`
+ * er derfor et efterslæbende tal: det siger "din stime var N, da du sidst
+ * drak". Springer man to dage over, står der stadig N — og først når man
+ * logger igen, opdager `computeStreak` hullet og sætter den til 1.
+ *
+ * For en TÆLLER er det fint; ingen kigger på den mellem to genstande. Men to
+ * steder læses den som en tilstand:
+ *
+ *   - "Ingen hviledag" måler den. Uden det her ville en stime på 6, der blev
+ *     brudt for en uge siden, stå som 6/7 og kunne fuldføres af én genstand
+ *     — som `computeStreak` i samme åndedrag ville sætte til 1.
+ *   - Stimestriben på Mig viser den. "2 dage" dagen efter man har misset er
+ *     ikke forkert regnet, det er bare ikke sandt længere.
+ *
+ * Reglen er `computeStreak`s egen, læst baglæns: er sidste drikkedag hverken
+ * denne eller den forrige, er stimen brudt. Samme `Math.floor`-division, så
+ * de to ikke kan blive uenige om en grænse.
+ */
+export function levendeStime(input: {
+  /** Nu (epoch ms). */
+  now: number;
+  /** Brugerens `currentDayStreak`. */
+  currentDayStreak: number | undefined;
+  /** Brugerens `lastDrinkDayStart` — drikkedagen for den seneste genstand. */
+  lastDrinkDayStart: number | undefined;
+}): number {
+  const stime = input.currentDayStreak ?? 0;
+  if (stime === 0) return 0;
+
+  // Ingen kendt sidste drikkedag: rækken er fra før feltet fandtes, eller
+  // brugeren har aldrig logget. Tallet er ikke til at efterprøve, og et
+  // gæt til den milde side ville dele et mærke ud på et løst grundlag.
+  if (input.lastDrinkDayStart === undefined) return 0;
+
+  const dage = Math.floor(
+    (getDrinkDayStart(input.now) - input.lastDrinkDayStart) / MS_PER_DAY,
+  );
+
+  // 0 = man har drukket i dag, 1 = i går og stimen kan stadig reddes i dag.
+  // Alt derover er et hul.
+  return dage <= 1 ? stime : 0;
+}

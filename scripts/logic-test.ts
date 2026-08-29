@@ -18,7 +18,7 @@ import {
   getDrinkDayStart,
   isAvatarColor,
 } from "../convex/constants";
-import { computeStreak, pointsForDrink } from "../convex/streaks";
+import { computeStreak, levendeStime, pointsForDrink } from "../convex/streaks";
 import schema from "../convex/schema.ts";
 import type { ScoreboardRow } from "../convex/scoreboard.ts";
 import {
@@ -1456,6 +1456,67 @@ console.log("\n[Logic] achievements");
       {},
     )?.achievementId !== "obeerma",
     true,
+  );
+}
+
+console.log("\n[Logic] levende stime");
+{
+  /*
+   * `currentDayStreak` opdateres KUN, når nogen logger noget. Den er derfor
+   * et efterslæbende tal, og to steder læses den som en tilstand: mærket
+   * "Ingen hviledag" og stimestriben på Mig. Uden det her stod en stime på
+   * 6, der blev brudt for en uge siden, stadig som 6/7.
+   */
+  const iDag = cest("2026-08-29T14:00:00");
+
+  check(
+    "drukket i dag → stimen står",
+    levendeStime({
+      now: iDag,
+      currentDayStreak: 3,
+      lastDrinkDayStart: cest("2026-08-29T10:00:00"),
+    }),
+    3,
+  );
+  // I går tæller stadig: dagen er ikke slut, og stimen kan reddes i aften.
+  check(
+    "drukket i går → stimen lever endnu",
+    levendeStime({
+      now: iDag,
+      currentDayStreak: 3,
+      lastDrinkDayStart: cest("2026-08-28T10:00:00"),
+    }),
+    3,
+  );
+  // Netop det tilfælde, der blev meldt: sidst logget forrige drikkedag.
+  check(
+    "sprunget en dag over → brudt",
+    levendeStime({
+      now: iDag,
+      currentDayStreak: 2,
+      lastDrinkDayStart: cest("2026-08-27T10:00:00"),
+    }),
+    0,
+  );
+  check(
+    "en uge siden → brudt",
+    levendeStime({
+      now: iDag,
+      currentDayStreak: 6,
+      lastDrinkDayStart: cest("2026-08-22T10:00:00"),
+    }),
+    0,
+  );
+  check(
+    "ingen stime → nul, uanset hvad",
+    levendeStime({ now: iDag, currentDayStreak: 0, lastDrinkDayStart: undefined }),
+    0,
+  );
+  // Et tal uden en dato at efterprøve det mod deler ikke et mærke ud.
+  check(
+    "stime uden kendt sidste drikkedag → nul",
+    levendeStime({ now: iDag, currentDayStreak: 5, lastDrinkDayStart: undefined }),
+    0,
   );
 }
 
