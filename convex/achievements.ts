@@ -15,6 +15,7 @@ import {
 } from "./achievementRules";
 import { getDrinkDayStart, localWallClock } from "./constants";
 import { beregnRunStart, byggAggregat, type LogLite } from "./drinkRules";
+import { levendeStime } from "./streaks";
 import { requireAdmin, requireCanViewUser, requireCurrentUser } from "./identity";
 
 /**
@@ -137,7 +138,15 @@ export async function hentMaalinger(
       0,
       (user.checkInCount ?? 0) - (user.achievementNulpunkt?.checkIns ?? 0),
     ),
-    aktuelStime: user.currentDayStreak ?? 0,
+    // LEVENDE stime, ikke tælleren som den står. `currentDayStreak` opdateres
+    // kun, når nogen logger noget, så en stime på 6, der blev brudt for en
+    // uge siden, ville stå som 6/7 — og kunne fuldføres af én genstand, som
+    // `computeStreak` i samme åndedrag ville sætte til 1.
+    aktuelStime: levendeStime({
+      now,
+      currentDayStreak: user.currentDayStreak,
+      lastDrinkDayStart: user.lastDrinkDayStart,
+    }),
     natteLogninger,
   };
 }
