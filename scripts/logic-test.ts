@@ -8,6 +8,7 @@
  * Kør: npm run test:logic
  */
 
+import { existsSync } from "node:fs";
 import {
   AVATAR_COLORS,
   AVATAR_COLOR_NAMES,
@@ -1456,6 +1457,26 @@ console.log("\n[Logic] achievements");
     )?.achievementId !== "obeerma",
     true,
   );
+}
+
+console.log("\n[Logic] achievement-billeder");
+{
+  /*
+   * Peger hver `image` på en fil, der findes?
+   *
+   * Den eneste test her, der rører disken. Den findes, fordi fejlen ER sket:
+   * de fire nye mærker fik stier skrevet FØR billederne fandtes, og da de
+   * blev lagt ind, hed den ene `hantogdenaldrig.png`, hvor definitionen
+   * sagde `togdenaldrig.png`. Intet fejlede — `<img>` viser bare et brudt
+   * ikon, og det opdager man kun ved at åbne hylden på en telefon.
+   *
+   * TypeScript kan ikke fange det: en sti er en streng, og en fil er en fil.
+   * Det her er den billigste måde at binde de to sammen.
+   */
+  for (const def of ACHIEVEMENTS) {
+    const sti = `public${def.image}`;
+    check(`${def.id}: ${def.image} findes`, existsSync(sti), true);
+  }
 }
 
 console.log("\n[Logic] drikkedage bagud (historikkens akse)");

@@ -195,9 +195,11 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
   // drukket" — Full Bender på 20 genstande er toppen af den skala, og en
   // ny oven på den bliver en opfordring frem for en spøg.
   //
-  // BILLEDERNE MANGLER. Stierne peger på filer, der endnu ikke findes i
-  // public/assets/achievements/, og `<img>` viser et brudt ikon, indtil de
-  // lægges ind. Navnene er valgt, så de kan lægges ind uden at røre koden.
+  // Billederne ligger i public/assets/achievements/ som de øvrige. Bemærk
+  // `hantogdenaldrig.png` — filen fik hele titlen med, hvor de tre andre
+  // droppede det første ord. Stien følger FILEN; at omdøbe en fil, der
+  // allerede er i repoet, for at passe til en streng er den forkerte vej
+  // rundt.
   // ---------------------------------------------------------------------
 
   {
@@ -208,7 +210,7 @@ export const ACHIEVEMENTS: readonly Achievement[] = [
     description:
       "En Sladesh løb ud, mens du kiggede den anden vej. Det tæller også.",
     howToGet: "Lad en Sladesh, du har modtaget, løbe ud uden at gennemføre den.",
-    image: "/assets/achievements/togdenaldrig.png",
+    image: "/assets/achievements/hantogdenaldrig.png",
     emoji: "🐔",
     // IKKE gentagelig. Den kunne teknisk set tælle, hvor mange gange man har
     // kylret ud — men et mærke, der står "×12", er en statistik, ikke en
