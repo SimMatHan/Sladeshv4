@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 
 /**
  * Bundark — appens ene måde at vise noget "oven på" det, man er i gang med.
@@ -50,6 +57,52 @@ export function Ark({
   const traek = useRef<
     { start: number; tid: number; sidst: number; sidstTid: number } | undefined
   >(undefined);
+
+  /**
+   * Hvor mange pixels tastaturet dækker forneden.
+   *
+   * ## Hvorfor det ikke klarer sig selv
+   *
+   * `index.html` sætter `interactive-widget=resizes-content`, som får
+   * tastaturet til at SKUBBE indholdet op frem for at lægge sig over det.
+   * Den findes kun i Chrome/Android. På iOS ændrer tastaturet ikke
+   * layout-viewporten overhovedet — det lægger sig oven på, og `bottom: 0`
+   * peger stadig på skærmens bund, altså bag tastaturet.
+   *
+   * Log-arket har et søgefelt øverst og træfferne under. På en iPhone
+   * betød det, at man skrev, tastaturet kom op, og de chips man skulle
+   * VÆLGE imellem lå bag det. Man kunne ikke se, hvad man valgte.
+   *
+   * `visualViewport` er den ene kilde, der kender den faktiske synlige
+   * flade. Forskellen mellem den og `window.innerHeight` ER tastaturet.
+   *
+   * På Android bliver tallet ~0 af sig selv: dér er `innerHeight` allerede
+   * skrumpet af `resizes-content`, så der ikke kompenseres to gange.
+   */
+  const [tastatur, setTastatur] = useState(0);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (vv === null || vv === undefined) return;
+
+    const maal = () => {
+      const daekket = window.innerHeight - vv.height - vv.offsetTop;
+      // Afrundet og med gulv: `visualViewport` giver brøkdele af en pixel,
+      // og et negativt tal (fx mens der zoomes) må ikke løfte arket.
+      setTastatur(Math.max(0, Math.round(daekket)));
+    };
+
+    maal();
+    vv.addEventListener("resize", maal);
+    // `scroll` med: iOS flytter den visuelle viewport, når man ruller med
+    // tastaturet oppe, og så ændrer `offsetTop` sig uden en resize.
+    vv.addEventListener("scroll", maal);
+
+    return () => {
+      vv.removeEventListener("resize", maal);
+      vv.removeEventListener("scroll", maal);
+    };
+  }, []);
 
   useEffect(() => {
     const forrige = document.body.style.overflow;
@@ -136,7 +189,12 @@ export function Ark({
         role="dialog"
         aria-modal="true"
         aria-label={titel}
-        style={traekker ? { transform: `translateY(${trukket}px)` } : undefined}
+        style={{
+          // Løfter arket fri af tastaturet. `0px` og ikke `0`, fordi
+          // værdien indgår i en `calc()` i CSS'en.
+          ...({ "--tastatur": `${tastatur}px` } as CSSProperties),
+          ...(traekker ? { transform: `translateY(${trukket}px)` } : {}),
+        }}
       >
         {/*
           Grebet OG titlen er trækfladen. Grebet alene er 40×4px — for lidt

@@ -86,7 +86,10 @@ function Appen() {
   const mig = useCachetQuery("mig", api.users.getMe, {});
   const createUser = useMutation(api.users.createUser);
 
-  const [fane, setFane] = useState<Fane>("kanal");
+  // MIG er startskærmen. Kanalen var det før, men den er noget, man går HEN
+  // til — stillingen, chatten, kortet. Mig er, hvor man selv står, og det er
+  // det, man åbner appen for at se efter en genstand.
+  const [fane, setFane] = useState<Fane>("mig");
   const [visning, setVisning] = useState<Visning>("stilling");
   const [logAabent, setLogAabent] = useState(false);
   const [kanalAabent, setKanalAabent] = useState(false);
@@ -345,16 +348,19 @@ function Appen() {
           ikke få en sløret bund ud af ingenting. */}
       <div className="bundsloer" aria-hidden="true" />
 
+      {/* MIG står til venstre, Kanal til højre. Rækkefølgen følger nu
+          startskærmen: den fane, man lander på, er den første, man læser.
+          Stod Kanal først, ville appen åbne på sin anden knap. */}
       <nav className="nav">
         <button
           className="navknap"
-          aria-current={fane === "kanal" ? "page" : undefined}
-          onClick={() => setFane("kanal")}
+          aria-current={fane === "mig" ? "page" : undefined}
+          onClick={() => setFane("mig")}
         >
           <span className="ikon">
-            <KanalIkon />
+            <MigIkon />
           </span>
-          Kanal
+          Mig
         </button>
 
         <button
@@ -367,13 +373,13 @@ function Appen() {
 
         <button
           className="navknap"
-          aria-current={fane === "mig" ? "page" : undefined}
-          onClick={() => setFane("mig")}
+          aria-current={fane === "kanal" ? "page" : undefined}
+          onClick={() => setFane("kanal")}
         >
           <span className="ikon">
-            <MigIkon />
+            <KanalIkon />
           </span>
-          Mig
+          Kanal
         </button>
       </nav>
 

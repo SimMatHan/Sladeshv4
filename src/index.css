@@ -822,8 +822,39 @@ input {
   color: var(--tekst-svag);
 }
 
+/*
+ * Den aktive fane.
+ *
+ * Den skiftede KUN farve — fra `--tekst-svag` til `--tekst`. To grå toner
+ * ved siden af hinanden på en 11px etikette, set på en telefon i en bar:
+ * forskellen var der, men den var ikke til at aflæse på et blik, og man
+ * kunne ikke se hvilken side man stod på.
+ *
+ * Nu bærer fladen valget, som den gør i segmentvælgeren (`.segment`) —
+ * samme greb, så de to steder i appen, hvor man vælger mellem sideordnede
+ * visninger, opfører sig ens. Accentfarven oveni, fordi navigationen er
+ * appens ene faste holdepunkt og gerne må sige tydeligt, hvor man er.
+ */
 .navknap[aria-current="page"] {
-  color: var(--tekst);
+  color: var(--accent);
+}
+
+.navknap[aria-current="page"] .ikon {
+  /* Kun ikonet får fladen, ikke hele knappen med etiketten under. En pille
+     om begge ville fylde næsten hele navigationens højde og gøre den til en
+     række knapper frem for en stribe. */
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: var(--radius-rund);
+  /* Fladen skal være bredere end ikonet for at ligne en pille. Boksen
+     vokser vandret uden at flytte etiketten, fordi knappen er en kolonne
+     med `align-items: center`. */
+  width: calc(var(--ikon) + var(--luft-4));
+}
+
+/* Stregen bliver en anelse tykkere på den aktive. Farve alene bærer ikke et
+   valg for den, der ikke skelner de to toner. */
+.navknap[aria-current="page"] .ikon svg {
+  stroke-width: 2.2;
 }
 
 /*
@@ -934,11 +965,22 @@ input {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /*
+   * `--tastatur` sættes af Ark.tsx og er 0, når intet tastatur er oppe.
+   *
+   * `interactive-widget=resizes-content` i index.html skulle klare det, men
+   * findes kun i Chrome/Android. På iOS ligger tastaturet OVEN PÅ, uden at
+   * layout-viewporten ændrer sig, så `bottom: 0` peger bag tastaturet — og
+   * log-arkets træffere, dem man skal vælge imellem, lå derunder.
+   *
+   * Højden trækkes fra i samme åndedrag. Uden det ville arket blot glide op
+   * og få sin egen top skubbet ud over skærmkanten i stedet.
+   */
+  bottom: var(--tastatur, 0px);
   z-index: var(--lag-ark);
   max-width: var(--bredde);
   margin: 0 auto;
-  max-height: 88dvh;
+  max-height: calc(88dvh - var(--tastatur, 0px));
   display: flex;
   flex-direction: column;
   background: var(--flade);
