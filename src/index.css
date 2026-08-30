@@ -2059,7 +2059,12 @@ input {
 
   position: relative;
   isolation: isolate;
-  width: min(64vw, 260px);
+  /*
+   * MINDRE END DEN VAR (64vw/260px). Kuglen fyldte over halvdelen af
+   * skærmen og skubbede stimestriben under folden på en lille telefon. Den
+   * skal være skærmens hovedperson, ikke dens eneste indhold.
+   */
+  width: min(54vw, 216px);
   aspect-ratio: 1;
   border-radius: var(--radius-rund);
   overflow: hidden;
@@ -2122,8 +2127,20 @@ input {
 .orbsky {
   position: absolute;
   inset: -25%;
-  filter: blur(26px) saturate(calc(0.4 + 0.85 * var(--orbintensitet)));
-  opacity: calc(0.62 + 0.28 * var(--orbintensitet));
+  /*
+   * SLØRINGEN ER SKÅRET NED fra 26px til 13. Ved 26 løb de fire pletter
+   * sammen til én jævn flade, og kuglen så ud som en gradient, der lå
+   * stille — al farveforskellen blev midlet væk. Ved 13 kan man se, HVOR
+   * farverne møder hinanden, og det er dét, der får den til at ligne
+   * væske frem for maling.
+   *
+   * MÆTNINGENS BUND ER HÆVET fra 0,4 til 0,85. Den gamle bund gjorde en
+   * kugle på nul til en grå kugle — og nul er dagens normaltilstand, så
+   * det var dén, man så oftest. Den skal stadig være roligere end en våd
+   * aften, bare ikke farveløs.
+   */
+  filter: blur(13px) saturate(calc(0.85 + 0.7 * var(--orbintensitet)));
+  opacity: calc(0.82 + 0.14 * var(--orbintensitet));
   transition:
     filter var(--fart-lang) var(--kurve),
     opacity var(--fart-lang) var(--kurve);
@@ -2134,10 +2151,15 @@ input {
  * `background-position`, ingen bredde eller højde — de tre ville tvinge
  * browseren til at tegne laget forfra ved hver eneste ramme.
  */
+/*
+ * MINDRE PLETTER (62% → 54%). Store pletter dækker hinanden og bliver til
+ * én flade; mindre pletter lader bunden komme igennem imellem dem, og så er
+ * der noget for kanterne at vise sig imod.
+ */
 .orbplet {
   position: absolute;
-  width: 62%;
-  height: 62%;
+  width: 54%;
+  height: 54%;
   border-radius: var(--radius-rund);
   will-change: transform;
 }
@@ -2153,25 +2175,49 @@ input {
  * samme ved enhver intensitet, og et mønster, der er sikkert ved 0, kunne
  * blive synligt ved 1.
  */
+/*
+ * FIRE NUANCER, IKKE ÉN FARVE I FIRE STYRKER.
+ *
+ * Pletterne var accent, accent-mørk og accent blandet ned i fladen — samme
+ * kulør hele vejen, kun lysere og mørkere. Det er dét, der gjorde kuglen
+ * flad: uden farveSKIFT er der ikke rigtig nogen kant at få øje på, hvor to
+ * pletter mødes, uanset hvor lidt man slører.
+ *
+ * Nu trækkes to af dem mod `--guld` og `--medgang`. Accenten dominerer
+ * stadig (65–70 %), så kuglen er tydeligt appens farve — men de to nabo-
+ * kulører giver netop den skimren, man ser i forlægget.
+ *
+ * BEGGE ER TEMATOKENS, ikke faste farver. Det lyse tema overskriver dem
+ * (`--guld` bliver #856300, `--medgang` #1b6b4a), så blandingen bliver mørk
+ * og afdæmpet dér frem for at lyse op midt i en lys flade.
+ */
 .orbplet.a {
-  top: 4%;
-  left: 8%;
-  background: color-mix(in srgb, var(--accent) 85%, transparent);
+  top: 2%;
+  left: 6%;
+  background: color-mix(in srgb, var(--accent) 92%, transparent);
   animation: orbdrift-a calc(14s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.b {
-  top: 28%;
-  left: 34%;
-  background: color-mix(in srgb, var(--accent-mork) 75%, transparent);
+  top: 30%;
+  left: 38%;
+  background: color-mix(in srgb, var(--accent-mork) 88%, transparent);
   animation: orbdrift-b calc(18s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.c {
-  top: 40%;
-  left: 0%;
-  background: color-mix(in srgb, var(--accent) 45%, var(--flade-hvaelvet));
+  top: 44%;
+  left: 2%;
+  background: color-mix(in srgb, var(--accent) 68%, var(--guld));
   animation: orbdrift-c calc(22s + 12s * var(--orbrolighed)) ease-in-out infinite;
+}
+
+.orbplet.d {
+  top: 12%;
+  left: 40%;
+  background: color-mix(in srgb, var(--accent) 70%, var(--medgang));
+  /* 26s — igen et tal, der ikke deler multiplum med de tre andre. */
+  animation: orbdrift-d calc(26s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 /*
@@ -2212,6 +2258,19 @@ input {
   }
   50% {
     transform: translate3d(26%, -18%, 0) scale(1.25);
+  }
+}
+
+@keyframes orbdrift-d {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.1);
+  }
+  35% {
+    transform: translate3d(-18%, 26%, 0) scale(0.9);
+  }
+  75% {
+    transform: translate3d(-26%, -8%, 0) scale(1.15);
   }
 }
 
@@ -2269,9 +2328,74 @@ input {
 }
 
 /*
+ * KUGLEN MED EN PIL I HVER SIDE.
+ *
+ * Swipet var usynligt. Vælgeren under kuglen fortalte, at der var tre tal,
+ * men ikke at man kunne føre fingeren hen over kuglen for at skifte — og en
+ * handling, man ikke kan se, findes ikke for den, der ikke prøver.
+ */
+.orbmidte {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-2);
+}
+
+.orbpil {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: var(--ikon);
+  height: var(--ikon);
+  color: var(--tekst-svag);
+  opacity: 0.6;
+  transition: opacity var(--fart) var(--kurve);
+}
+
+/* Vendt om, så den peger væk fra kuglen. Bevægelsen nedenfor vendes med, og
+   det er netop meningen: begge pile skal nikke UDAD. */
+.orbpil.venstre {
+  transform: scaleX(-1);
+}
+
+/*
+ * SLUKKET frem for fjernet i enderne. Rækken ruller ikke rundt — står man på
+ * det første tal, er der intet til venstre — men en pil, der forsvandt,
+ * ville flytte kuglen et par pixels til siden ved hvert skifte.
+ */
+.orbpil.slukket {
+  opacity: 0;
+}
+
+/*
+ * Det lille nik udad. Det er forskellen på en pil, der PEGER, og en der
+ * INVITERER — en statisk pil kan læses som pynt, en der bevæger sig, kan
+ * ikke.
+ *
+ * Den ligger på `svg`'et frem for på `.orbpil`, fordi forælderen bruger sin
+ * egen `transform` til at spejlvende den venstre pil. To transforms på
+ * samme element ville overskrive hinanden, og så ville venstre pil pege
+ * forkert, så snart animationen begyndte.
+ */
+.orbpil svg {
+  width: 100%;
+  height: 100%;
+  animation: orbnik 2.4s ease-in-out infinite;
+}
+
+@keyframes orbnik {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(22%, 0, 0);
+  }
+}
+
+/*
  * VÆLGEREN under kuglen. Swipet er det, forlægget gør, og det er rart — men
  * det er også usynligt, og en handling man ikke kan se, findes ikke for den
- * der ikke prøver. Derfor står de tre tal som rigtige knapper.
+ * der ikke prøver. Derfor står de tre tal OGSÅ som rigtige knapper.
  */
 .orbvaelger {
   display: grid;
