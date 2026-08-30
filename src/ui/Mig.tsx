@@ -272,26 +272,67 @@ const AFTENLOFT = (() => {
 })();
 
 /**
- * Hvad "fuldt mættet kugle" betyder for hvert af de tre tal.
+ * KUGLEN BLIVER ALDRIG FÆRDIG.
  *
- * Kuglens farve og fart følger det VISTE tal, så de tre skal måles mod hver
- * sin skala. Alle tre er lånt fra noget, appen allerede har bestemt, frem
- * for at være valgt her:
+ * Den målte før mod et loft: 20 genstande gav en fuldt mættet kugle, og
+ * genstand 21 og 35 så ud præcis som genstand 20. Det var forkert på to
+ * måder. Det gjorde 20 til et MÅL — noget man går efter, og så er aftenen
+ * ligesom overstået — og det gjorde kuglen blind for alt derover, netop
+ * på de aftener hvor der var mest at vise.
  *
- *   - Genstande mod aftenens loft — samme tal som hjælpelinjen tæller ned
- *     mod, så kuglen er mættet præcis når "Full Bender" står under den.
- *   - Promille mod 1,5, hvor `beruselsesniveau()` i convex/promilleRules.ts
- *     skifter til "Meget beruset" og status bliver `danger`. Kuglen gløder
- *     altså, når appen i forvejen ville sige, at nu er det alvor.
- *   - Stimen mod "Ingen hviledag"s syv dage, som ugestriben lige under
- *     kuglen allerede viser.
+ * Man logger, hvad man har lyst til. Kuglen skal følge med hele vejen.
  *
- * Ingen af dem er et loft for, hvad man KAN nå — de er punktet, hvor kuglen
- * ikke bliver mere mættet. Orb.tsx klemmer selv alt derover ned til 1.
+ * Derfor HALVERING frem for loft: hvert skridt lukker halvdelen af det, der
+ * er tilbage op til fuld mætning. Kurven nærmer sig 1 uden nogensinde at nå
+ * den, så der er altid et stykke igen, og enhver logning rykker noget.
+ *
+ *   1 - 0.5^(værdi / halvering)
+ *
+ * Til gengæld rykker den MEST i starten, hvor man kan se forskel, og mindre
+ * og mindre derefter. Det er den ærlige form: forskellen på 2 og 3 genstande
+ * betyder mere end forskellen på 32 og 33, og en skala der behandlede dem
+ * ens, ville enten sprænge i toppen eller stå stille i bunden.
+ *
+ * Tallene nedenfor er altså IKKE mål. De er kun, hvor kuglen er halvvejs.
  */
-const PROMILLELOFT = 1.5;
+function intensitetAf(vaerdi: number, halvering: number): number {
+  // `!(x > 0)` frem for `x <= 0`, fordi den også fanger NaN. Et manglende
+  // tal skal give en rolig kugle, ikke en ugyldig CSS-værdi.
+  if (!(vaerdi > 0)) return 0;
+  return 1 - Math.pow(0.5, vaerdi / halvering);
+}
 
-const STIMELOFT = (() => {
+/**
+ * Halvvejs ved otte genstande.
+ *
+ * Den ene af de tre, der IKKE er lånt, og det er med vilje. Appens etablerede
+ * genstandstal — 20 for Full Bender, 10 for Obeerma — er alle sammen
+ * achievement-mål, og at bruge et mål som kuglens halvvejspunkt ville hente
+ * præcis dén "gå efter tallet"-følelse ind igen ad bagvejen.
+ *
+ * Otte er valgt efter en almindelig aften: de første par genstande rykker
+ * tydeligt, en våd aften er godt oppe, og en meget våd aften har stadig et
+ * stykke igen.
+ */
+const GENSTANDE_HALVERING = 8;
+
+/**
+ * Halvvejs ved 0,8 ‰ — hvor `beruselsesniveau()` i convex/promilleRules.ts
+ * skifter fra "Let påvirket" til "Beruset".
+ *
+ * Lånt, fordi grænsen her betyder det samme som kuglen siger: det er
+ * appens eget skel mellem "har fået noget" og "er påvirket".
+ */
+const PROMILLE_HALVERING = 0.8;
+
+/**
+ * Halvvejs ved "Ingen hviledag"s syv dage, som ugestriben lige under kuglen
+ * allerede viser.
+ *
+ * En uge er værd at kunne se på kuglen — men den er nu MIDTEN, ikke enden.
+ * Dag 8 og 20 bliver ved med at gøre den varmere.
+ */
+const STIME_HALVERING = (() => {
   const def = findAchievement("ingen_hviledag");
   return def === undefined ? 7 : taerskelFor(def);
 })();
@@ -399,7 +440,7 @@ function Hero({
           : `${genstande(mangler)} til Full Bender`,
       // Mens stillingen hentes, står tallet som "–", og en kugle der glødede
       // bag en tankestreg ville love noget, vi endnu ikke ved.
-      intensitet: henter ? 0 : drukketIDag / AFTENLOFT,
+      intensitet: henter ? 0 : intensitetAf(drukketIDag, GENSTANDE_HALVERING),
     },
     promille: {
       etiket: "Promille",
@@ -410,14 +451,14 @@ function Hero({
       // Uden vægt og køn er der intet at afspejle — feltet er en vej til
       // Indstillinger, ikke et tal. Se "Vis intet, du ikke ved" ovenfor.
       intensitet: kanPromille
-        ? (minPromille.promille as number) / PROMILLELOFT
+        ? intensitetAf(minPromille.promille as number, PROMILLE_HALVERING)
         : 0,
     },
     stime: {
       etiket: stime === 1 ? "Dag i træk" : "Dage i træk",
       tal: String(stime),
       under: laengsteStime > 0 ? `Længste ${laengsteStime}` : "Ingen stime endnu",
-      intensitet: stime / STIMELOFT,
+      intensitet: intensitetAf(stime, STIME_HALVERING),
     },
   };
 

@@ -39,9 +39,13 @@
  * besked uden at læse tallet.
  *
  * Den kommer UDEFRA frem for at blive regnet ud her, fordi den hører til
- * det viste tal: genstande måles mod aftenens loft, promille mod "meget
- * beruset", stimen mod en uge. Tre forskellige skalaer, som Mig.tsx ejer —
- * kuglen skal kun kende resultatet.
+ * det viste tal: genstande, promille og stime har hver sin skala, og dem
+ * ejer Mig.tsx. Kuglen skal kun kende resultatet.
+ *
+ * Bemærk at 1 aldrig nås. Skalaerne halverer afstanden op til fuld mætning
+ * frem for at ramme et loft, så kuglen bliver ved med at rykke sig, uanset
+ * hvor mange man logger — den er aldrig færdig, og der er aldrig et tal,
+ * det giver mening at "gå efter".
  *
  * Farven er ALDRIG den eneste besked. Tallet står midt i kuglen uanset
  * hvad, så den der ikke ser forskel på bleg og mættet ravgul, får præcis
@@ -61,11 +65,12 @@ export function Orb({
   /** 0–1. Hvor mættet og hvor urolig kuglen er. Se klemt nedenfor. */
   intensitet: number;
 }) {
-  // KLEMT HER frem for hos kalderen. En promille over "meget beruset" og et
-  // scoreboard, der er nået forbi aftenens loft, er begge helt normale — de
-  // skal give en fuldt mættet kugle, ikke en CSS-værdi uden for skalaen.
-  // NaN fanges af den sidste gren: et manglende tal skal give en rolig
-  // kugle, ikke en ugyldig `--orbintensitet`, der vælter hele udtrykket.
+  // Et VÆRN, ikke en del af skalaen. Kurven i Mig.tsx kan ikke selv nå 1,
+  // så den her binder aldrig i praksis — men kuglen skal stadig ikke kunne
+  // vælte, hvis en fremtidig kalder regner intensiteten ud på en anden
+  // måde. NaN fanges af den sidste gren: et manglende tal skal give en
+  // rolig kugle, ikke en ugyldig `--orbintensitet`, der slår både farve og
+  // fart ud.
   const klemt = intensitet > 1 ? 1 : intensitet > 0 ? intensitet : 0;
 
   return (
