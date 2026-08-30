@@ -2043,6 +2043,22 @@ input {
  * barn slå igennem på det, der ligger bag kortet.
  */
 .orb {
+  /*
+   * AFTENENS TILSTAND SOM ÉT TAL, sat af Orb.tsx. 0 er en bleg, næsten
+   * stillestående kugle; 1 er mættet og urolig.
+   *
+   * Reserven her er ikke pynt: står den ikke, og glemmer nogen at sende
+   * `intensitet` med, bliver hvert `calc()` nedenfor ugyldigt, og så falder
+   * BÅDE farve og fart tilbage til browserens standard — en gennemsigtig
+   * kugle, der ikke bevæger sig. Med reserven bliver den bare rolig.
+   */
+  --orbintensitet: 0;
+  /*
+   * Den modsatte vej, regnet ÉN gang frem for i fem `calc()`. Farten hænger
+   * på roligheden — varigheden skal OP, når intensiteten går ned.
+   */
+  --orbrolighed: calc(1 - var(--orbintensitet));
+
   position: relative;
   isolation: isolate;
   width: min(64vw, 260px);
@@ -2063,10 +2079,22 @@ input {
       color-mix(in srgb, var(--accent) 22%, var(--bund)),
       var(--flade) 70%
     );
-  /* Kanten er GEOMETRI (1px), ikke en skala — se regel 1. */
+  /*
+   * Kanten er GEOMETRI (1px), ikke en skala — se regel 1.
+   *
+   * GLØDEN UNDER KUGLEN følger intensiteten: usynlig ved 0, tydelig ved 1.
+   * Den er det eneste, der rækker ud OVER kuglens egen flade, og derfor det
+   * første, øjet fanger på afstand — netop dét, en aflæsning skal kunne.
+   */
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
-    0 18px 40px -24px color-mix(in srgb, var(--accent) 60%, transparent);
+    0 18px 40px -24px
+      color-mix(
+        in srgb,
+        var(--accent) calc(15% + 55% * var(--orbintensitet)),
+        transparent
+      );
+  transition: box-shadow var(--fart-lang) var(--kurve);
 }
 
 /*
@@ -2079,11 +2107,28 @@ input {
  * sløringens egen bløde kant blive klippet af masken og tegne en synlig ring
  * langs randen.
  */
+/*
+ * MÆTNINGEN LIGGER HER, i samme `filter` som sløringen — ikke som en farve
+ * på hver plet. Én egenskab at ændre, når data skifter, frem for tre, og
+ * pletternes egne farver kan blive stående som rene `color-mix`-udtryk.
+ *
+ * `saturate()` under 1 trækker farven mod grå UDEN at gøre kuglen mørkere.
+ * Havde vi sænket `opacity` i stedet, ville en rolig aften ikke bare være
+ * bleg — kuglen ville forsvinde ind i baggrunden, og så var der intet at
+ * aflæse.
+ *
+ * Bemærk at hverken `filter` eller `opacity` animeres af keyframes; de
+ * ændrer sig kun, når tallet gør. Pletterne indeni animeres udelukkende med
+ * `transform`, og det er dét, der holder tegningen billig.
+ */
 .orbsky {
   position: absolute;
   inset: -25%;
-  filter: blur(26px);
-  opacity: 0.9;
+  filter: blur(26px) saturate(calc(0.4 + 0.85 * var(--orbintensitet)));
+  opacity: calc(0.62 + 0.28 * var(--orbintensitet));
+  transition:
+    filter var(--fart-lang) var(--kurve),
+    opacity var(--fart-lang) var(--kurve);
 }
 
 /*
@@ -2099,25 +2144,36 @@ input {
   will-change: transform;
 }
 
+/*
+ * FARTEN FØLGER TILSTANDEN. Varigheden lægges oven i grundtallet efter
+ * `--orbrolighed`, så en tom aften driver dovent rundt (14s bliver til 26s)
+ * og en våd aften er urolig (14s).
+ *
+ * De 12 sekunder er de samme for alle tre, så de tre grundtal aldrig
+ * nærmer sig hinanden undervejs — se noten om fælles multipla nedenfor.
+ * Ganges de i stedet med en faktor, ville forholdet mellem dem være det
+ * samme ved enhver intensitet, og et mønster, der er sikkert ved 0, kunne
+ * blive synligt ved 1.
+ */
 .orbplet.a {
   top: 4%;
   left: 8%;
   background: color-mix(in srgb, var(--accent) 85%, transparent);
-  animation: orbdrift-a 14s ease-in-out infinite;
+  animation: orbdrift-a calc(14s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.b {
   top: 28%;
   left: 34%;
   background: color-mix(in srgb, var(--accent-mork) 75%, transparent);
-  animation: orbdrift-b 18s ease-in-out infinite;
+  animation: orbdrift-b calc(18s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.c {
   top: 40%;
   left: 0%;
   background: color-mix(in srgb, var(--accent) 45%, var(--flade-hvaelvet));
-  animation: orbdrift-c 22s ease-in-out infinite;
+  animation: orbdrift-c calc(22s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 /*
