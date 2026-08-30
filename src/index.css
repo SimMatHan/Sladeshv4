@@ -1821,8 +1821,8 @@ input {
 /*
  * DISSE REGLER LÅ UDEN FOR SYSTEMET.
  *
- * `.profiltop`, `.talgitter` og `.medaljer` er ældre end designsystemet og
- * blev aldrig flyttet med: 22px, 13.5px, 23px, 11.5px, 15px, 9px, 7px og
+ * `.profiltop` og `.talgitter` er ældre end designsystemet og blev aldrig
+ * flyttet med: 22px, 13.5px, 23px, 11.5px, 15px, 9px, 7px og
  * `-0.02em` findes ingen af dem i skalaen. Det er ikke en skønhedsfejl —
  * det er derfor Mig, Admin og personkortet føltes som en anden app end
  * resten: de brugte bogstavelig talt en anden typografisk skala.
@@ -1964,17 +1964,15 @@ input {
   line-height: 1;
 }
 
-.medaljer {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--luft-1);
-  font-size: var(--tekst-m);
-}
-
-.medaljer .laast {
-  opacity: 0.2;
-  filter: grayscale(1);
-}
+/*
+ * Her lå `.medaljer`: alle tolv mærker som en stribe emoji, de låste nedtonet
+ * med `grayscale`. Den skulle lokke ind i hylden.
+ *
+ * Tolv emojier i én stribe læses ikke som tolv ting — de bliver ét mønster,
+ * og fordi de fleste er grå, ligner mønsteret mest af alt en fejl. Mærkerne
+ * har billede, navn og fremdrift inde i hylden; striben viste ingen af
+ * delene.
+ */
 
 /*
  * Mig-fanens tre kort er STORE i hjørnerne — 22px, ikke systemets 14.
@@ -3575,36 +3573,22 @@ p.dagliste {
   color: var(--accent);
 }
 
-.taettestmidt .bjaelke {
-  margin-top: var(--luft-2);
-}
-
 .taettesttal {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
 
 /*
- * At kortet FØRER et sted hen.
+ * Her lå `.taettestled` — en "SE ALLE 12 MÆRKER"-linje under striben.
  *
- * Det har altid været en knap, der åbner trofæhylden, men intet på det sagde
- * det: man så et mærke, en bjælke og en stribe emoji, og der var ingen grund
- * til at tro, at der var mere bag. Et kort, hvor alt kan læses uden at
- * trykke, ligner en visning frem for en dør.
+ * Den fandtes, fordi kortet ikke lignede en knap: man så et mærke, en bjælke
+ * og en stribe emoji, og intet sagde, at der var mere bag. Ledeteksten var
+ * altså en lap på et kort, der viste for meget.
  *
- * To signaler, fordi ét ikke rakte. Vinklen er den, enhver telefonbruger
- * læser uden at tænke; ledeteksten siger, hvad man får — striben af emoji
- * lokker, men den navngiver ikke destinationen.
+ * Nu er bjælken og striben væk, og kortet er én række: mærke, navn, tæller,
+ * vinkel. Rækken med en vinkel i højre kant ER mønsteret for "det her fører
+ * et sted hen" — så skal der ikke også stå det med ord.
  */
-.taettestled {
-  display: block;
-  margin-top: var(--luft-2);
-  font-size: var(--tekst-xs);
-  font-weight: var(--vaegt-medium);
-  letter-spacing: var(--spor-etiket);
-  text-transform: uppercase;
-  color: var(--accent);
-}
 
 /* Tallet og vinklen som ÉN søjle i højre kant, så de to ikke skubber til
    hinanden, når tallet går fra ét til to cifre. */
@@ -3621,7 +3605,7 @@ p.dagliste {
   flex-shrink: 0;
   width: var(--ikon);
   height: var(--ikon);
-  /* Dæmpet: den skal FINDES, ikke læses først. Titlen og bjælken er det,
+  /* Dæmpet: den skal FINDES, ikke læses først. Navnet på mærket er det,
      man kommer for. */
   color: var(--tekst-svag);
 }
@@ -3717,9 +3701,10 @@ p.dagliste {
  * der VAR mærker, men ikke hvilke. Billede og navn i stedet — de samme
  * billeder, hylden bruger.
  *
- * `.medaljer` bliver, hvor den hører hjemme: på Mig, under "tættest på",
- * hvor stribens opgave netop ER at være en antydning, man selv kan folde
- * ud ved at åbne hylden. Se Mig.tsx.
+ * Mig havde en tilsvarende stribe (`.medaljer`) under "tættest på". Den er
+ * siden fjernet af samme grund, som gjorde den forkert her: en emoji uden
+ * navn siger, at der ER et mærke, ikke hvilket. Nu findes mærkerne ét sted
+ * — i hylden — og med billede og navn begge steder. Se Mig.tsx.
  */
 .maerkeliste {
   display: flex;

@@ -576,15 +576,15 @@ function AchievementRaekke({
         <div className="taettestmidt">
           <span className="etiket">Næste mærke</span>
           <div className="titel">Alle låst op</div>
-          <span className="hjaelp">
-            {oplaaste} af {achievements.length} optjent
-          </span>
-          <Medaljestribe achievements={achievements} />
-          <span className="taettestled">Se hele hylden</span>
         </div>
 
-        <span className="taettestvinkel" aria-hidden="true">
-          <VinkelIkon />
+        <span className="taettesthoejre">
+          <span className="hjaelp taettesttal">
+            {oplaaste}/{achievements.length}
+          </span>
+          <span className="taettestvinkel" aria-hidden="true">
+            <VinkelIkon />
+          </span>
         </span>
       </button>
     );
@@ -604,23 +604,6 @@ function AchievementRaekke({
       <div className="taettestmidt">
         <span className="etiket">Tættest på</span>
         <div className="titel">{def?.title ?? "Næste mærke"}</div>
-        <div
-          className="bjaelke"
-          role="progressbar"
-          aria-valuenow={naesteMilepael.current}
-          aria-valuemin={0}
-          aria-valuemax={naesteMilepael.threshold}
-          aria-label={`${def?.title ?? "Næste mærke"}: ${naesteMilepael.current} af ${naesteMilepael.threshold}`}
-        >
-          <div className="fyld" style={{ width: `${naesteMilepael.percentage}%` }} />
-        </div>
-        <Medaljestribe achievements={achievements} />
-        {/* Navnet på det sted, knappen fører hen. Striben ovenover LOKKER,
-            men den siger ikke hvad man får — og et kort, hvor alt kan
-            læses uden at trykke, ligner en visning frem for en dør. */}
-        <span className="taettestled">
-          Se alle {achievements.length} mærker
-        </span>
       </div>
 
       <span className="taettesthoejre">
@@ -635,23 +618,21 @@ function AchievementRaekke({
   );
 }
 
-/**
- * Emoji-striben. Dens opgave er at LOKKE — de rigtige badges med billeder,
- * fremdrift og historik ligger i hylden bagved arket. Derfor kun emojier,
- * ingen tal, ingen navne: nok til at vække nysgerrighed, ikke til at
- * informere færdigt.
+/*
+ * EMOJI-STRIBEN ER VÆK.
+ *
+ * `Medaljestribe` tegnede alle tolv mærker som emojier under fremdriften,
+ * de låste nedtonet. Tanken var, at den skulle LOKKE.
+ *
+ * Den lokkede ikke. Tolv emojier i én stribe kan ikke læses som tolv ting
+ * — de bliver ét mønster, og fordi de fleste er grå, ligner mønsteret mest
+ * af alt en fejl. Kortet havde seks ting at se på (billede, etiket, titel,
+ * bjælke, stribe, tæller og en "se alle"-linje), og det blev en visning,
+ * man skulle afkode, frem for en dør, man kunne trykke på.
+ *
+ * Fremdriftsbjælken røg med af samme grund: `0/1` til højre siger allerede
+ * det samme med færre streger.
+ *
+ * Mærkerne findes stadig — med billede, navn, fremdrift og historik — inde
+ * i hylden, som knappen fører hen til. Det er dér, man kan nå at se på dem.
  */
-function Medaljestribe({ achievements }: { achievements: AchievementListe }) {
-  return (
-    <div className="medaljer">
-      {achievements.map((achievement) => (
-        <span
-          key={achievement.achievementId}
-          className={achievement.unlocked ? undefined : "laast"}
-        >
-          {achievement.emoji ?? "🏆"}
-        </span>
-      ))}
-    </div>
-  );
-}
