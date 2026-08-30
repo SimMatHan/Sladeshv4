@@ -825,36 +825,17 @@ input {
 /*
  * Den aktive fane.
  *
- * Den skiftede KUN farve — fra `--tekst-svag` til `--tekst`. To grå toner
- * ved siden af hinanden på en 11px etikette, set på en telefon i en bar:
- * forskellen var der, men den var ikke til at aflæse på et blik, og man
- * kunne ikke se hvilken side man stod på.
+ * FARVEN ALENE, og det er et valg. Her lå en pille bag ikonet plus en
+ * tykkere streg — tre signaler på én 11px etikette. Det var for meget for
+ * en stribe med to knapper: navigationen blev det tungeste på skærmen, og
+ * den skal være det letteste. Fravalgt efter at have set den.
  *
- * Nu bærer fladen valget, som den gør i segmentvælgeren (`.segment`) —
- * samme greb, så de to steder i appen, hvor man vælger mellem sideordnede
- * visninger, opfører sig ens. Accentfarven oveni, fordi navigationen er
- * appens ene faste holdepunkt og gerne må sige tydeligt, hvor man er.
+ * Accenten bliver, hvor `--tekst` stod før. Den skiller sig ud fra den
+ * inaktive `--tekst-svag` på kulør og ikke kun på lyshed, og det er nok,
+ * netop fordi der kun er to at vælge imellem.
  */
 .navknap[aria-current="page"] {
   color: var(--accent);
-}
-
-.navknap[aria-current="page"] .ikon {
-  /* Kun ikonet får fladen, ikke hele knappen med etiketten under. En pille
-     om begge ville fylde næsten hele navigationens højde og gøre den til en
-     række knapper frem for en stribe. */
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border-radius: var(--radius-rund);
-  /* Fladen skal være bredere end ikonet for at ligne en pille. Boksen
-     vokser vandret uden at flytte etiketten, fordi knappen er en kolonne
-     med `align-items: center`. */
-  width: calc(var(--ikon) + var(--luft-4));
-}
-
-/* Stregen bliver en anelse tykkere på den aktive. Farve alene bærer ikke et
-   valg for den, der ikke skelner de to toner. */
-.navknap[aria-current="page"] .ikon svg {
-  stroke-width: 2.2;
 }
 
 /*
