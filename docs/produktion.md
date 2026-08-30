@@ -293,8 +293,25 @@ JSON kan ikke bære kommentarer, så valgene står her:
   nøglen i `vercel.json` til
   `Content-Security-Policy`, og så håndhæver den. Er der linjer, siger de
   præcis hvilket direktiv der mangler hvad.
-- **`Cache-Control: immutable`** på `/assets/` er sikkert, fordi Vite giver
-  hver fil et indholds-hash i navnet. `index.html` får det bevidst ikke.
+- **`Cache-Control: immutable`** er sikkert for Vites egne filer, fordi de har
+  et indholds-hash i navnet: ændrer indholdet sig, ændrer URL'en sig.
+  `index.html` får det bevidst ikke.
+
+  **Men `/assets/` rummer mere end Vites output.** Alt i `public/assets/`
+  havner samme sted med sit LITERALE navn — i dag
+  `/assets/achievements/*.png`. De har ingen hash, så URL'en er den samme,
+  uanset hvad filen indeholder, og et års `immutable` betyder, at en browser
+  aldrig spørger igen.
+
+  Det kostede: de fire nye achievement-billeder blev refereret i koden, før
+  filerne lå i repoet. Browseren hentede dem, fik 404, og holdt op med at
+  spørge — også efter at filerne var lagt ind. Tre af dem blev ved med at
+  være brudte i dagevis, mens filen lå på serveren. Den fjerde virkede, fordi
+  dens sti først blev efterspurgt, EFTER at filen fandtes.
+
+  Reglen udelader derfor `achievements/`, som får fem minutter og en
+  revalidering. Lægges der andre ikke-hashede filer i `public/assets/`, skal
+  de samme vej.
 
 ---
 
