@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -11,6 +11,8 @@ import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
 import { TandhjulIkon, VinkelIkon } from "./Ikoner";
 import { Indstillinger } from "./Indstillinger";
+import { Orb } from "./Orb";
+import { tik } from "./haptik";
 import { levendeStime } from "../../convex/streaks";
 import { Stimestribe } from "./Stimestribe";
 
@@ -22,9 +24,9 @@ import { Stimestribe } from "./Stimestribe";
  * for resten af dagen, og det er ikke til at fortryde. Det er den ene
  * handling i appen, der spørger.
  *
- * Skærmens hero er aftenens ene tal — genstande i dag, med promillen i
- * hjørnet og en bjælke mod Full Bender. Det var to ringe indtil videre; se
- * `.hero` i index.css for hvorfor de er væk.
+ * Skærmens hero er en levende kugle med ét stort tal, og tre tal at vælge
+ * det iblandt: I AFTEN, PROMILLE og STIME. Man skifter ved at swipe eller
+ * ved at trykke på tallet under. Se `Hero` nedenfor og `Orb.tsx`.
  *
  * Under heroet står stimen som en stribe over ugen (Stimestribe.tsx).
  * Heroet er I AFTEN; striben er de syv dage, der førte hertil. Livstidspoint
@@ -115,6 +117,12 @@ export function Mig({
         minUserId={mig._id}
         minPromille={minPromille}
         sidsteGenstandAt={mig.lastDrinkAt}
+        stime={levendeStime({
+          now: Date.now(),
+          currentDayStreak: mig.currentDayStreak,
+          lastDrinkDayStart: mig.lastDrinkDayStart,
+        })}
+        laengsteStime={mig.longestStreak ?? 0}
         onIndstil={() => setIndstillingerAabne(true)}
       />
 
@@ -264,25 +272,52 @@ const AFTENLOFT = (() => {
 })();
 
 /**
- * Mig-fanens hero — ét stort tal, én bjælke, to hjælpelinjer.
+ * Mig-fanens hero — én levende kugle med ét tal, og tre tal at vælge det
+ * iblandt.
  *
- * Se `.hero` i index.css for hvorfor de to ringe er væk, og hvorfor kortet
- * kun er fyldt i lys tilstand.
+ * Forlægget er Ultrahumans ringapp. Kuglen selv bor i Orb.tsx; her ligger
+ * VALGET af, hvad den viser.
+ *
+ * ## Tre tal, ikke ét kort med det hele
+ *
+ * Her stod ét kort med genstande, promille, en bjælke og to hjælpelinjer —
+ * fem oplysninger på én flade, alle lige store. Nu er der ét stort tal ad
+ * gangen, og de to andre står som små tal under, klar til at blive valgt.
+ * Det er den samme information; forskellen er, at skærmen nu siger, hvad
+ * der er vigtigst, i stedet for at overlade det til øjet.
+ *
+ * Rækkefølgen er aftenens: hvor meget har jeg fået (I AFTEN), hvad gør det
+ * ved mig (PROMILLE), og hvor længe har jeg holdt det gående (STIME).
+ *
+ * ## Man skifter ved at swipe ELLER ved at trykke
+ *
+ * Swipet er det, forlægget gør, og det er rart. Men det er også usynligt,
+ * og en handling, man ikke kan se, findes ikke for den, der ikke prøver.
+ * Tallene under kuglen er derfor rigtige knapper med `role="tab"` — samme
+ * mønster som `Faner`, så tastatur og skærmlæser kommer med.
  *
  * ## Vis intet, du ikke ved
  *
- * Kortet tegnes, så snart det VED noget, og hver linje kan mangle for sig.
- * Promillen kræver vægt og køn; er de ikke udfyldt, står feltet som en
- * knap, der åbner Indstillinger, frem for som et gæt eller et nul. Uden
- * aktiv Kanal er der ingen genstande at tælle. Se
+ * Hvert tal kan mangle for sig. Promillen kræver vægt og køn; er de ikke
+ * udfyldt, står feltet som en vej til Indstillinger frem for som et gæt
+ * eller et nul. Uden aktiv Kanal er der ingen genstande at tælle. Se
  * docs/redesign-kontrakt.md afsnit 7.
  */
+type Orbvalg = "aften" | "promille" | "stime";
+
+/** Hvor langt fingeren skal føres, før det tæller som et swipe. */
+const SWIPELAENGDE = 44;
+
+const ORBRAEKKEFOELGE: readonly Orbvalg[] = ["aften", "promille", "stime"];
+
 function Hero({
   channelId,
   stilling,
   minUserId,
   minPromille,
   sidsteGenstandAt,
+  stime,
+  laengsteStime,
   onIndstil,
 }: {
   channelId: Id<"kanaler"> | undefined;
@@ -290,99 +325,124 @@ function Hero({
   minUserId: Id<"users">;
   minPromille: PromilleSvar | undefined;
   sidsteGenstandAt: number | undefined;
+  stime: number;
+  laengsteStime: number;
   onIndstil: () => void;
 }) {
+  const [valg, setValg] = useState<Orbvalg>("aften");
+  const traek = useRef<{ x: number; y: number } | undefined>(undefined);
+
   // Man kan mangle på listen uden at det er en fejl — scoreboardet viser kun
   // dem der er MED i dag. Har man hverken logget eller checket ind, er
   // svaret ægte 0, ikke et opslag der fejlede.
   const egenRaekke = stilling?.find((raekke) => raekke.userId === minUserId);
   const drukketIDag = egenRaekke?.drinksToday ?? 0;
-
   const henter = stilling === undefined && channelId !== undefined;
-  const andel = Math.min(drukketIDag / AFTENLOFT, 1);
   const mangler = Math.max(AFTENLOFT - drukketIDag, 0);
 
-  return (
-    <div className="kort hero">
-      <div className="herotop">
-        <div className="heroblok">
-          <span className="etiket">I aften</span>
-          <div className="herotal">
-            <span className="tal">{henter ? "–" : genstande(drukketIDag)}</span>
-            <span className="enhed">genstande</span>
-          </div>
-        </div>
+  const kanPromille =
+    minPromille !== undefined &&
+    minPromille.konfigureret &&
+    minPromille.promille !== null;
 
-        <Heropromille minPromille={minPromille} onIndstil={onIndstil} />
-      </div>
+  const skift = (ny: Orbvalg) => {
+    if (ny === valg) return;
+    setValg(ny);
+    // Kvitteringen for et valg, man har taget med fingeren. Gør intet på
+    // iOS — se haptik.ts.
+    tik();
+  };
 
-      <div className="herobund">
-        <div
-          className="herobjaelke"
-          role="progressbar"
-          aria-valuenow={drukketIDag}
-          aria-valuemin={0}
-          aria-valuemax={AFTENLOFT}
-          aria-label={`${genstande(drukketIDag)} af ${AFTENLOFT} genstande`}
-        >
-          <div className="fyld" style={{ width: `${andel * 100}%` }} />
-        </div>
+  /** Et skridt til siden. Standser i enderne frem for at rulle rundt: en
+      liste på tre, der er cirkulær, føles som om man har mistet overblikket. */
+  const skridt = (retning: 1 | -1) => {
+    const i = ORBRAEKKEFOELGE.indexOf(valg) + retning;
+    if (i < 0 || i >= ORBRAEKKEFOELGE.length) return;
+    skift(ORBRAEKKEFOELGE[i]);
+  };
 
-        <div className="herolinjer">
-          <span>{sidsteGenstand(sidsteGenstandAt)}</span>
-          <span>
-            {mangler === 0
-              ? "Full Bender \u{1F37B}"
-              : `${genstande(mangler)} til Full Bender`}
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-}
+  const felter: Record<Orbvalg, { etiket: string; tal: string; under?: string }> = {
+    aften: {
+      etiket: "I aften",
+      tal: henter ? "–" : genstande(drukketIDag),
+      under:
+        mangler === 0
+          ? "Full Bender \u{1F37B}"
+          : `${genstande(mangler)} til Full Bender`,
+    },
+    promille: {
+      etiket: "Promille",
+      tal: kanPromille
+        ? promille(minPromille.promille as number).replace(" \u2030", "")
+        : "–",
+      under: kanPromille ? sidsteGenstand(sidsteGenstandAt) : "Udfyld vægt og køn",
+    },
+    stime: {
+      etiket: stime === 1 ? "Dag i træk" : "Dage i træk",
+      tal: String(stime),
+      under: laengsteStime > 0 ? `Længste ${laengsteStime}` : "Ingen stime endnu",
+    },
+  };
 
-/**
- * Promillen i heroets højre hjørne.
- *
- * `‰`-tegnet er skåret fra: etiketten over tallet siger allerede
- * "Promille", og tegnet ville gøre et 28px-tal til et 28px-tal plus en
- * krølle. Selve formateringen delegeres stadig til `promille()` fra
- * lib/visning.ts — den eneste kilde til komma og decimaler i hele appen —
- * og kun det KENDTE, faste suffiks trimmes bagefter, så der ikke opstår en
- * anden kopi af talformateringen.
- */
-function Heropromille({
-  minPromille,
-  onIndstil,
-}: {
-  minPromille: PromilleSvar | undefined;
-  onIndstil: () => void;
-}) {
-  if (minPromille === undefined) {
-    return (
-      <div className="heroblok hoejre">
-        <span className="etiket">Promille</span>
-        <span className="heropromille tom">–</span>
-      </div>
-    );
-  }
-
-  // Gæt aldrig et tal. Uden vægt og køn regnes der ikke — se getMinPromille.
-  if (!minPromille.konfigureret || minPromille.promille === null) {
-    return (
-      <button className="heroblok hoejre heroknap" onClick={onIndstil}>
-        <span className="etiket">Promille</span>
-        <span className="heropromille tom">Udfyld →</span>
-      </button>
-    );
-  }
+  const aktiv = felter[valg];
 
   return (
-    <div className="heroblok hoejre">
-      <span className="etiket">Promille</span>
-      <span className="heropromille">
-        {promille(minPromille.promille).replace(" \u2030", "")}
-      </span>
+    <div
+      className="orbhero"
+      onPointerDown={(event) => {
+        traek.current = { x: event.clientX, y: event.clientY };
+      }}
+      onPointerUp={(event) => {
+        const t = traek.current;
+        traek.current = undefined;
+        if (t === undefined) return;
+
+        const dx = event.clientX - t.x;
+        // VANDRET skal vinde over lodret. Uden det ville en rulning ned ad
+        // siden, der starter oven på kuglen, skifte tal undervejs.
+        if (Math.abs(dx) < SWIPELAENGDE || Math.abs(dx) < Math.abs(event.clientY - t.y)) {
+          return;
+        }
+        skridt(dx < 0 ? 1 : -1);
+      }}
+      onPointerCancel={() => {
+        traek.current = undefined;
+      }}
+    >
+      {/* `key` tvinger en ny kugle frem ved hvert skifte, så tallet toner
+          ind i stedet for at hoppe fra et ciffer til et andet. */}
+      <Orb key={valg} tal={aktiv.tal} etiket={aktiv.etiket} undertekst={aktiv.under} />
+
+      <div className="orbvaelger" role="tablist" aria-label="Vælg tal">
+        {ORBRAEKKEFOELGE.map((id) => {
+          const felt = felter[id];
+          const valgt = id === valg;
+
+          // Promillen uden vægt og køn er den ene, der fører et andet sted
+          // hen: den er ikke et tal, man kan vælge, men noget der mangler.
+          if (id === "promille" && !kanPromille && minPromille !== undefined) {
+            return (
+              <button key={id} className="orbstat mangler" onClick={onIndstil}>
+                <span className="etiket">Promille</span>
+                <span className="vaerdi">Udfyld →</span>
+              </button>
+            );
+          }
+
+          return (
+            <button
+              key={id}
+              role="tab"
+              aria-selected={valgt}
+              className={valgt ? "orbstat valgt" : "orbstat"}
+              onClick={() => skift(id)}
+            >
+              <span className="etiket">{felt.etiket}</span>
+              <span className="vaerdi">{felt.tal}</span>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

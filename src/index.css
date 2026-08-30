@@ -477,7 +477,7 @@ input {
  * gentage tre linjer om størrelse, vægt og sporing hver gang et tal vises.
  *
  * Der var også en `.tal-stort` til `--tekst-xxl`. Ingen brugte den: de
- * store tal på Mig har deres egne regler i `.hero` og `.livstid`, fordi de
+ * store tal på Mig har deres egne regler i `.orbtal` og `.livstid`, fordi de
  * skal andet end at være store. Fjernet af `npm run revision`.
  */
 .tal {
@@ -508,20 +508,6 @@ input {
 
 .hjaelp {
   font-size: var(--tekst-s);
-  color: var(--tekst-svag);
-}
-
-/*
- * Klassenavnet er brugt bart i KanalVaelger.tsx og LogArk.tsx (en
- * størrelses-annotation på en chip, en volumen under et størrelsesvalg) —
- * men har ALDRIG haft en regel, helt tilbage til det allerførste commit.
- * Begge steder har det derfor stået usynligt: ingen skrifttype, ingen farve,
- * bare hvad der end arves fra forælderen. Rettet her som en delt
- * systemklasse, i stedet for at skrive to bespoke kopier — samme princip
- * som `.hjaelp` og `.etiket` ovenfor.
- */
-.enhed {
-  font-size: var(--tekst-xs);
   color: var(--tekst-svag);
 }
 
@@ -1999,178 +1985,28 @@ input {
  * liste af mange, eller ét af tre felter, der fylder skærmen. Begge tal
  * findes allerede som `--radius` og `--radius-stor`.
  */
-.hero,
 .stime,
 .taettest {
   border-radius: var(--radius-stor);
 }
 
 /*
- * HEROET på Mig — aftenens ene tal.
+ * HEROET på Mig er væk — kuglen afløste det.
  *
- * Her stod to ringe. Ringen er en god figur for "hvor langt er du henne",
- * men aftenens genstande har ikke noget rigtigt loft: ringen målte mod
- * Full Benders 20, altså mod et tal, ingen sigter efter. Den brugte
- * skærmens dyreste plads på at antyde en andel, der ikke betød noget.
+ * Her lå `.hero` med `.herotop`, `.heroblok`, `.herotal`, `.heropromille`,
+ * `.herobund`, `.herobjaelke`, `.herolinjer` og `.heroknap`: ét kort med
+ * genstande, promille, en bjælke og to hjælpelinjer. Fem oplysninger på én
+ * flade, alle lige store.
  *
- * Mockuppen sætter TALLET stort og lader bjælken under gøre det, ringen
- * gjorde — se design/Main.dc.html. Promillen står i hjørnet, fordi den er
- * det andet tal, man kigger efter, og hjælpelinjerne forneden svarer på
- * "hvornår sidst" og "hvor langt til det næste".
+ * `.orbhero` ovenfor viser ét stort tal ad gangen og lader de to andre stå
+ * som små tal under. Samme information, men skærmen siger nu, hvad der er
+ * vigtigst, i stedet for at overlade det til øjet.
  *
- * TO FORMER, og det er ikke en forglemmelse: mockuppen fylder kortet i lys
- * (#1B4D3E) og lader det være et almindeligt kort i mørk (#14161b med
- * accenten kun på promilletallet). På en pale creme-side er ét mørkt felt
- * dét, der holder skærmen sammen; i mørke ville et fyldt ravgult kort være
- * en projektør.
+ * Reglerne er fjernet frem for at blive stående: CSS uden markup ser ud som
+ * om noget bruger den, og den næste, der skal rette en farve, retter et sted
+ * der ikke tegnes.
  */
-.hero {
-  display: flex;
-  flex-direction: column;
-  gap: var(--luft-5);
-  margin: var(--luft-5) 0;
 
-  /* Fladeafhængige farver som variabler. Fyldes kortet, kan hverken kant,
-     dæmpet tekst eller bjælkens spor være de samme som på et hvidt kort. */
-  --herokant: var(--kant);
-  --herodaempet: var(--tekst-daempet);
-  --heroetiket: var(--tekst-svag);
-  --herotal: var(--accent);
-  /*
-   * Bjælkens spor er `--kant`, IKKE `--flade-saenket`. Den sænkede flade er
-   * #14161b i mørk — nøjagtig samme værdi som `--flade`, altså som kortet
-   * bjælken ligger på — så sporet ville være usynligt, og bjælken ville se
-   * ud til at svæve. Mockuppens mørke hero bruger også kantfarven.
-   */
-  --herospor: var(--kant);
-  --herofyld: var(--accent);
-}
-
-@media (prefers-color-scheme: light) {
-  /*
-   * `:root:not([data-tema])` holder festivaltemaerne udenfor. De er mørke i
-   * sig selv, og de dæmpede toner herunder er valgt mod flaskegrøn — ikke
-   * mod Copenhells rød.
-   */
-  :root:not([data-tema]) .hero {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: var(--accent-tekst);
-
-    /* Alt herunder skal lyse OP fra fladen, ikke ned i den. Tonerne er
-       mockuppens egne: #A8C4B4 på etiketter, #C2D6C9 på hjælpelinjer. */
-    --herokant: rgb(255 255 255 / 0.16);
-    --herodaempet: #c2d6c9;
-    --heroetiket: #a8c4b4;
-    --herotal: var(--accent-tekst);
-    --herospor: rgb(255 255 255 / 0.18);
-    --herofyld: var(--accent-tekst);
-  }
-}
-
-.herotop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--luft-4);
-}
-
-.heroblok {
-  display: flex;
-  flex-direction: column;
-  gap: var(--luft-2);
-  min-width: 0;
-}
-
-/* Promillen står til højre og læses derfra. */
-.heroblok.hoejre {
-  align-items: flex-end;
-  text-align: right;
-}
-
-.hero .etiket {
-  color: var(--heroetiket);
-}
-
-/*
- * Aftenens tal. `--tekst-xxl` er 40px, mockuppen har 56 — men 56 findes
- * ikke i skalaen, og `--tekst-xxl` er netop beskrevet som "det ene store
- * tal på skærmen". Det er dét, det her er. Se regel 2 i toppen af filen.
- */
-.herotal {
-  display: flex;
-  align-items: baseline;
-  gap: var(--luft-2);
-}
-
-.herotal .tal {
-  font-size: var(--tekst-xxl);
-  font-weight: var(--vaegt-fed);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--spor-tal);
-  line-height: 1;
-}
-
-.herotal .enhed {
-  font-size: var(--tekst-m);
-  color: var(--herodaempet);
-}
-
-/* Promilletallet. Mindre end aftenens, og i accent på det mørke kort —
-   dér er det den eneste farve, mockuppen bruger. */
-.heropromille {
-  font-size: var(--tekst-xl);
-  font-weight: var(--vaegt-fed);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--spor-tal);
-  line-height: 1;
-  color: var(--herotal);
-}
-
-/* Ikke udfyldt vægt og køn: der REGNES ikke, og der gættes ikke. Feltet er
-   en knap, der åbner Indstillinger. */
-.heropromille.tom {
-  color: var(--herodaempet);
-}
-
-.herobund {
-  display: flex;
-  flex-direction: column;
-  gap: var(--luft-2);
-}
-
-.herobjaelke {
-  height: 6px;
-  border-radius: var(--radius-rund);
-  background: var(--herospor);
-  overflow: hidden;
-}
-
-.herobjaelke .fyld {
-  height: 100%;
-  border-radius: var(--radius-rund);
-  background: var(--herofyld);
-  transition: width var(--fart) ease;
-}
-
-.herolinjer {
-  display: flex;
-  justify-content: space-between;
-  gap: var(--luft-3);
-  font-size: var(--tekst-s);
-  color: var(--herodaempet);
-}
-
-/* Hele toppen er trykbar, når promillen mangler — så er der én ting at
-   gøre ved kortet, og den skal kunne rammes. */
-.heroknap {
-  display: block;
-  width: 100%;
-  font: inherit;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
 
 /* --------------------------------------------------------------- stimen */
 
@@ -3361,7 +3197,7 @@ p.dagliste {
 /*
  * Tallet inde i fremdriftsringen.
  *
- * Boede før hos Mig-fanen, som havde to ringe. De er erstattet af `.hero`,
+ * Boede før hos Mig-fanen, som havde to ringe. De er erstattet af kuglen,
  * og hylden er nu det ENESTE sted i appen med en ring — så reglen står her,
  * hvor den bruges, frem for at pege tilbage på en skærm, der ikke har den
  * mere.
