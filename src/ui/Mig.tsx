@@ -272,6 +272,31 @@ const AFTENLOFT = (() => {
 })();
 
 /**
+ * Hvad "fuldt mættet kugle" betyder for hvert af de tre tal.
+ *
+ * Kuglens farve og fart følger det VISTE tal, så de tre skal måles mod hver
+ * sin skala. Alle tre er lånt fra noget, appen allerede har bestemt, frem
+ * for at være valgt her:
+ *
+ *   - Genstande mod aftenens loft — samme tal som hjælpelinjen tæller ned
+ *     mod, så kuglen er mættet præcis når "Full Bender" står under den.
+ *   - Promille mod 1,5, hvor `beruselsesniveau()` i convex/promilleRules.ts
+ *     skifter til "Meget beruset" og status bliver `danger`. Kuglen gløder
+ *     altså, når appen i forvejen ville sige, at nu er det alvor.
+ *   - Stimen mod "Ingen hviledag"s syv dage, som ugestriben lige under
+ *     kuglen allerede viser.
+ *
+ * Ingen af dem er et loft for, hvad man KAN nå — de er punktet, hvor kuglen
+ * ikke bliver mere mættet. Orb.tsx klemmer selv alt derover ned til 1.
+ */
+const PROMILLELOFT = 1.5;
+
+const STIMELOFT = (() => {
+  const def = findAchievement("ingen_hviledag");
+  return def === undefined ? 7 : taerskelFor(def);
+})();
+
+/**
  * Mig-fanens hero — én levende kugle med ét tal, og tre tal at vælge det
  * iblandt.
  *
@@ -361,7 +386,10 @@ function Hero({
     skift(ORBRAEKKEFOELGE[i]);
   };
 
-  const felter: Record<Orbvalg, { etiket: string; tal: string; under?: string }> = {
+  const felter: Record<
+    Orbvalg,
+    { etiket: string; tal: string; under?: string; intensitet: number }
+  > = {
     aften: {
       etiket: "I aften",
       tal: henter ? "–" : genstande(drukketIDag),
@@ -369,6 +397,9 @@ function Hero({
         mangler === 0
           ? "Full Bender \u{1F37B}"
           : `${genstande(mangler)} til Full Bender`,
+      // Mens stillingen hentes, står tallet som "–", og en kugle der glødede
+      // bag en tankestreg ville love noget, vi endnu ikke ved.
+      intensitet: henter ? 0 : drukketIDag / AFTENLOFT,
     },
     promille: {
       etiket: "Promille",
@@ -376,11 +407,17 @@ function Hero({
         ? promille(minPromille.promille as number).replace(" \u2030", "")
         : "–",
       under: kanPromille ? sidsteGenstand(sidsteGenstandAt) : "Udfyld vægt og køn",
+      // Uden vægt og køn er der intet at afspejle — feltet er en vej til
+      // Indstillinger, ikke et tal. Se "Vis intet, du ikke ved" ovenfor.
+      intensitet: kanPromille
+        ? (minPromille.promille as number) / PROMILLELOFT
+        : 0,
     },
     stime: {
       etiket: stime === 1 ? "Dag i træk" : "Dage i træk",
       tal: String(stime),
       under: laengsteStime > 0 ? `Længste ${laengsteStime}` : "Ingen stime endnu",
+      intensitet: stime / STIMELOFT,
     },
   };
 
@@ -411,7 +448,13 @@ function Hero({
     >
       {/* `key` tvinger en ny kugle frem ved hvert skifte, så tallet toner
           ind i stedet for at hoppe fra et ciffer til et andet. */}
-      <Orb key={valg} tal={aktiv.tal} etiket={aktiv.etiket} undertekst={aktiv.under} />
+      <Orb
+        key={valg}
+        tal={aktiv.tal}
+        etiket={aktiv.etiket}
+        undertekst={aktiv.under}
+        intensitet={aktiv.intensitet}
+      />
 
       <div className="orbvaelger" role="tablist" aria-label="Vælg tal">
         {ORBRAEKKEFOELGE.map((id) => {
