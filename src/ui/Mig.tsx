@@ -463,6 +463,7 @@ function Hero({
   };
 
   const aktiv = felter[valg];
+  const indeks = ORBRAEKKEFOELGE.indexOf(valg);
 
   return (
     <div
@@ -489,13 +490,42 @@ function Hero({
     >
       {/* `key` tvinger en ny kugle frem ved hvert skifte, så tallet toner
           ind i stedet for at hoppe fra et ciffer til et andet. */}
-      <Orb
-        key={valg}
-        tal={aktiv.tal}
-        etiket={aktiv.etiket}
-        undertekst={aktiv.under}
-        intensitet={aktiv.intensitet}
-      />
+      {/*
+        PILENE SIGER, AT DER ER MERE TIL SIDERNE.
+        Swipet var usynligt: kuglen så ud som ét tal, og de tre knapper under
+        den kunne lige så godt være en visning. En pil i hver side er det, en
+        telefonbruger læser uden at tænke over det, og den lille bevægelse
+        udad gør det til en opfordring frem for en pynt.
+
+        De SLUKKES frem for at fjernes i enderne — rækken ruller ikke rundt,
+        og en pil, der forsvandt, ville flytte kuglen et par pixels til
+        siden, hver gang man skiftede.
+      */}
+      <div className="orbmidte">
+        <span
+          className={indeks === 0 ? "orbpil venstre slukket" : "orbpil venstre"}
+          aria-hidden="true"
+        >
+          <VinkelIkon />
+        </span>
+
+        <Orb
+          key={valg}
+          tal={aktiv.tal}
+          etiket={aktiv.etiket}
+          undertekst={aktiv.under}
+          intensitet={aktiv.intensitet}
+        />
+
+        <span
+          className={
+            indeks === ORBRAEKKEFOELGE.length - 1 ? "orbpil slukket" : "orbpil"
+          }
+          aria-hidden="true"
+        >
+          <VinkelIkon />
+        </span>
+      </div>
 
       <div className="orbvaelger" role="tablist" aria-label="Vælg tal">
         {ORBRAEKKEFOELGE.map((id) => {

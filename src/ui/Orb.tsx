@@ -8,7 +8,7 @@
  * ## Ren CSS, ingen pakke
  *
  * docs/redesign-kontrakt.md afsnit 2: ingen animationsbibliotek, ingen
- * npm-pakker. Kuglen er derfor tre slørede pletter, der driver rundt bag en
+ * npm-pakker. Kuglen er derfor fire slørede pletter, der driver rundt bag en
  * rund maske — `overflow: hidden` på en cirkel. Det er hele trickset.
  *
  * SLØRINGEN LIGGER PÅ FORÆLDEREN, ikke på hver plet. Ét `filter: blur()` på
@@ -84,6 +84,7 @@ export function Orb({
         <span className="orbplet a" />
         <span className="orbplet b" />
         <span className="orbplet c" />
+        <span className="orbplet d" />
       </div>
 
       <div className="orbindhold">
