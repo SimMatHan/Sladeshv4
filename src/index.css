@@ -1990,22 +1990,288 @@ input {
   border-radius: var(--radius-stor);
 }
 
+/* ---------------------------------------------------------------- kuglen */
+
 /*
- * HEROET på Mig er væk — kuglen afløste det.
+ * KUGLEN på Mig — ét stort tal ad gangen, tegnet som en levende flade.
  *
  * Her lå `.hero` med `.herotop`, `.heroblok`, `.herotal`, `.heropromille`,
  * `.herobund`, `.herobjaelke`, `.herolinjer` og `.heroknap`: ét kort med
  * genstande, promille, en bjælke og to hjælpelinjer. Fem oplysninger på én
- * flade, alle lige store.
+ * flade, alle lige store. Nu er der ét stort tal, og de to andre står som
+ * små tal under, klar til at blive valgt. Samme information — forskellen er,
+ * at skærmen siger hvad der er vigtigst, i stedet for at overlade det til
+ * øjet.
  *
- * `.orbhero` ovenfor viser ét stort tal ad gangen og lader de to andre stå
- * som små tal under. Samme information, men skærmen siger nu, hvad der er
- * vigtigst, i stedet for at overlade det til øjet.
- *
- * Reglerne er fjernet frem for at blive stående: CSS uden markup ser ud som
- * om noget bruger den, og den næste, der skal rette en farve, retter et sted
- * der ikke tegnes.
+ * De gamle regler er fjernet frem for at blive stående: CSS uden markup ser
+ * ud som om noget bruger den, og den næste, der skal rette en farve, retter
+ * et sted der ikke tegnes.
  */
+
+/*
+ * `touch-action: pan-y` giver den LODRETTE rulning til browseren og beholder
+ * det vandrette til swipet. Uden den ville browseren enten stjæle begge
+ * retninger eller vente på at se, hvad fingeren ville — og ventetiden er dét,
+ * der får et swipe til at føles klistret.
+ *
+ * `user-select: none`, fordi et swipe hen over et stort tal ellers markerer
+ * det. Det er ikke tekst, man skal kopiere; det er en flade, man fører
+ * fingeren hen over.
+ */
+.orbhero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-5);
+  margin-bottom: var(--luft-4);
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/*
+ * Kuglen er en CIRKEL MED `overflow: hidden`, og det er hele trickset: de
+ * slørede pletter indeni driver ud over kanten og bliver klippet af den runde
+ * maske. Derfor ser fladen ud til at bevæge sig i sig selv frem for at være
+ * en gradient, der ligger stille.
+ *
+ * `aspect-ratio` frem for en fast højde: bredden følger skærmen, og en kugle,
+ * der bliver til en ellipse på en lille telefon, er ikke længere en kugle.
+ * Loftet på 260px er der, fordi den ellers æder hele skærmen på en tablet.
+ *
+ * `isolation: isolate` holder sløringen indeni. Uden den kan `filter` på et
+ * barn slå igennem på det, der ligger bag kortet.
+ */
+.orb {
+  position: relative;
+  isolation: isolate;
+  width: min(64vw, 260px);
+  aspect-ratio: 1;
+  border-radius: var(--radius-rund);
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  /*
+   * Bunden under pletterne. `color-mix` frem for en hex-farve, så kuglen
+   * følger temaet: `--accent` er ravgul i mørk, flaskegrøn i lys, og
+   * festivaltemaerne overskriver den.
+   */
+  background:
+    radial-gradient(
+      circle at 50% 120%,
+      color-mix(in srgb, var(--accent) 22%, var(--bund)),
+      var(--flade) 70%
+    );
+  /* Kanten er GEOMETRI (1px), ikke en skala — se regel 1. */
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 18px 40px -24px color-mix(in srgb, var(--accent) 60%, transparent);
+}
+
+/*
+ * SLØRINGEN LIGGER HER, PÅ FORÆLDEREN — ikke på hver plet.
+ *
+ * Ét `filter: blur()` koster ét lag at tegne; tre koster tre, og på en ældre
+ * telefon er det forskellen på en kugle, der driver, og en der hakker.
+ *
+ * `inset: -25%` giver pletterne plads at drive ud i. Uden det ville
+ * sløringens egen bløde kant blive klippet af masken og tegne en synlig ring
+ * langs randen.
+ */
+.orbsky {
+  position: absolute;
+  inset: -25%;
+  filter: blur(26px);
+  opacity: 0.9;
+}
+
+/*
+ * Pletterne animeres KUN med `transform`. Ingen `filter`, ingen
+ * `background-position`, ingen bredde eller højde — de tre ville tvinge
+ * browseren til at tegne laget forfra ved hver eneste ramme.
+ */
+.orbplet {
+  position: absolute;
+  width: 62%;
+  height: 62%;
+  border-radius: var(--radius-rund);
+  will-change: transform;
+}
+
+.orbplet.a {
+  top: 4%;
+  left: 8%;
+  background: color-mix(in srgb, var(--accent) 85%, transparent);
+  animation: orbdrift-a 14s ease-in-out infinite;
+}
+
+.orbplet.b {
+  top: 28%;
+  left: 34%;
+  background: color-mix(in srgb, var(--accent-mork) 75%, transparent);
+  animation: orbdrift-b 18s ease-in-out infinite;
+}
+
+.orbplet.c {
+  top: 40%;
+  left: 0%;
+  background: color-mix(in srgb, var(--accent) 45%, var(--flade-hvaelvet));
+  animation: orbdrift-c 22s ease-in-out infinite;
+}
+
+/*
+ * Tre forskellige og PRIMTALSAGTIGE varigheder (14/18/22s), så mønsteret
+ * ikke gentager sig synligt. Falder de sammen om et fælles multiplum, kan
+ * øjet fange takten, og så holder kuglen op med at være levende.
+ */
+@keyframes orbdrift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  33% {
+    transform: translate3d(18%, 22%, 0) scale(1.15);
+  }
+  66% {
+    transform: translate3d(-14%, 10%, 0) scale(0.9);
+  }
+}
+
+@keyframes orbdrift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+  40% {
+    transform: translate3d(-22%, -16%, 0) scale(0.85);
+  }
+  70% {
+    transform: translate3d(12%, -24%, 0) scale(1.2);
+  }
+}
+
+@keyframes orbdrift-c {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.95);
+  }
+  50% {
+    transform: translate3d(26%, -18%, 0) scale(1.25);
+  }
+}
+
+/*
+ * Indholdet ligger OVEN PÅ skyen — `position: relative` alene er nok, fordi
+ * `.orbsky` er absolut placeret og kommer først i markup.
+ *
+ * Tallet toner ind ved hvert skifte: `key` i Mig.tsx tvinger en ny kugle
+ * frem, og uden animationen ville cifrene bare hoppe.
+ */
+.orbindhold {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-1);
+  padding: 0 var(--luft-4);
+  animation: orbind var(--fart-lang) var(--kurve) both;
+}
+
+@keyframes orbind {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--luft-2), 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.orbtal {
+  font-size: var(--tekst-xxl);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+  line-height: 1;
+}
+
+.orbetiket {
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-etiket);
+  text-transform: uppercase;
+  color: var(--tekst-daempet);
+}
+
+.orbundertekst {
+  font-size: var(--tekst-s);
+  color: var(--tekst-daempet);
+  /* Undertekster som "0,5 genstande til Full Bender" må gerne brække, men
+     ikke sprænge kuglen. */
+  max-width: 100%;
+  text-wrap: balance;
+}
+
+/*
+ * VÆLGEREN under kuglen. Swipet er det, forlægget gør, og det er rart — men
+ * det er også usynligt, og en handling man ikke kan se, findes ikke for den
+ * der ikke prøver. Derfor står de tre tal som rigtige knapper.
+ */
+.orbvaelger {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--luft-2);
+  width: 100%;
+}
+
+.orbstat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--luft-1);
+  /* Regel 5: alt man kan trykke på er mindst --tryk højt. */
+  min-height: var(--tryk);
+  padding: var(--luft-2) var(--luft-1);
+  border-radius: var(--radius);
+  background: transparent;
+  transition:
+    background var(--fart) var(--kurve),
+    color var(--fart) var(--kurve);
+}
+
+.orbstat .vaerdi {
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: var(--spor-tal);
+  color: var(--tekst-daempet);
+}
+
+/*
+ * Den valgte får en flade OG en accentfarvet værdi. To signaler frem for ét,
+ * fordi farve alene ikke er nok for den, der ikke ser forskel på ravgul og
+ * grå — se WCAG 1.4.1.
+ */
+.orbstat.valgt {
+  background: var(--flade-brik);
+}
+
+.orbstat.valgt .etiket {
+  color: var(--accent);
+}
+
+.orbstat.valgt .vaerdi {
+  color: var(--tekst);
+}
+
+/* Promillen uden vægt og køn fører et andet sted hen — den er ikke et tal,
+   man kan vælge, men noget der mangler. */
+.orbstat.mangler .vaerdi {
+  color: var(--accent);
+}
 
 
 /* --------------------------------------------------------------- stimen */
