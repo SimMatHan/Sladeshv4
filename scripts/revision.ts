@@ -278,6 +278,16 @@ const PAR: Array<[string, string]> = [
   ["--guld", "--flade"],
   ["--soelv", "--flade"],
   ["--bronze", "--flade"],
+  /*
+   * Kuglens tekst mod kuglens LYSESTE og MØRKESTE punkt.
+   *
+   * Kuglen har sin egen palet og skifter ikke med temaet, så de to par
+   * måler det samme i alle fire gennemløb. Det er med vilje: står de her,
+   * kan ingen sænke `--orb-indigo` eller lysne `--orb-tekst` uden at
+   * revisionen siger fra, og kuglen bærer appens største tal.
+   */
+  ["--orb-tekst", "--orb-lys"],
+  ["--orb-tekst", "--orb-indigo"],
 ];
 
 const GRAENSE = 4.5;

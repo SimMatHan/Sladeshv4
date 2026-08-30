@@ -154,6 +154,45 @@
    */
   --paa-farve: #ffffff;
 
+  /* ------------------------------------------------------------ kuglen */
+
+  /*
+   * KUGLEN HAR SIN EGEN PALET, og det er en bevidst undtagelse.
+   *
+   * Den fulgte `--accent` og skiftede dermed med temaet: ravgul i mørk,
+   * flaskegrøn i lys, rød til Copenhell. Det var pænt på papiret, men i
+   * praksis var den ét lag lysere og mørkere af samme kulør — og en kugle
+   * uden farveSKIFT har ingen kanter at få øje på, hvor farverne mødes.
+   *
+   * Nu er den blå, lys og skarp, ens i alle fire temaer. Det er PRISEN
+   * for, at den kan bære sort tekst: en flade, der skifter fra ravgul til
+   * flaskegrøn til rød, kan ikke have én tekstfarve, der virker på dem
+   * alle. Samme begrundelse som `--paa-farve` ovenfor — teksten hører til
+   * fladen, ikke til temaet.
+   *
+   * Nuancerne er naboer i det blå, ikke tilfældige farver: himmel, cyan,
+   * indigo, violet. Nok forskel til at tegne en kant, ikke så meget at
+   * kuglen bliver en regnbue.
+   *
+   * `--orb-indigo` er den mørkeste med vilje. Alt dybere (#6366f1 blev
+   * prøvet) falder under 4,5:1 mod teksten, og så er kuglen ikke længere
+   * noget, man kan læse et tal på.
+   */
+  --orb-lys: #bae6fd;
+  --orb-blaa: #38bdf8;
+  --orb-cyan: #22d3ee;
+  --orb-indigo: #818cf8;
+  --orb-violet: #a78bfa;
+  /*
+   * NÆRSORT, ikke ren sort. Ren #000 mod en lys blå flade er hårdere end
+   * noget andet i appen; den her har et strejf blåt i sig, så den hører
+   * til på kuglen frem for at ligge oven på den.
+   *
+   * Måles af `npm run revision` mod både `--orb-lys` og `--orb-indigo` —
+   * kuglens lyseste og mørkeste punkt. Se PAR i scripts/revision.ts.
+   */
+  --orb-tekst: #0a1626;
+
   /* -------------------------------------------------------- bevægelse */
 
   /*
@@ -2076,12 +2115,17 @@ input {
    * følger temaet: `--accent` er ravgul i mørk, flaskegrøn i lys, og
    * festivaltemaerne overskriver den.
    */
+  /*
+   * LYS BUND, ikke mørk. Den var `accent 22% + bund`, altså nærsort med et
+   * anstrøg farve — pletterne lå som lys på mørk, og kuglen var i praksis
+   * mørk uanset tema. En lys bund gør to ting: farverne bliver skarpe frem
+   * for glødende, og fladen kan bære sort tekst.
+   *
+   * Lyset kommer fra ØVERSTE VENSTRE hjørne, hvor lys plejer at komme fra.
+   * Den gamle lå på 50% 120% — nedefra, som en lampe under en kugle.
+   */
   background:
-    radial-gradient(
-      circle at 50% 120%,
-      color-mix(in srgb, var(--accent) 22%, var(--bund)),
-      var(--flade) 70%
-    );
+    radial-gradient(circle at 32% 26%, var(--orb-lys), var(--orb-blaa) 72%);
   /*
    * Kanten er GEOMETRI (1px), ikke en skala — se regel 1.
    *
@@ -2090,11 +2134,11 @@ input {
    * første, øjet fanger på afstand — netop dét, en aflæsning skal kunne.
    */
   box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--paa-farve) 45%, transparent),
     0 18px 40px -24px
       color-mix(
         in srgb,
-        var(--accent) calc(15% + 55% * var(--orbintensitet)),
+        var(--orb-blaa) calc(25% + 55% * var(--orbintensitet)),
         transparent
       );
   transition: box-shadow var(--fart-lang) var(--kurve);
@@ -2139,8 +2183,18 @@ input {
    * det var dén, man så oftest. Den skal stadig være roligere end en våd
    * aften, bare ikke farveløs.
    */
-  filter: blur(13px) saturate(calc(0.85 + 0.7 * var(--orbintensitet)));
-  opacity: calc(0.82 + 0.14 * var(--orbintensitet));
+  /*
+   * INTENSITETEN KØRER NU MEST PÅ GENNEMSIGTIGHED, ikke på mætning.
+   *
+   * Farverne er skarpe i sig selv, så de behøver ikke et stort
+   * `saturate()`-spring — og et stort spring var direkte farligt her:
+   * mætning kan trække lysstyrken NED, og under den sorte tekst er det
+   * læsbarheden, der ryger. Gennemsigtighed trækker den anden vej. Ved lav
+   * intensitet skinner den lyse bund igennem, kuglen bliver blegere, og
+   * kontrasten mod teksten bliver bedre, ikke værre.
+   */
+  filter: blur(13px) saturate(calc(0.9 + 0.4 * var(--orbintensitet)));
+  opacity: calc(0.68 + 0.28 * var(--orbintensitet));
   transition:
     filter var(--fart-lang) var(--kurve),
     opacity var(--fart-lang) var(--kurve);
@@ -2176,46 +2230,46 @@ input {
  * blive synligt ved 1.
  */
 /*
- * FIRE NUANCER, IKKE ÉN FARVE I FIRE STYRKER.
+ * FIRE NABOER I DET BLÅ — himmel, cyan, indigo, violet.
  *
- * Pletterne var accent, accent-mørk og accent blandet ned i fladen — samme
- * kulør hele vejen, kun lysere og mørkere. Det er dét, der gjorde kuglen
- * flad: uden farveSKIFT er der ikke rigtig nogen kant at få øje på, hvor to
- * pletter mødes, uanset hvor lidt man slører.
+ * De var accent, accent-mørk og accent blandet med guld og grøn: én kulør i
+ * fire styrker plus to, der trak i hver sin retning. Det gav enten en flad
+ * kugle eller en, der lignede en fejl, alt efter tema.
  *
- * Nu trækkes to af dem mod `--guld` og `--medgang`. Accenten dominerer
- * stadig (65–70 %), så kuglen er tydeligt appens farve — men de to nabo-
- * kulører giver netop den skimren, man ser i forlægget.
+ * De fire her ligger tæt nok til at høre sammen og langt nok fra hinanden
+ * til, at man kan se HVOR de mødes. Det er kanterne, der giver kuglen dybde;
+ * uden dem er den en gradient.
  *
- * BEGGE ER TEMATOKENS, ikke faste farver. Det lyse tema overskriver dem
- * (`--guld` bliver #856300, `--medgang` #1b6b4a), så blandingen bliver mørk
- * og afdæmpet dér frem for at lyse op midt i en lys flade.
+ * Rene tokens frem for `color-mix` med `transparent`: farverne skal være
+ * skarpe, og en halvgennemsigtig plet henter sin lysstyrke fra det, den
+ * ligger på. Gennemsigtigheden hører til på `.orbsky`, hvor den kan styres
+ * ét sted.
  */
 .orbplet.a {
   top: 2%;
   left: 6%;
-  background: color-mix(in srgb, var(--accent) 92%, transparent);
+  background: var(--orb-blaa);
   animation: orbdrift-a calc(14s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.b {
   top: 30%;
   left: 38%;
-  background: color-mix(in srgb, var(--accent-mork) 88%, transparent);
+  background: var(--orb-cyan);
   animation: orbdrift-b calc(18s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.c {
   top: 44%;
   left: 2%;
-  background: color-mix(in srgb, var(--accent) 68%, var(--guld));
+  background: var(--orb-indigo);
   animation: orbdrift-c calc(22s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.d {
   top: 12%;
   left: 40%;
-  background: color-mix(in srgb, var(--accent) 70%, var(--medgang));
+  background: var(--orb-violet);
   /* 26s — igen et tal, der ikke deler multiplum med de tre andre. */
   animation: orbdrift-d calc(26s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
@@ -2302,12 +2356,28 @@ input {
   }
 }
 
+/*
+ * AL TEKST PÅ KUGLEN ER NÆRSORT — også det store tal.
+ *
+ * Etiketten og underteksten var `--tekst-daempet`, altså dæmpet mod SIDENS
+ * bund. Men de ligger ikke på siden, de ligger på en lys blå flade, og dér
+ * var de nærmest væk.
+ *
+ * Tallet arvede `--tekst`, som er nærhvid i mørkt tema. Det ville have
+ * stået hvidt på lys blå — værre end det, det afløste. Kuglen er nu lys i
+ * BEGGE temaer, så teksten på den skal være mørk i begge; ellers er den
+ * læsbar det ene sted og ikke det andet.
+ *
+ * Samme mønster som `--paa-farve`: teksten hører til fladen under sig, ikke
+ * til temaet omkring den.
+ */
 .orbtal {
   font-size: var(--tekst-xxl);
   font-weight: var(--vaegt-fed);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--spor-tal);
   line-height: 1;
+  color: var(--orb-tekst);
 }
 
 .orbetiket {
@@ -2315,12 +2385,12 @@ input {
   font-weight: var(--vaegt-fed);
   letter-spacing: var(--spor-etiket);
   text-transform: uppercase;
-  color: var(--tekst-daempet);
+  color: var(--orb-tekst);
 }
 
 .orbundertekst {
   font-size: var(--tekst-s);
-  color: var(--tekst-daempet);
+  color: var(--orb-tekst);
   /* Undertekster som "0,5 genstande til Full Bender" må gerne brække, men
      ikke sprænge kuglen. */
   max-width: 100%;
