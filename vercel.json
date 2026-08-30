@@ -27,11 +27,20 @@
       ]
     },
     {
-      "source": "/assets/(.*)",
+      "source": "/assets/((?!achievements/).*)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/assets/achievements/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
         }
       ]
     },
