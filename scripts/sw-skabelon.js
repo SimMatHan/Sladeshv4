@@ -81,12 +81,17 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  // Kortfliserne. Værten skiftede fra tile.openstreetmap.org til CARTOs
-  // Positron/Dark Matter, da kortet blev gråtone — se `FLISER` i
-  // src/ui/Kort.tsx. Uden denne linje ville fliserne falde igennem til
-  // "alt andet udefra" nedenfor og holde op med at blive gemt, og et kort
-  // i en kælder ville blive tomt igen.
-  if (url.hostname.endsWith("basemaps.cartocdn.com")) {
+  // Kortfliserne. Uden denne linje falder de igennem til "alt andet udefra"
+  // nedenfor og bliver aldrig gemt — og et kort i en kælder ville være tomt.
+  //
+  // Værten er `tile.openstreetmap.org`. Den stod som `basemaps.cartocdn.com`,
+  // fordi kortet engang brugte CARTOs Positron, og linjen blev IKKE rettet,
+  // da CARTO begyndte at kræve en API-nøgle og kortet skiftede tilbage til
+  // OSM. Fliserne har altså ikke været gemt siden — offline-kortet var dødt,
+  // uden at noget fejlede. `FLISER` i src/ui/Kort.tsx er den ene kilde til
+  // værten; står de to ikke ens, sker der ingenting, og det opdager man kun
+  // ved at gå i kælderen.
+  if (url.hostname === "tile.openstreetmap.org") {
     event.respondWith(fliseSvar(request));
     return;
   }
