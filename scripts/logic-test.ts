@@ -9,6 +9,7 @@
  */
 
 import { existsSync, readFileSync } from "node:fs";
+import { tastaturskifte } from "../src/ui/tastaturskifte";
 import {
   AVATAR_COLORS,
   AVATAR_COLOR_NAMES,
@@ -1702,6 +1703,81 @@ console.log("\n[Logic] optimistisk stilling");
   check("ingen flydende-komma-støj", medGenstand(start, mig, 1.5, nu)[0]?.drinksToday, 3.5);
   // Kan ikke gå i minus, uanset hvad der bliver trukket fra.
   check("aldrig negativ", udenGenstand(start, mig.userId, 99).find((r) => r.userId === mig.userId)?.drinksToday, 0);
+}
+
+console.log("\n[Logic] tastaturets op og ned");
+{
+  /*
+   * Den her blev skrevet, EFTER at bundklyngen paa en iPhone laa 60 px for
+   * hoejt, og efter to forkerte gaet paa hvorfor. Beslutningen er lille, men
+   * den har fire ting at holde styr paa — to maalemodeller, en taerskel, en
+   * tilstand og en rotation — og det var netop dét, der gjorde den svaer.
+   *
+   * IPHONE er skaermen fra maalingen: 393 x 852 CSS px.
+   */
+  const start = { fuld: 852, bredde: 393, varOppe: false };
+
+  // Browseren FOELGER `resizes-content`: innerHeight skrumper selv, og
+  // `daekket` bliver ~0. Det er den, iOS 17+ og Android goer.
+  const oppeKrympet = tastaturskifte(start, { hoejde: 516, bredde: 393, daekket: 0 });
+  check("krympet viewport laeses som tastatur", oppeKrympet.varOppe, true);
+  check("og slipper ikke feltet, mens man skriver", oppeKrympet.slip, false);
+  check("den fulde hoejde huskes", oppeKrympet.fuld, 852);
+
+  const nedeIgen = tastaturskifte(oppeKrympet, { hoejde: 852, bredde: 393, daekket: 0 });
+  check("tastaturet vaek slipper feltet", nedeIgen.slip, true);
+  check("og tilstanden nulstilles", nedeIgen.varOppe, false);
+
+  // Kun ved OVERGANGEN. Ellers ville hvert eneste maal med tastaturet nede
+  // rive fokus ud af det felt, man lige har trykket paa.
+  const stadigNede = tastaturskifte(nedeIgen, { hoejde: 852, bredde: 393, daekket: 0 });
+  check("men kun én gang", stadigNede.slip, false);
+
+  // Browseren foelger IKKE `resizes-content`: innerHeight staar stille, og
+  // forskellen dukker op i `daekket` i stedet. AEldre iOS.
+  const oppeDaekket = tastaturskifte(start, { hoejde: 852, bredde: 393, daekket: 336 });
+  check("daekket viewport laeses ogsaa som tastatur", oppeDaekket.varOppe, true);
+  check(
+    "og slipper ogsaa naar det forsvinder",
+    tastaturskifte(oppeDaekket, { hoejde: 852, bredde: 393, daekket: 0 }).slip,
+    true,
+  );
+
+  /*
+   * TILBEHOERSBJAELKEN ALENE ER IKKE ET TASTATUR.
+   *
+   * Det er hele grunden til, at der er en taerskel. En iPad med fysisk
+   * tastatur viser kun bjaelken — ~55 px — og ville ellers faa feltet
+   * sluppet under en, der sidder og skriver.
+   */
+  const kunBjaelke = tastaturskifte(start, { hoejde: 797, bredde: 393, daekket: 0 });
+  check("55 px bjaelke er ikke et tastatur", kunBjaelke.varOppe, false);
+  check("og river ikke fokus ud", kunBjaelke.slip, false);
+  check(
+    "heller ikke naar den forsvinder igen",
+    tastaturskifte(kunBjaelke, { hoejde: 852, bredde: 393, daekket: 0 }).slip,
+    false,
+  );
+
+  /*
+   * ROTATION er ikke et tastatur. Landskab er lavere end portraet, og uden
+   * den her ville skiftet blive laest som et tastatur, der kom op og aldrig
+   * gik ned igen.
+   */
+  const drejet = tastaturskifte(start, { hoejde: 393, bredde: 852, daekket: 0 });
+  check("rotation laeses ikke som tastatur", drejet.varOppe, false);
+  check("og den fulde hoejde tages forfra", drejet.fuld, 393);
+  check("uden at rive fokus ud", drejet.slip, false);
+
+  // Aabner appen MENS tastaturet er oppe, er den foerste maaling allerede
+  // lav. Den maa ikke give et falsk slip — kun et forsigtigt "ved ikke".
+  const startMedTastatur = { fuld: 0, bredde: 0, varOppe: false };
+  const foersteMaal = tastaturskifte(startMedTastatur, {
+    hoejde: 516,
+    bredde: 393,
+    daekket: 0,
+  });
+  check("foerste maal med tastatur oppe slipper intet", foersteMaal.slip, false);
 }
 
 console.log(
