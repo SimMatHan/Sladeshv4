@@ -9,6 +9,7 @@ import { fejltekst, genstande, promille } from "../lib/visning";
 import { Achievements } from "./Achievements";
 import { Admin } from "./Admin";
 import { Avatar } from "./Avatar";
+import { Faner, type Fanevalg } from "./Faner";
 import { TandhjulIkon, VinkelIkon } from "./Ikoner";
 import { Indstillinger } from "./Indstillinger";
 import { Orb } from "./Orb";
@@ -126,20 +127,9 @@ export function Mig({
         onIndstil={() => setIndstillingerAabne(true)}
       />
 
-      {/* Rækkefølgen er tidsmæssig: heroet er I AFTEN, striben er UGEN,
+      {/* Rækkefølgen er tidsmæssig: kuglen er I AFTEN, striben er UGEN,
           mærket er DET NÆSTE. */}
-      {/* Den LEVENDE stime, ikke tælleren. `currentDayStreak` opdateres kun,
-          når nogen logger noget, så striben sagde "2 dage" dagen efter man
-          havde misset — ikke forkert regnet, bare ikke sandt længere. Samme
-          funktion som "Ingen hviledag" måler med, så de to ikke kan komme
-          til at vise hver sit. */}
-      <Stimestribe
-        stime={levendeStime({
-          now: Date.now(),
-          currentDayStreak: mig.currentDayStreak,
-          lastDrinkDayStart: mig.lastDrinkDayStart,
-        })}
-      />
+      <Stimestribe />
 
       <AchievementRaekke
         naesteMilepael={naesteMilepael}
@@ -376,6 +366,20 @@ const SWIPELAENGDE = 44;
 
 const ORBRAEKKEFOELGE: readonly Orbvalg[] = ["aften", "promille", "stime"];
 
+/**
+ * Navnene i fanestriben.
+ *
+ * KORTE og FASTE. Kuglens egen etiket bøjer sig efter tallet ("Dag i træk"
+ * mod "Dage i træk"), men en fane, der skifter bredde, når stimen går fra 1
+ * til 2, får de to andre til at rykke sig. Striben er en kontrol; den skal
+ * stå stille.
+ */
+const FANER: readonly Fanevalg<Orbvalg>[] = [
+  { id: "aften", etiket: "I aften" },
+  { id: "promille", etiket: "Promille" },
+  { id: "stime", etiket: "Stime" },
+];
+
 function Hero({
   channelId,
   stilling,
@@ -463,7 +467,6 @@ function Hero({
   };
 
   const aktiv = felter[valg];
-  const indeks = ORBRAEKKEFOELGE.indexOf(valg);
 
   return (
     <div
@@ -490,73 +493,39 @@ function Hero({
     >
       {/* `key` tvinger en ny kugle frem ved hvert skifte, så tallet toner
           ind i stedet for at hoppe fra et ciffer til et andet. */}
+      <Orb
+        key={valg}
+        tal={aktiv.tal}
+        etiket={aktiv.etiket}
+        undertekst={aktiv.under}
+        intensitet={aktiv.intensitet}
+        // Promillen uden vægt og køn er den ene undertekst, der fører et
+        // sted hen. Den stod før som en fjerde knap i vælgeren; nu er
+        // linjen selv vejen, så genvejen overlever uden et ekstra element.
+        onUndertekst={
+          valg === "promille" && !kanPromille && minPromille !== undefined
+            ? onIndstil
+            : undefined
+        }
+      />
+
       {/*
-        PILENE SIGER, AT DER ER MERE TIL SIDERNE.
-        Swipet var usynligt: kuglen så ud som ét tal, og de tre knapper under
-        den kunne lige så godt være en visning. En pil i hver side er det, en
-        telefonbruger læser uden at tænke over det, og den lille bevægelse
-        udad gør det til en opfordring frem for en pynt.
+        APPENS EGEN FANESTRIBE frem for kuglens egen vælger.
 
-        De SLUKKES frem for at fjernes i enderne — rækken ruller ikke rundt,
-        og en pil, der forsvandt, ville flytte kuglen et par pixels til
-        siden, hver gang man skiftede.
+        Her stod tre knapper med ETIKET OG TAL. Det betød, at det valgte tal
+        stod to gange på skærmen med 40 px imellem — én gang stort i kuglen,
+        én gang lille lige under — og at "dage i træk" stod en tredje gang
+        nede i stimekortet. Tre visninger af to tal.
+
+        Nu bærer striben kun navnene. Tallet står ét sted: i kuglen, hvor det
+        er stort nok til at læse på en armslængde.
+
+        `Faner` frem for en ny kontrol, jf. regel 4 i designsystemet: findes
+        den, så genbrug den. Den giver samtidig tastatur og skærmlæser med,
+        og den siger tydeligere end tre løse knapper, at der ER tre visninger
+        — det var dét, de nu fjernede pile forsøgte at sige.
       */}
-      <div className="orbmidte">
-        <span
-          className={indeks === 0 ? "orbpil venstre slukket" : "orbpil venstre"}
-          aria-hidden="true"
-        >
-          <VinkelIkon />
-        </span>
-
-        <Orb
-          key={valg}
-          tal={aktiv.tal}
-          etiket={aktiv.etiket}
-          undertekst={aktiv.under}
-          intensitet={aktiv.intensitet}
-        />
-
-        <span
-          className={
-            indeks === ORBRAEKKEFOELGE.length - 1 ? "orbpil slukket" : "orbpil"
-          }
-          aria-hidden="true"
-        >
-          <VinkelIkon />
-        </span>
-      </div>
-
-      <div className="orbvaelger" role="tablist" aria-label="Vælg tal">
-        {ORBRAEKKEFOELGE.map((id) => {
-          const felt = felter[id];
-          const valgt = id === valg;
-
-          // Promillen uden vægt og køn er den ene, der fører et andet sted
-          // hen: den er ikke et tal, man kan vælge, men noget der mangler.
-          if (id === "promille" && !kanPromille && minPromille !== undefined) {
-            return (
-              <button key={id} className="orbstat mangler" onClick={onIndstil}>
-                <span className="etiket">Promille</span>
-                <span className="vaerdi">Udfyld →</span>
-              </button>
-            );
-          }
-
-          return (
-            <button
-              key={id}
-              role="tab"
-              aria-selected={valgt}
-              className={valgt ? "orbstat valgt" : "orbstat"}
-              onClick={() => skift(id)}
-            >
-              <span className="etiket">{felt.etiket}</span>
-              <span className="vaerdi">{felt.tal}</span>
-            </button>
-          );
-        })}
-      </div>
+      <Faner valg={FANER} aktiv={valg} onVaelg={skift} />
     </div>
   );
 }

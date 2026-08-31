@@ -43,7 +43,19 @@ const HISTORIK_DYBDE = 200;
 /** Dansk ugedagsforbogstav. `getDay()`: 0 = søndag. */
 const UGEDAG = ["S", "M", "T", "O", "T", "F", "L"] as const;
 
-export function Stimestribe({ stime }: { stime: number }) {
+/*
+ * TALLET ER VÆK HERFRA — kun de syv dage er tilbage.
+ *
+ * Kortet havde en flamme med stimetallet i til venstre for striben. Det
+ * samme tal stod i kuglen ovenfor, og en tredje gang i vælgeren under den.
+ * Tre visninger af ét tal på én skærm.
+ *
+ * Striben kan stå alene, fordi den viser noget, tallet ikke kan: HVILKE dage
+ * man var ude, og at i dag stadig er tom. Det er dét, man åbner appen for at
+ * se. Tallet hører til i kuglen, hvor det er stort nok til at læse på en
+ * armslængde.
+ */
+export function Stimestribe() {
   const mineLogs = useQuery(api.drinkLogs.getDrinkLogsForUser, {
     limit: HISTORIK_DYBDE,
   });
@@ -77,14 +89,6 @@ export function Stimestribe({ stime }: { stime: number }) {
 
   return (
     <div className="kort stime">
-      <div className="stimetal">
-        <span className="stimeflamme" aria-hidden="true">
-          <FlammeIkon />
-          <span className="stimeantal">{stime}</span>
-        </span>
-        <span className="etiket">{stime === 1 ? "Dag" : "Dage"}</span>
-      </div>
-
       <ol className="stimedage">
         {dage.map((dag) => (
           <li key={dag.dayStart} className="stimedag">
@@ -113,11 +117,7 @@ function prikklasse(ude: boolean, erIDag: boolean): string {
   return "stimeprik";
 }
 
-/** Flammen bag stimetallet. Fyldt, ikke streg — den er en flade, ikke et ikon. */
-function FlammeIkon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M12 2c1 4-3 5-3 9a3 3 0 0 0 6 0c0-1.2-.4-2-.4-2 2.4 1.4 3.4 3.4 3.4 5.5A6 6 0 0 1 6 14.5C6 9 12 8 12 2z" />
-    </svg>
-  );
-}
+/*
+ * `FlammeIkon` lå her. Den tegnede flammen bag stimetallet og har ingen
+ * anden kalder — den er slettet frem for at stå som ubrugt kode.
+ */
