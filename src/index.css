@@ -2004,12 +2004,21 @@ input {
  * personkortet, hvor tallene ER sagen og gerne må stå i en kasse; at give
  * den en variant, der fjerner alt det, den er, ville gøre den til to ting.
  */
+/*
+ * Livstidstallene, nu NEDERST I UGEKORTET.
+ *
+ * Stregen er kortets egen `--kant`, ikke en ny farve: den skal skille to
+ * halvdele af samme kort, ikke tegne en ramme om noget nyt. Luften over og
+ * under er ens, så de to halvdele vejer lige meget — den ene er ikke en
+ * fodnote til den anden.
+ */
 .livstid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--luft-3);
-  margin: var(--luft-5) 0;
-  padding: 0 var(--luft-1);
+  margin-top: var(--luft-4);
+  padding-top: var(--luft-4);
+  border-top: 1px solid var(--kant);
 }
 
 .livstid > div {
@@ -2018,8 +2027,18 @@ input {
   gap: var(--luft-2);
 }
 
+/*
+ * NED FRA 28px TIL 17. De var skærmens NÆSTSTØRSTE tal, kun overgået af
+ * kuglen — tre livstidstal i 28px fed, der råbte lige så højt som aftenens
+ * ene vigtige tal.
+ *
+ * Bart på baggrunden slap de af sted med det, fordi der ikke var andet
+ * omkring dem. Inde i ugekortet ville de gøre kortet bundtungt og
+ * overdøve striben lige over. 17px er stadig et tal, man læser først i sin
+ * kolonne; det er bare ikke længere et, der konkurrerer med kuglen.
+ */
 .livstid .vaerdi {
-  font-size: var(--tekst-xl);
+  font-size: var(--tekst-m);
   font-weight: var(--vaegt-fed);
   font-variant-numeric: tabular-nums;
   letter-spacing: var(--spor-tal);
@@ -2464,8 +2483,21 @@ input {
  * De seneste syv drikkedage — og kun dem. Stimetallet står i kuglen
  * ovenfor; se Stimestribe.tsx for hvorfor striben kan undvære det.
  */
-.stime {
+/*
+ * UGEKORTET — striben og livstidstallene, adskilt af én streg.
+ *
+ * De to var før et kort og en bar række på baggrunden. De svarer på det
+ * samme, "hvordan går det så", bare over hver sin længde, og de læses
+ * lettere som ét spørgsmål med to tidshorisonter end som to ting.
+ */
+.ugekort {
   margin-bottom: var(--luft-3);
+}
+
+.stime {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-3);
 }
 
 /*
@@ -3694,7 +3726,13 @@ p.dagliste {
   font: inherit;
   color: inherit;
   cursor: pointer;
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--kant));
+  /*
+   * SAMME KANT SOM DE ANDRE KORT. Den var tonet med 35 % accent for at
+   * skille sig ud dengang siden var en stak kasser. Nu er der ét kort over
+   * den, og en næsten-men-ikke-helt ens kant to steder læses ikke som
+   * fremhævelse — den læses som en fejl. Etiketten i accentfarve og
+   * vinklen i højre kant siger rigeligt, at det her er en dør.
+   */
 }
 
 .taettest:active {
@@ -3712,9 +3750,13 @@ p.dagliste {
   color: var(--accent);
 }
 
+/* Tælleren arver `.hjaelp`s `--tekst-svag`, som er sat til 11px versaler i
+   et hjørne. Her bærer den et TAL, man skal kunne læse i forbifarten, og
+   `--tekst-daempet` er det trin, resten af appen bruger til netop det. */
 .taettesttal {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
+  color: var(--tekst-daempet);
 }
 
 /*
