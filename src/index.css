@@ -2874,17 +2874,16 @@ input {
 }
 
 /* ------------------------------------------------------------------- chat */
-/*
- * Skriveren er fast over navigationen, saa den ikke skal scrolles frem.
- * Det kraever `interactive-widget=resizes-content` i viewport-metaen
- * (index.html) — ellers lægger tastaturet sig hen over den paa iOS.
- */
 
 /*
- * Chat, redesignet efter docs/redesign-oplaeg.md, afsnit 5. Skriveren i
- * bunden er BEVIDST urørt i sin positionering — `position: fixed` sammen
- * med `interactive-widget=resizes-content` i index.html holder den over
- * tastaturet. Kun tokenisering herunder, ingen ny logik.
+ * Chat, redesignet efter docs/redesign-oplaeg.md, afsnit 5.
+ *
+ * Skriveren er fast over navigationen, så den ikke skal rulles frem.
+ *
+ * DER STOD HER, at `interactive-widget=resizes-content` i viewport-metaen
+ * holdt den over tastaturet. Det passede kun på Android. På iOS gør den
+ * ingenting, og skriveren lå bag tastaturet, mens man skrev — se
+ * `--tastatur` i `.skriver` og målingen i tastatur.ts.
  */
 .chat {
   /* Plads til den faste skriver nederst — plus luften over navigationen,
@@ -3037,7 +3036,16 @@ input {
   position: fixed;
   left: var(--luft-4);
   right: var(--luft-4);
-  bottom: calc(var(--navplads) + var(--bund-sikker) + var(--luft-2));
+  /*
+   * `--tastatur` sættes af Chat.tsx og er 0, når intet tastatur er oppe.
+   *
+   * Uden den sad skriveren BAG tastaturet på iOS. Kommentaren ovenfor
+   * påstod, at `interactive-widget=resizes-content` klarede det; den findes
+   * kun i Chrome/Android. Samme fejl som log-arket havde — se tastatur.ts.
+   */
+  bottom: calc(
+    var(--navplads) + var(--bund-sikker) + var(--luft-2) + var(--tastatur, 0px)
+  );
   z-index: var(--lag-skriver);
   display: flex;
   align-items: center;

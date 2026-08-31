@@ -6,6 +6,7 @@ import {
   type PointerEvent,
   type ReactNode,
 } from "react";
+import { useTastaturhoejde } from "./tastatur";
 
 /**
  * Bundark — appens ene måde at vise noget "oven på" det, man er i gang med.
@@ -61,48 +62,15 @@ export function Ark({
   /**
    * Hvor mange pixels tastaturet dækker forneden.
    *
-   * ## Hvorfor det ikke klarer sig selv
+   * Log-arket har et søgefelt øverst og træfferne under. På en iPhone betød
+   * det, at man skrev, tastaturet kom op, og de chips man skulle VÆLGE
+   * imellem lå bag det. Man kunne ikke se, hvad man valgte.
    *
-   * `index.html` sætter `interactive-widget=resizes-content`, som får
-   * tastaturet til at SKUBBE indholdet op frem for at lægge sig over det.
-   * Den findes kun i Chrome/Android. På iOS ændrer tastaturet ikke
-   * layout-viewporten overhovedet — det lægger sig oven på, og `bottom: 0`
-   * peger stadig på skærmens bund, altså bag tastaturet.
-   *
-   * Log-arket har et søgefelt øverst og træfferne under. På en iPhone
-   * betød det, at man skrev, tastaturet kom op, og de chips man skulle
-   * VÆLGE imellem lå bag det. Man kunne ikke se, hvad man valgte.
-   *
-   * `visualViewport` er den ene kilde, der kender den faktiske synlige
-   * flade. Forskellen mellem den og `window.innerHeight` ER tastaturet.
-   *
-   * På Android bliver tallet ~0 af sig selv: dér er `innerHeight` allerede
-   * skrumpet af `resizes-content`, så der ikke kompenseres to gange.
+   * Hvorfor det ikke klarer sig selv, og hvordan det måles, står i
+   * tastatur.ts — chattens skriver har præcis samme problem og deler
+   * målingen, så de to ikke kan drive fra hinanden.
    */
-  const [tastatur, setTastatur] = useState(0);
-
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (vv === null || vv === undefined) return;
-
-    const maal = () => {
-      const daekket = window.innerHeight - vv.height - vv.offsetTop;
-      // Afrundet og med gulv: `visualViewport` giver brøkdele af en pixel,
-      // og et negativt tal (fx mens der zoomes) må ikke løfte arket.
-      setTastatur(Math.max(0, Math.round(daekket)));
-    };
-
-    maal();
-    vv.addEventListener("resize", maal);
-    // `scroll` med: iOS flytter den visuelle viewport, når man ruller med
-    // tastaturet oppe, og så ændrer `offsetTop` sig uden en resize.
-    vv.addEventListener("scroll", maal);
-
-    return () => {
-      vv.removeEventListener("resize", maal);
-      vv.removeEventListener("scroll", maal);
-    };
-  }, []);
+  const tastatur = useTastaturhoejde();
 
   useEffect(() => {
     const forrige = document.body.style.overflow;
