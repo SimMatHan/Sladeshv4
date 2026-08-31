@@ -2398,179 +2398,63 @@ input {
 }
 
 /*
- * KUGLEN MED EN PIL I HVER SIDE.
+ * PILENE I SIDERNE ER VÆK, og fanestriben har overtaget deres opgave.
  *
- * Swipet var usynligt. Vælgeren under kuglen fortalte, at der var tre tal,
- * men ikke at man kunne føre fingeren hen over kuglen for at skifte — og en
- * handling, man ikke kan se, findes ikke for den, der ikke prøver.
- */
-.orbmidte {
-  display: flex;
-  align-items: center;
-  gap: var(--luft-2);
-}
-
-.orbpil {
-  display: grid;
-  place-items: center;
-  flex-shrink: 0;
-  width: var(--ikon);
-  height: var(--ikon);
-  color: var(--tekst-svag);
-  opacity: 0.6;
-  transition: opacity var(--fart) var(--kurve);
-}
-
-/* Vendt om, så den peger væk fra kuglen. Bevægelsen nedenfor vendes med, og
-   det er netop meningen: begge pile skal nikke UDAD. */
-.orbpil.venstre {
-  transform: scaleX(-1);
-}
-
-/*
- * SLUKKET frem for fjernet i enderne. Rækken ruller ikke rundt — står man på
- * det første tal, er der intet til venstre — men en pil, der forsvandt,
- * ville flytte kuglen et par pixels til siden ved hvert skifte.
- */
-.orbpil.slukket {
-  opacity: 0;
-}
-
-/*
- * Det lille nik udad. Det er forskellen på en pil, der PEGER, og en der
- * INVITERER — en statisk pil kan læses som pynt, en der bevæger sig, kan
- * ikke.
+ * Her lå `.orbmidte` med en `.orbpil` i hver side, og under dem `.orbvaelger`
+ * med tre `.orbstat`-knapper, der viste ETIKET OG TAL.
  *
- * Den ligger på `svg`'et frem for på `.orbpil`, fordi forælderen bruger sin
- * egen `transform` til at spejlvende den venstre pil. To transforms på
- * samme element ville overskrive hinanden, og så ville venstre pil pege
- * forkert, så snart animationen begyndte.
+ * Det gav to problemer på én gang. Det valgte tal stod to gange med 40 px
+ * imellem — stort i kuglen, lille lige under — og "dage i træk" stod en
+ * tredje gang nede i stimekortet. Og pilene svævede løst uden for en rund
+ * flade, hvor den ene var usynlig i hver ende, så rækken så skæv ud.
+ *
+ * Nu bruger kuglen appens egen `.segmenter` (se Faner.tsx). Den siger
+ * tydeligere end tre løse knapper, at der er tre visninger, den bærer kun
+ * NAVNENE, og tallet står ét sted: i kuglen.
  */
-.orbpil svg {
-  width: 100%;
-  height: 100%;
-  animation: orbnik 2.4s ease-in-out infinite;
-}
 
-@keyframes orbnik {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(22%, 0, 0);
-  }
+/* Striben ligger inde i `.orbhero`, som selv holder afstanden med sin
+   `gap`. Uden nulstillingen ville segmentvælgerens egen margen lægge sig
+   oven i den og skubbe kuglen op. */
+.orbhero .segmenter {
+  width: 100%;
+  margin: 0;
 }
 
 /*
- * VÆLGEREN under kuglen. Swipet er det, forlægget gør, og det er rart — men
- * det er også usynligt, og en handling man ikke kan se, findes ikke for den
- * der ikke prøver. Derfor står de tre tal OGSÅ som rigtige knapper.
+ * Underteksten som VEJ VIDERE — kun promillen uden vægt og køn bruger den.
+ *
+ * Den arver `.orbundertekst` og lægger kun det på, der gør den til et link:
+ * understregning, så den ikke bare er tekst, der tilfældigvis kan trykkes
+ * på. Farven bliver den samme som resten af kuglens tekst; en accentfarve
+ * ville skulle måles mod fire blå nuancer, og den ene ting, der er sikker
+ * mod dem alle, er netop `--orb-tekst`.
  */
-.orbvaelger {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--luft-2);
-  width: 100%;
+.orblink {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
-
-.orbstat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--luft-1);
-  /* Regel 5: alt man kan trykke på er mindst --tryk højt. */
-  min-height: var(--tryk);
-  padding: var(--luft-2) var(--luft-1);
-  border-radius: var(--radius);
-  background: transparent;
-  transition:
-    background var(--fart) var(--kurve),
-    color var(--fart) var(--kurve);
-}
-
-.orbstat .vaerdi {
-  font-size: var(--tekst-m);
-  font-weight: var(--vaegt-medium);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--spor-tal);
-  color: var(--tekst-daempet);
-}
-
-/*
- * Den valgte får en flade OG en accentfarvet værdi. To signaler frem for ét,
- * fordi farve alene ikke er nok for den, der ikke ser forskel på ravgul og
- * grå — se WCAG 1.4.1.
- */
-.orbstat.valgt {
-  background: var(--flade-brik);
-}
-
-.orbstat.valgt .etiket {
-  color: var(--accent);
-}
-
-.orbstat.valgt .vaerdi {
-  color: var(--tekst);
-}
-
-/* Promillen uden vægt og køn fører et andet sted hen — den er ikke et tal,
-   man kan vælge, men noget der mangler. */
-.orbstat.mangler .vaerdi {
-  color: var(--accent);
-}
-
 
 /* --------------------------------------------------------------- stimen */
 
 /*
- * De seneste syv drikkedage. Se Stimestribe.tsx for hvorfor tallet ikke
- * kan stå alene.
+ * De seneste syv drikkedage — og kun dem. Stimetallet står i kuglen
+ * ovenfor; se Stimestribe.tsx for hvorfor striben kan undvære det.
  */
 .stime {
-  display: flex;
-  align-items: center;
-  gap: var(--luft-4);
   margin-bottom: var(--luft-3);
 }
 
-.stimetal {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: var(--luft-1);
-}
+/*
+ * `.stimetal`, `.stimeflamme` og `.stimeantal` lå her — flammen med
+ * stimetallet i, til venstre for striben. Samme tal som kuglen viser, og som
+ * vælgeren viste en tredje gang. Striben kan stå alene: den viser HVILKE
+ * dage man var ude, hvilket tallet ikke kan.
+ */
 
-/* Tallet står OVEN I flammen, ikke ved siden af — den er en flade, det
-   er et tal, og to ting side om side ville blive to ting at læse. */
-.stimeflamme {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: var(--tryk);
-  height: var(--tryk);
-  color: var(--accent);
-}
-
-.stimeflamme svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-  opacity: 0.16;
-}
-
-.stimeantal {
-  position: absolute;
-  font-size: var(--tekst-m);
-  font-weight: var(--vaegt-fed);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: var(--spor-tal);
-}
-
+/* `flex: 1` er væk med flammen: `.stime` er ikke længere en flex-række med
+   to børn, men et kort med striben alene. */
 .stimedage {
-  flex: 1;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--luft-1);

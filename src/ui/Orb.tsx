@@ -56,6 +56,7 @@ export function Orb({
   etiket,
   undertekst,
   intensitet,
+  onUndertekst,
 }: {
   /** Det store tal. En streng, fordi promille og genstande formateres hver
       for sig — orben skal ikke kende til komma og decimaler. */
@@ -64,6 +65,14 @@ export function Orb({
   undertekst?: string;
   /** 0–1. Hvor mættet og hvor urolig kuglen er. Se klemt nedenfor. */
   intensitet: number;
+  /**
+   * Gør underteksten til en vej videre.
+   *
+   * Kun ét felt bruger den: promillen uden vægt og køn, hvor linjen ikke
+   * beskriver et tal, men noget der mangler. Uden den ville genvejen kræve
+   * et ekstra element på en side, der netop er ved at blive skåret ned.
+   */
+  onUndertekst?: () => void;
 }) {
   // Et VÆRN, ikke en del af skalaen. Kurven i Mig.tsx kan ikke selv nå 1,
   // så den her binder aldrig i praksis — men kuglen skal stadig ikke kunne
@@ -90,9 +99,14 @@ export function Orb({
       <div className="orbindhold">
         <span className="orbtal">{tal}</span>
         <span className="orbetiket">{etiket}</span>
-        {undertekst !== undefined && (
-          <span className="orbundertekst">{undertekst}</span>
-        )}
+        {undertekst !== undefined &&
+          (onUndertekst === undefined ? (
+            <span className="orbundertekst">{undertekst}</span>
+          ) : (
+            <button className="orbundertekst orblink" onClick={onUndertekst}>
+              {undertekst} →
+            </button>
+          ))}
       </div>
     </div>
   );
