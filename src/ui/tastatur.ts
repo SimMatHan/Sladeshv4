@@ -6,25 +6,32 @@ import { tastaturskifte } from "./tastaturskifte";
  *
  * ## Hvorfor den findes
  *
- * `index.html` sætter `interactive-widget=resizes-content`, som får
- * tastaturet til at SKUBBE indholdet op frem for at lægge sig over det.
- * Den findes kun i Chrome/Android. På iOS ændrer tastaturet ikke
- * layout-viewporten overhovedet — det lægger sig oven på, og `bottom: 0`
- * peger stadig på skærmens bund, altså bag tastaturet.
+ * Tastaturet lægger sig OVEN PÅ siden. Layout-viewporten ændrer sig ikke,
+ * så `bottom: 0` peger stadig på skærmens bund — altså bag tastaturet.
+ * Skal noget stå fri af det, skal vi selv løfte det.
  *
  * `visualViewport` er den ene kilde, der kender den faktiske synlige flade.
  * Forskellen mellem den og `window.innerHeight` ER tastaturet.
  *
- * På Android bliver tallet ~0 af sig selv: dér er `innerHeight` allerede
- * skrumpet af `resizes-content`, så der ikke kompenseres to gange.
+ * ## Vi løfter selv, i stedet for at bede browseren om det
+ *
+ * `index.html` bad før om `interactive-widget=resizes-content`, som får
+ * browseren til at krympe layout-viewporten i stedet. Den er fjernet: nyere
+ * iOS er begyndt at følge den, og den krympning blev ikke givet helt tilbage
+ * bagefter — hele den faste bundklynge stod 60 px for højt, når man var
+ * færdig med at skrive. Se index.html for den fulde historie.
+ *
+ * Uden den er der ÉN model på tværs af platforme: tastaturet dækker, og vi
+ * måler hvor meget. Det er også dét, koden her hele tiden har været skrevet
+ * til.
  *
  * ## Hvorfor den ligger her og ikke i Ark.tsx
  *
  * Den blev skrevet til log-arket, hvor tastaturet lagde sig over de chips,
- * man skulle vælge imellem. Chattens skriver har præcis samme problem og
- * havde præcis samme forkerte antagelse i sin kommentar — at
- * `resizes-content` klarede den på iOS. To kopier af den slags måling
- * driver fra hinanden; den ene bliver rettet, og den anden bliver glemt.
+ * man skulle vælge imellem. Chattens skriver har præcis samme problem, og
+ * dens kommentar havde præcis den samme forkerte antagelse — at metaen
+ * klarede den. To kopier af den slags måling driver fra hinanden; den ene
+ * bliver rettet, og den anden bliver glemt.
  */
 export function useTastaturhoejde(): number {
   const [tastatur, setTastatur] = useState(0);
@@ -138,15 +145,15 @@ let varOppe = false;
  *
  * ## Hvorfor den bliver kortere
  *
- * `index.html` beder om `interactive-widget=resizes-content`. Den blev
- * skrevet ind for Android, men nyere iOS er begyndt at følge den, og så
- * KRYMPER iOS layout-viewporten, mens man skriver. Det er meningen.
+ * Tilbehørsbjælken over tastaturet hører til FOKUS, ikke til tastaturet.
+ * Bliver feltet fokuseret, når man har slået tastaturet ned — ved at stryge
+ * det væk, eller ved at trykke på en fane — kan dens plads blive ved med at
+ * være reserveret. Cirka 60 px, og præcis det, der blev målt.
  *
- * Problemet er tilbehørsbjælken over tastaturet. Den hører til FOKUS, ikke
- * til tastaturet, så bliver feltet fokuseret, når man har slået tastaturet
- * ned — ved at stryge det væk, eller ved at trykke på en fane — bliver
- * bjælkens plads ved med at være reserveret. Cirka 60 px. Præcis det, der
- * blev målt.
+ * `interactive-widget=resizes-content` er siden fjernet fra index.html, og
+ * det var den egentlige årsag. Det her bliver stående som SELE OG SELER:
+ * at slippe et felt, ingen skriver i længere, er rigtigt i sig selv, og det
+ * koster ingenting, hvis metaen var hele forklaringen.
  *
  * ## Hvorfor et hardware-tastatur ikke rammes
  *
