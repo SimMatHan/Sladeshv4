@@ -8,6 +8,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { fejltekst, genstande, promille } from "../lib/visning";
 import { Achievements } from "./Achievements";
 import { Admin } from "./Admin";
+import { Ark } from "./Ark";
 import { Avatar } from "./Avatar";
 import { Faner, type Fanevalg } from "./Faner";
 import { TandhjulIkon, VinkelIkon } from "./Ikoner";
@@ -163,21 +164,9 @@ export function Mig({
           </button>
         )}
 
-        {spoerger ? (
-          <div className="kort bekraeftkort">
-            <p>Din stilling starter forfra. Historikken bliver stående.</p>
-            <button className="knap fare" disabled={arbejder} onClick={() => void nulstil()}>
-              Ja, nulstil mit run
-            </button>
-            <button className="knap" onClick={() => setSpoerger(false)}>
-              Fortryd
-            </button>
-          </div>
-        ) : (
-          <button className="knap fare" onClick={() => setSpoerger(true)}>
-            Nulstil run
-          </button>
-        )}
+        <button className="knap fare" onClick={() => setSpoerger(true)}>
+          Nulstil run
+        </button>
 
         <button className="knap" onClick={() => void signOut()}>
           Log ud
@@ -191,6 +180,53 @@ export function Mig({
       )}
 
       {hyldeAaben && <Achievements onLuk={() => setHyldeAaben(false)} />}
+
+      {/*
+        NULSTIL SPØRGER I ET ARK, ikke i et kort på siden.
+
+        Bekræftelsen stod før som et kort, der foldede sig ud NEDE i
+        knaprækken — under folden på en telefon, uden noget der dæmpede
+        resten af siden. Den ene handling på Mig, man ikke kan fortryde,
+        blev altså bekræftet mere diskret end alt andet.
+
+        `Ark` frem for en ny modal, jf. regel 4. Den giver dug, træk-for-at-
+        lukke og `aria-modal` gratis, og at trække den væk betyder ANNULLÉR
+        — den sikre udgang er den nemmeste bevægelse.
+      */}
+      {spoerger && (
+        <Ark titel="Nulstil run?" onLuk={() => setSpoerger(false)}>
+          <div className="nulstil">
+            {/*
+              Samme gif som mærket `reset_confirmed` ("Are you sure about
+              that?"), man får for netop denne handling. Den er allerede i
+              repoet, og vitsen lander kun, hvis det er den samme.
+
+              `alt=""`: den er en joke, ikke information. En skærmlæser skal
+              have teksten under, ikke en beskrivelse af en gif.
+            */}
+            <img
+              className="nulstilgif"
+              src="/assets/achievements/areyousureaboutthat.gif"
+              alt=""
+            />
+
+            <p className="nulstiltekst">
+              Din stilling starter forfra. Historikken bliver stående.
+            </p>
+
+            <button
+              className="knap fare"
+              disabled={arbejder}
+              onClick={() => void nulstil()}
+            >
+              {arbejder ? "Nulstiller …" : "Ja, nulstil mit run"}
+            </button>
+            <button className="knap" onClick={() => setSpoerger(false)}>
+              Annullér
+            </button>
+          </div>
+        </Ark>
+      )}
 
       {adminAabent && (
         <Admin channelId={channelId} onLuk={() => setAdminAabent(false)} />

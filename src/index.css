@@ -2533,13 +2533,51 @@ input {
 
 /*
  * Bekræftelseskortet: et spørgsmål og to knapper, brugt hvor en handling
- * ikke kan fortrydes. Mig-fanens "Nulstil run" og Admins "Nulstil
- * achievements" er samme mønster, så de deler klassen — den hed
- * `.nulstilbekraeft`, indtil Admin viste at den ikke kun handler om
- * nulstilling.
+ * ikke kan fortrydes.
+ *
+ * Kun ADMIN bruger den nu. Mig-fanens "Nulstil run" delte den, men er
+ * flyttet i et ark — se `.nulstil` nedenfor. Klassen bliver, fordi Admins
+ * "Nulstil achievements" stadig er et kort inde i et ark, hvor et ark oven
+ * på et ark ikke giver mening.
  */
 .bekraeftkort p {
   margin: 0 0 var(--luft-3);
+}
+
+/*
+ * NULSTIL-ARKET. Ét spørgsmål, én gif og to knapper — midterstillet, fordi
+ * arket ikke har andet indhold at flugte med.
+ */
+.nulstil {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-3);
+  padding-bottom: var(--luft-4);
+}
+
+/*
+ * Gif'en er 220×220 og skal ikke skaleres OP på en stor skærm — en meme,
+ * der bliver strakt, ser billig ud. `width` frem for `max-width`, så den
+ * krymper på en smal telefon, og loftet holder den fra at vokse.
+ */
+.nulstilgif {
+  width: min(100%, 220px);
+  border-radius: var(--radius);
+  display: block;
+}
+
+.nulstiltekst {
+  margin: 0;
+  text-align: center;
+  color: var(--tekst-daempet);
+}
+
+/* Knapperne fylder bredden i arket. To knapper side om side ville gøre den
+   uigenkaldelige og den sikre lige store — den sikre skal være den, man
+   rammer uden at sigte. */
+.nulstil .knap {
+  width: 100%;
 }
 
 /* ------------------------------------------------------------------ login */
