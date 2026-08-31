@@ -128,34 +128,45 @@ export function Mig({
         onIndstil={() => setIndstillingerAabne(true)}
       />
 
-      {/* Rækkefølgen er tidsmæssig: kuglen er I AFTEN, striben er UGEN,
-          mærket er DET NÆSTE. */}
-      <Stimestribe />
+      {/*
+        UGEN OG LIVSTIDEN I ÉT KORT.
+
+        Livstidstallene stod bart på baggrunden under mærkekortet — tre tal
+        uden ramme, uden overskrift, klemt mellem et kort og en knaprække.
+        De så ud som noget, der var blevet til overs.
+
+        De hører sammen med striben: begge svarer på "hvordan går det så",
+        bare over hver sin længde. Striben er de seneste syv dage, tallene er
+        hele tiden. Sat i ét kort med en streg imellem kan man læse dem som
+        ét spørgsmål med to tidshorisonter frem for to løsrevne ting.
+
+        Rækkefølgen på siden er stadig tidsmæssig: kuglen er I AFTEN, kortet
+        her er UGEN OG HELE TIDEN, mærket er DET NÆSTE.
+      */}
+      <div className="kort ugekort">
+        <Stimestribe />
+
+        <div className="livstid">
+          <div>
+            <span className="etiket">Point</span>
+            <div className="vaerdi">{genstande(mig.totalPoints ?? 0)}</div>
+          </div>
+          <div>
+            <span className="etiket">Længste</span>
+            <div className="vaerdi">{mig.longestStreak ?? 0}</div>
+          </div>
+          <div>
+            <span className="etiket">Check ins</span>
+            <div className="vaerdi">{mig.checkInCount ?? 0}</div>
+          </div>
+        </div>
+      </div>
 
       <AchievementRaekke
         naesteMilepael={naesteMilepael}
         achievements={achievements}
         onAaben={() => setHyldeAaben(true)}
       />
-
-      {/* Livstidstallene BART på baggrunden — etiket over tal, ingen kasse.
-          De lånte `.talgitter` fra Admin, og tre hvide kort her oven på
-          ringkortet, stimekortet og mærkekortet gjorde skærmen til en
-          stak kasser. Se `.livstid` i index.css. */}
-      <div className="livstid">
-        <div>
-          <span className="etiket">Point</span>
-          <div className="vaerdi">{genstande(mig.totalPoints ?? 0)}</div>
-        </div>
-        <div>
-          <span className="etiket">Længste</span>
-          <div className="vaerdi">{mig.longestStreak ?? 0}</div>
-        </div>
-        <div>
-          <span className="etiket">Check ins</span>
-          <div className="vaerdi">{mig.checkInCount ?? 0}</div>
-        </div>
-      </div>
 
       <div className="knapraekke">
         {mig.isAdmin === true && (

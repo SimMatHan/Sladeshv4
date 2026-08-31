@@ -88,7 +88,21 @@ export function Stimestribe() {
   }, [mineLogs]);
 
   return (
-    <div className="kort stime">
+    <div className="stime">
+      {/*
+        "SENESTE 7 DAGE", ikke "denne uge".
+
+        Aksen er RULLENDE — den slutter altid i dag og går syv dage tilbage,
+        og derfor starter bogstavrækken på en tilfældig ugedag (T O T F L S M
+        en mandag). Kaldte overskriften den "ugen", ville rækken se forkert
+        ud hver eneste dag undtagen én.
+
+        Rullende er også det rigtige for stimen: det, man vil vide, er om
+        man kan nå at redde den i aften, og så skal i dag stå yderst til
+        højre — ikke midt i en mandag-til-søndag.
+      */}
+      <span className="etiket">Seneste 7 dage</span>
+
       <ol className="stimedage">
         {dage.map((dag) => (
           <li key={dag.dayStart} className="stimedag">
