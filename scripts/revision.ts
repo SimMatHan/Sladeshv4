@@ -281,13 +281,14 @@ const PAR: Array<[string, string]> = [
   /*
    * Kuglens tekst mod kuglens LYSESTE og MØRKESTE punkt.
    *
-   * Kuglen har sin egen palet og skifter ikke med temaet, så de to par
-   * måler det samme i alle fire gennemløb. Det er med vilje: står de her,
-   * kan ingen sænke `--orb-indigo` eller lysne `--orb-tekst` uden at
-   * revisionen siger fra, og kuglen bærer appens største tal.
+   * Hvert tema har sine EGNE seks kugletokens, så de to par måler noget
+   * forskelligt i hvert gennemløb. Det er hele grunden til, at de står her:
+   * kuglen følger temaet, og et nyt tema kan ikke tilføjes med en for mørk
+   * `--orb-dyb` eller en for lys `--orb-tekst`, uden at revisionen siger
+   * fra. Kuglen bærer appens største tal.
    */
   ["--orb-tekst", "--orb-lys"],
-  ["--orb-tekst", "--orb-indigo"],
+  ["--orb-tekst", "--orb-dyb"],
 ];
 
 const GRAENSE = 4.5;
