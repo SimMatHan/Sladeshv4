@@ -997,10 +997,10 @@ input {
   /*
    * `--tastatur` sættes af Ark.tsx og er 0, når intet tastatur er oppe.
    *
-   * `interactive-widget=resizes-content` i index.html skulle klare det, men
-   * findes kun i Chrome/Android. På iOS ligger tastaturet OVEN PÅ, uden at
-   * layout-viewporten ændrer sig, så `bottom: 0` peger bag tastaturet — og
-   * log-arkets træffere, dem man skal vælge imellem, lå derunder.
+   * Tastaturet ligger OVEN PÅ, uden at layout-viewporten ændrer sig, så
+   * `bottom: 0` peger bag tastaturet — og log-arkets træffere, dem man skal
+   * vælge imellem, lå derunder. At bede browseren om at krympe siden i
+   * stedet blev prøvet og er rullet tilbage; se index.html.
    *
    * Højden trækkes fra i samme åndedrag. Uden det ville arket blot glide op
    * og få sin egen top skubbet ud over skærmkanten i stedet.
@@ -2880,10 +2880,10 @@ input {
  *
  * Skriveren er fast over navigationen, så den ikke skal rulles frem.
  *
- * DER STOD HER, at `interactive-widget=resizes-content` i viewport-metaen
- * holdt den over tastaturet. Det passede kun på Android. På iOS gør den
- * ingenting, og skriveren lå bag tastaturet, mens man skrev — se
- * `--tastatur` i `.skriver` og målingen i tastatur.ts.
+ * DER STOD HER, at viewport-metaen holdt den over tastaturet. Den metaflag
+ * er fjernet igen — den krympede layout-viewporten og gav ikke pladsen
+ * tilbage. Skriveren løftes nu af `--tastatur`; se `.skriver` nedenfor,
+ * målingen i tastatur.ts og hele historien i index.html.
  */
 .chat {
   /* Plads til den faste skriver nederst — plus luften over navigationen,
@@ -3039,9 +3039,10 @@ input {
   /*
    * `--tastatur` sættes af Chat.tsx og er 0, når intet tastatur er oppe.
    *
-   * Uden den sad skriveren BAG tastaturet på iOS. Kommentaren ovenfor
-   * påstod, at `interactive-widget=resizes-content` klarede det; den findes
-   * kun i Chrome/Android. Samme fejl som log-arket havde — se tastatur.ts.
+   * Uden den sad skriveren BAG tastaturet. Kommentaren ovenfor påstod, at
+   * viewport-metaen klarede det; den er siden fjernet, fordi den krympede
+   * layout-viewporten og ikke gav pladsen tilbage. Se index.html og
+   * tastatur.ts.
    */
   bottom: calc(
     var(--navplads) + var(--bund-sikker) + var(--luft-2) + var(--tastatur, 0px)

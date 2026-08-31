@@ -20,13 +20,38 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Sladesh" />
 
-    <!-- `interactive-widget=resizes-content` faar tastaturet til at skubbe
-         indholdet op i stedet for at lægge sig hen over den faste skriver
-         i chatten. `viewport-fit=cover` giver env(safe-area-inset-*) vaerdier
-         paa telefoner med hak. -->
+    <!--
+      `interactive-widget=resizes-content` STOD HER OG ER FJERNET.
+
+      Den bad browseren om at KRYMPE layout-viewporten, naar tastaturet kom
+      op, saa indholdet blev skubbet op i stedet for at faa tastaturet ned
+      over sig. Den blev skrevet ind for Android, og kommentaren her paastod,
+      at iOS bare ignorerede den.
+
+      Det gjorde iOS engang. Nyere iOS foelger den — og det er dét, der var
+      galt. Maalt paa en iPhone 15 Pro laa hele den faste bundklynge 60 px
+      for hoejt, EFTER tastaturet var gaaet ned: layout-viewporten var stadig
+      krympet, fordi tilbehoersbjaelken over tastaturet hoerer til FOKUS og
+      ikke til tastaturet. `position: fixed` regner fra layout-viewporten, saa
+      baade skriveren og navigationen rykkede med.
+
+      Uden linjen laegger tastaturet sig OVEN PAA igen, layout-viewporten
+      roeres ikke, og der er ingen krympning at give tilbage. At loefte
+      skriveren fri af tastaturet er saa vores eget arbejde — og det er
+      allerede skrevet: `--tastatur` i src/ui/tastatur.ts maaler
+      `visualViewport` og goer praecis det. Den kode har hidtil ikke haft
+      noget at lave paa iOS, netop fordi denne linje stod her.
+
+      Det giver ogsaa ÉN model paa tvaers af platforme frem for to: vi
+      loefter selv, i stedet for at bede hver browser om at goere noget lidt
+      forskelligt.
+
+      `viewport-fit=cover` bliver — den giver env(safe-area-inset-*) paa
+      telefoner med hak og har intet med tastaturet at goere.
+    -->
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <title>SladeshApp</title>
   </head>

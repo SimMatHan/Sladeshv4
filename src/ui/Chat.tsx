@@ -202,9 +202,8 @@ export function Chat({
       {/*
         Skriveren løftes fri af tastaturet på iOS.
 
-        Kommentaren i index.css påstod, at `interactive-widget=resizes-content`
-        i viewport-metaen klarede det. Den findes kun i Chrome/Android — på
-        iOS lægger tastaturet sig oven på uden at røre layout-viewporten, så
+        Kommentaren i index.css påstod, at viewport-metaen klarede det.
+        Tastaturet lægger sig oven på uden at røre layout-viewporten, så
         `position: fixed` med en bund regnet fra skærmkanten peger bag
         tastaturet. Det er samme fejl, log-arket havde.
 
