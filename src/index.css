@@ -3750,9 +3750,14 @@ p.dagliste {
   color: var(--accent);
 }
 
-/* Tælleren arver `.hjaelp`s `--tekst-svag`, som er sat til 11px versaler i
-   et hjørne. Her bærer den et TAL, man skal kunne læse i forbifarten, og
-   `--tekst-daempet` er det trin, resten af appen bruger til netop det. */
+/*
+ * Tælleren i TROFÆHYLDEN (Achievements.tsx). Mig-kortet brugte den også,
+ * indtil dets tal flyttede ind i titlen.
+ *
+ * Den arver `.hjaelp`s `--tekst-svag`, som er sat til 11px versaler i et
+ * hjørne. Her bærer den et TAL, man skal kunne læse i forbifarten, og
+ * `--tekst-daempet` er det trin, resten af appen bruger til netop det.
+ */
 .taettesttal {
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
@@ -3760,25 +3765,22 @@ p.dagliste {
 }
 
 /*
- * Her lå `.taettestled` — en "SE ALLE 12 MÆRKER"-linje under striben.
+ * TO TING LÅ HER OG ER BEGGE VÆK.
  *
- * Den fandtes, fordi kortet ikke lignede en knap: man så et mærke, en bjælke
- * og en stribe emoji, og intet sagde, at der var mere bag. Ledeteksten var
- * altså en lap på et kort, der viste for meget.
+ * `.taettestled` var en "SE ALLE 12 MÆRKER"-linje. Den fandtes, fordi
+ * kortet ikke lignede en knap: man så et mærke, en bjælke og en stribe
+ * emoji, og intet sagde, at der var mere bag. Ledeteksten var en lap på et
+ * kort, der viste for meget.
  *
- * Nu er bjælken og striben væk, og kortet er én række: mærke, navn, tæller,
- * vinkel. Rækken med en vinkel i højre kant ER mønsteret for "det her fører
- * et sted hen" — så skal der ikke også stå det med ord.
+ * `.taettesthoejre` var en søjle, der holdt tælleren og vinklen sammen i
+ * højre kant, så de ikke skubbede til hinanden, når tallet gik fra ét til
+ * to cifre. Den forsvandt af sig selv, da tælleren flyttede ind i titlen
+ * ("7 af 12 låst op") — så er der kun vinklen tilbage, og en søjle med ét
+ * barn er ikke en søjle.
+ *
+ * Kortet er nu tre ting: trofæ, tekst, vinkel. Rækken med en vinkel i højre
+ * kant ER mønsteret for "det her fører et sted hen".
  */
-
-/* Tallet og vinklen som ÉN søjle i højre kant, så de to ikke skubber til
-   hinanden, når tallet går fra ét til to cifre. */
-.taettesthoejre {
-  display: flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--luft-2);
-}
 
 .taettestvinkel {
   display: grid;

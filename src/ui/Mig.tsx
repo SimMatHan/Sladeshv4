@@ -57,7 +57,6 @@ export function Mig({
 }) {
   const mig = useQuery(api.users.getMe, {});
   const minPromille = useQuery(api.promille.getMinPromille, {});
-  const naesteMilepael = useQuery(api.achievements.getNaesteMilepael, {});
   const achievements = useQuery(api.achievements.getAchievementsForUser, {});
   const stilling = useQuery(
     api.scoreboard.getScoreboard,
@@ -163,7 +162,6 @@ export function Mig({
       </div>
 
       <AchievementRaekke
-        naesteMilepael={naesteMilepael}
         achievements={achievements}
         onAaben={() => setHyldeAaben(true)}
       />
@@ -592,73 +590,64 @@ function sidsteGenstand(sidsteAt: number | undefined): string {
 type AchievementListe = NonNullable<
   ReturnType<typeof useQuery<typeof api.achievements.getAchievementsForUser>>
 >;
-type NaesteMilepael = ReturnType<
-  typeof useQuery<typeof api.achievements.getNaesteMilepael>
->;
-
+/**
+ * Døren ind til trofæhylden.
+ *
+ * ## Den siger, hvor den fører hen — ikke hvad der er tættest på
+ *
+ * Kortet viste "Tættest på: Feinschmecker" med billedet af netop det mærke.
+ * Det er en oplysning, men det er den forkerte: man skal først vide, at
+ * mærkerne FINDES og at der er en hylde at åbne. Ét mærkes navn siger
+ * ingen af delene — og for den, der ikke kender Feinschmecker, sagde kortet
+ * bogstavelig talt intet om, hvad der lå bag.
+ *
+ * Nu står der "Mærker" og "7 af 12 låst op". Det er hele overblikket i én
+ * linje: hvor mange man har, hvor mange der findes, og dermed hvor mange
+ * der mangler.
+ *
+ * ## Tælleren står i titlen, ikke ude til højre
+ *
+ * Den lå før som "0/1" i højre kant, adskilt fra den tekst, den hørte til.
+ * Nu ER tallet titlen, og så er der ingen grund til at have det to steder
+ * eller at bevare søjlen, det stod i.
+ *
+ * ## Trofæet frem for et mærkebillede
+ *
+ * Billedslottet viste det nærmeste mærke. Uden "nærmeste" ville et vilkårligt
+ * mærkes billede love, at kortet handlede om netop dét. Trofæet står for
+ * hylden som helhed, og 🎉 tager over, når der ikke er mere at hente.
+ */
 function AchievementRaekke({
-  naesteMilepael,
   achievements,
   onAaben,
 }: {
-  naesteMilepael: NaesteMilepael;
   achievements: AchievementListe | undefined;
   onAaben: () => void;
 }) {
-  if (naesteMilepael === undefined || achievements === undefined) {
+  if (achievements === undefined) {
     return <p className="midtstillet">Henter achievements …</p>;
   }
 
   const oplaaste = achievements.filter((a) => a.unlocked).length;
-
-  // `naesteMilepael` er null når alt opnåeligt allerede er låst op — en
-  // fejring, ikke en tom tilstand.
-  if (naesteMilepael === null) {
-    return (
-      <button className="kort taettest" onClick={onAaben}>
-        <span className="badgebillede lille alt-oplaast" aria-hidden="true">
-          🎉
-        </span>
-        <div className="taettestmidt">
-          <span className="etiket">Næste mærke</span>
-          <div className="titel">Alle låst op</div>
-        </div>
-
-        <span className="taettesthoejre">
-          <span className="hjaelp taettesttal">
-            {oplaaste}/{achievements.length}
-          </span>
-          <span className="taettestvinkel" aria-hidden="true">
-            <VinkelIkon />
-          </span>
-        </span>
-      </button>
-    );
-  }
-
-  const def = findAchievement(naesteMilepael.achievementId);
+  const alle = oplaaste === achievements.length;
 
   return (
     <button className="kort taettest" onClick={onAaben}>
-      {/* Genbruger `.badgebillede lille` fra hylden, så mærket ser ens ud
-          de to steder det vises. Definitionen har billedet; brugerens
-          tæller hører til i hylden og gentages ikke her. */}
-      <span className="badgebillede lille">
-        {def === undefined ? "🏆" : <img src={def.image} alt="" />}
+      <span className="badgebillede lille alt-oplaast" aria-hidden="true">
+        {alle ? "🎉" : "🏆"}
       </span>
 
       <div className="taettestmidt">
-        <span className="etiket">Tættest på</span>
-        <div className="titel">{def?.title ?? "Næste mærke"}</div>
+        <span className="etiket">Mærker</span>
+        <div className="titel">
+          {alle
+            ? "Alle låst op"
+            : `${oplaaste} af ${achievements.length} låst op`}
+        </div>
       </div>
 
-      <span className="taettesthoejre">
-        <span className="hjaelp taettesttal">
-          {naesteMilepael.current}/{naesteMilepael.threshold}
-        </span>
-        <span className="taettestvinkel" aria-hidden="true">
-          <VinkelIkon />
-        </span>
+      <span className="taettestvinkel" aria-hidden="true">
+        <VinkelIkon />
       </span>
     </button>
   );
