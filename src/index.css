@@ -157,41 +157,49 @@
   /* ------------------------------------------------------------ kuglen */
 
   /*
-   * KUGLEN HAR SIN EGEN PALET, og det er en bevidst undtagelse.
+   * KUGLEN FØLGER TEMAET — men som sin EGEN palet, ikke som `--accent`.
    *
-   * Den fulgte `--accent` og skiftede dermed med temaet: ravgul i mørk,
-   * flaskegrøn i lys, rød til Copenhell. Det var pænt på papiret, men i
-   * praksis var den ét lag lysere og mørkere af samme kulør — og en kugle
-   * uden farveSKIFT har ingen kanter at få øje på, hvor farverne mødes.
+   * Den var blå i alle fire temaer. Det var prisen for den sorte tekst: en
+   * flade, der skifter kulør med temaet, kan ikke bære én fast tekstfarve.
+   * Men prisen var for høj — en blå kugle midt i et rødt Copenhell-tema er
+   * ikke et designvalg, det er en fremmed ting på skærmen.
    *
-   * Nu er den blå, lys og skarp, ens i alle fire temaer. Det er PRISEN
-   * for, at den kan bære sort tekst: en flade, der skifter fra ravgul til
-   * flaskegrøn til rød, kan ikke have én tekstfarve, der virker på dem
-   * alle. Samme begrundelse som `--paa-farve` ovenfor — teksten hører til
-   * fladen, ikke til temaet.
+   * Løsningen er ikke at binde kuglen til `--accent`, men at give HVERT
+   * TEMA sine seks kugletokens, tekstfarven iblandt. Så følger kuglen
+   * temaet, og teksten følger kuglen.
    *
-   * Nuancerne er naboer i det blå, ikke tilfældige farver: himmel, cyan,
-   * indigo, violet. Nok forskel til at tegne en kant, ikke så meget at
-   * kuglen bliver en regnbue.
+   * Grunden til, at den ikke bare kan bruge `--accent` direkte, står ved
+   * kuglens regler længere nede: fire pletter i ÉN kulør giver ingen kanter
+   * at få øje på, hvor farverne mødes, og accenten er kun én farve.
+   * `--orb-a` til `--orb-dyb` er fire naboer i accentens familie — nok
+   * forskel til at tegne en kant, ikke så meget at kuglen bliver en
+   * regnbue.
    *
-   * `--orb-indigo` er den mørkeste med vilje. Alt dybere (#6366f1 blev
-   * prøvet) falder under 4,5:1 mod teksten, og så er kuglen ikke længere
-   * noget, man kan læse et tal på.
+   * TRE KRAV, som ethvert nyt tema skal opfylde:
+   *
+   *   1. Kuglen skal være LYS. Pletterne er tinter af accenten, ikke
+   *      accenten selv — de fleste accentfarver er alt for mættede til at
+   *      bære tekst.
+   *   2. `--orb-dyb` er den mørkeste plet. Er den for mørk, ryger
+   *      læsbarheden — se punkt 3.
+   *   3. `npm run revision` måler `--orb-tekst` mod BÅDE `--orb-lys` og
+   *      `--orb-dyb` i hvert eneste tema. Falder en af dem under 4,5:1,
+   *      fejler revisionen. Målt nu: 5,49 i det værste tema.
+   *
+   * Tallene her er det mørke temas: rav, gylden, orange — accenten
+   * #f59e0b i familie.
    */
-  --orb-lys: #bae6fd;
-  --orb-blaa: #38bdf8;
-  --orb-cyan: #22d3ee;
-  --orb-indigo: #818cf8;
-  --orb-violet: #a78bfa;
+  --orb-lys: #fde8c3;
+  --orb-a: #fbbf24;
+  --orb-b: #f59e0b;
+  --orb-c: #fb923c;
+  --orb-dyb: #d97706;
   /*
-   * NÆRSORT, ikke ren sort. Ren #000 mod en lys blå flade er hårdere end
-   * noget andet i appen; den her har et strejf blåt i sig, så den hører
-   * til på kuglen frem for at ligge oven på den.
-   *
-   * Måles af `npm run revision` mod både `--orb-lys` og `--orb-indigo` —
-   * kuglens lyseste og mørkeste punkt. Se PAR i scripts/revision.ts.
+   * NÆRSORT, ikke ren sort. Ren #000 mod en lys flade er hårdere end noget
+   * andet i appen; hver temas variant har et strejf af kuglens egen kulør i
+   * sig, så teksten hører til på kuglen frem for at ligge oven på den.
    */
-  --orb-tekst: #0a1626;
+  --orb-tekst: #26160a;
 
   /* -------------------------------------------------------- bevægelse */
 
@@ -396,6 +404,21 @@
      */
     --fare: #b33a28;
     --medgang: #1b6b4a;
+
+    /*
+     * Kuglen i flaskegrønnens familie — men LYSERE end accenten selv.
+     *
+     * `--accent` er #1b4d3e, en meget mørk grøn. Brugt direkte som plet
+     * ville kuglen blive næsten sort og teksten forsvinde. Pletterne er
+     * derfor tinter af den samme kulør; det er accentens FAMILIE, kuglen
+     * skal ligne, ikke dens præcise værdi.
+     */
+    --orb-lys: #d3ece0;
+    --orb-a: #7fcbac;
+    --orb-b: #4fb28c;
+    --orb-c: #a5dcc4;
+    --orb-dyb: #3da77f;
+    --orb-tekst: #061a15;
 
     /*
      * Medaljerne er PATINERET metal her, ikke neon. Det er ikke en
@@ -2125,7 +2148,7 @@ input {
    * Den gamle lå på 50% 120% — nedefra, som en lampe under en kugle.
    */
   background:
-    radial-gradient(circle at 32% 26%, var(--orb-lys), var(--orb-blaa) 72%);
+    radial-gradient(circle at 32% 26%, var(--orb-lys), var(--orb-a) 72%);
   /*
    * Kanten er GEOMETRI (1px), ikke en skala — se regel 1.
    *
@@ -2138,7 +2161,7 @@ input {
     0 18px 40px -24px
       color-mix(
         in srgb,
-        var(--orb-blaa) calc(25% + 55% * var(--orbintensitet)),
+        var(--orb-a) calc(25% + 55% * var(--orbintensitet)),
         transparent
       );
   transition: box-shadow var(--fart-lang) var(--kurve);
@@ -2248,28 +2271,28 @@ input {
 .orbplet.a {
   top: 2%;
   left: 6%;
-  background: var(--orb-blaa);
+  background: var(--orb-a);
   animation: orbdrift-a calc(14s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.b {
   top: 30%;
   left: 38%;
-  background: var(--orb-cyan);
+  background: var(--orb-b);
   animation: orbdrift-b calc(18s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.c {
   top: 44%;
   left: 2%;
-  background: var(--orb-indigo);
+  background: var(--orb-dyb);
   animation: orbdrift-c calc(22s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
 
 .orbplet.d {
   top: 12%;
   left: 40%;
-  background: var(--orb-violet);
+  background: var(--orb-c);
   /* 26s — igen et tal, der ikke deler multiplum med de tre andre. */
   animation: orbdrift-d calc(26s + 12s * var(--orbrolighed)) ease-in-out infinite;
 }
@@ -4046,6 +4069,19 @@ p.dagliste {
   --accent: #c41e1e;
   --accent-mork: #8f1616;
   --accent-tekst: #f5f5f5;
+
+  /*
+   * Kuglen i rødt. Temaet er nærsort med en dyb rød accent, og en LYS kugle
+   * midt i det er med vilje: den er skærmens ene lysende ting, ligesom i de
+   * andre temaer. En mørkerød kugle på nærsort ville forsvinde ind i
+   * baggrunden og tage tallet med sig.
+   */
+  --orb-lys: #ffd9d9;
+  --orb-a: #f87171;
+  --orb-b: #f05a5a;
+  --orb-c: #fca5a5;
+  --orb-dyb: #e56767;
+  --orb-tekst: #240606;
 }
 
 /* O Days — næsten sort med cremehvid tekst og logoets turkis. */
@@ -4065,6 +4101,15 @@ p.dagliste {
   --accent: #3aa7b3;
   --accent-mork: #2a7f8a;
   --accent-tekst: #121212;
+
+  /* Kuglen i logoets turkis. Den ene accent, der er lys nok til, at
+     `--orb-dyb` kan være accentfarven selv. */
+  --orb-lys: #cdeef2;
+  --orb-a: #67d3de;
+  --orb-b: #4bbcc8;
+  --orb-c: #96e3ea;
+  --orb-dyb: #3aa7b3;
+  --orb-tekst: #041c20;
 }
 
 /* -------------------------------------------------------- broadcastbjælke */
