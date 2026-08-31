@@ -8,7 +8,7 @@
  * Kør: npm run test:logic
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import {
   AVATAR_COLORS,
   AVATAR_COLOR_NAMES,
@@ -1537,6 +1537,53 @@ console.log("\n[Logic] achievement-billeder");
   for (const def of ACHIEVEMENTS) {
     const sti = `public${def.image}`;
     check(`${def.id}: ${def.image} findes`, existsSync(sti), true);
+  }
+
+  /*
+   * ... og SVARER FILENDELSEN TIL INDHOLDET?
+   *
+   * Også den fejl er sket, og den er værre end den manglende fil, fordi
+   * intet ser galt ud i repoet: `feinschmecker.png`, `likefinewine.png` og
+   * `obeerma.png` var alle tre JPEG-filer med .png på. En fil, der ligger
+   * det rigtige sted og hedder det rigtige, men indeholder noget andet.
+   *
+   * Det gør en forskel, fordi Vercel sætter `Content-Type` efter
+   * FILENDELSEN, og vercel.json sætter `X-Content-Type-Options: nosniff` på
+   * alt. Browseren får altså at vide, at det er en PNG, og at den ikke må
+   * kigge efter — og så kan den nægte at tegne den JPEG, den rent faktisk
+   * fik. Om den gør det, afhænger af browseren, og det er præcis dét, der
+   * gør fejlen svær at fange: den virker på min maskine.
+   *
+   * Magiske bytes frem for et bibliotek — tre signaturer er nok her, og de
+   * har ikke ændret sig i tredive år.
+   */
+  const SIGNATURER: Array<{ endelser: string[]; magi: number[] }> = [
+    { endelser: ["png"], magi: [0x89, 0x50, 0x4e, 0x47] },
+    { endelser: ["jpg", "jpeg"], magi: [0xff, 0xd8, 0xff] },
+    { endelser: ["gif"], magi: [0x47, 0x49, 0x46] },
+  ];
+
+  for (const def of ACHIEVEMENTS) {
+    const sti = `public${def.image}`;
+    if (!existsSync(sti)) continue;
+
+    const endelse = def.image.split(".").pop() ?? "";
+    const forventet = SIGNATURER.find((s) => s.endelser.includes(endelse));
+
+    // En endelse, testen ikke kender, skal fejle frem for at blive sprunget
+    // over. Ellers ville `.webp` snige sig forbi uden at nogen opdagede, at
+    // den ikke blev tjekket.
+    if (forventet === undefined) {
+      check(`${def.id}: kender endelsen .${endelse}`, false, true);
+      continue;
+    }
+
+    const hoved = [...readFileSync(sti).subarray(0, forventet.magi.length)];
+    check(
+      `${def.id}: ${def.image} er faktisk .${endelse}`,
+      hoved.join(","),
+      forventet.magi.join(","),
+    );
   }
 }
 
