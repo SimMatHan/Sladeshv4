@@ -1,4 +1,11 @@
-import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type FormEvent,
+} from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -9,6 +16,7 @@ import { getDrinkDayStart } from "../../convex/constants";
 import { fejltekst, klokken } from "../lib/visning";
 import { Avatar } from "./Avatar";
 import { SendIkon } from "./Ikoner";
+import { useTastaturhoejde } from "./tastatur";
 
 /**
  * Kanalens chat.
@@ -38,6 +46,7 @@ export function Chat({
   minUserId: Id<"users"> | undefined;
   onVaelgPerson: (userId: Id<"users">) => void;
 }) {
+  const tastatur = useTastaturhoejde();
   // Cachet, ikke rå `useQuery`: Chat er en FANE, og hvert skift væk afmelder
   // queryen, så den startede forfra med "Henter beskeder …" hver gang man
   // kom tilbage. Tråden tømmer sig selv hvert døgn, og øjebliksbilledet
@@ -190,7 +199,23 @@ export function Chat({
         </div>
       )}
 
-      <form className="skriver" onSubmit={(event) => void send(event)}>
+      {/*
+        Skriveren løftes fri af tastaturet på iOS.
+
+        Kommentaren i index.css påstod, at `interactive-widget=resizes-content`
+        i viewport-metaen klarede det. Den findes kun i Chrome/Android — på
+        iOS lægger tastaturet sig oven på uden at røre layout-viewporten, så
+        `position: fixed` med en bund regnet fra skærmkanten peger bag
+        tastaturet. Det er samme fejl, log-arket havde.
+
+        Se tastatur.ts for målingen og for hvorfor hooken også rydder op
+        efter iOS' egen rulning.
+      */}
+      <form
+        className="skriver"
+        style={{ "--tastatur": `${tastatur}px` } as CSSProperties}
+        onSubmit={(event) => void send(event)}
+      >
         <input
           className="felt"
           value={tekst}
