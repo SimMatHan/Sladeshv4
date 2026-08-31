@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { tastaturskifte } from "./tastaturskifte";
 
 /**
  * Hvor mange pixels tastaturet dækker af skærmen. 0 når det er nede.
@@ -56,6 +57,7 @@ export function useTastaturhoejde(): number {
       }
 
       const daekket = window.innerHeight - vv.height - vv.offsetTop;
+      slipFeltetNaarTastaturetErVaek(daekket);
       // Afrundet og med gulv: `visualViewport` giver brøkdele af en pixel,
       // og et negativt tal (fx mens der zoomes) må ikke løfte noget.
       setTastatur(Math.max(0, Math.round(daekket)));
@@ -95,11 +97,89 @@ export function useTastaturhoejde(): number {
 }
 
 /**
+ * Den fulde layout-viewport, altså højden UDEN tastatur.
+ *
+ * Den største `innerHeight`, vi har set. Der findes ikke et opslag for
+ * "hvor høj ville siden være uden tastatur" — men den højeste værdi, siden
+ * nogensinde har haft, ER den, for tastaturet kan kun gøre den mindre.
+ */
+let fuldHoejde = 0;
+
+/**
+ * Bredden, `fuldHoejde` blev målt ved.
+ *
+ * Drejer man telefonen, bliver siden lavere, uden at der er et tastatur.
+ * Uden den her ville den gamle portræthøjde stå tilbage som "fuld", og
+ * landskab ville se ud som et tastatur, der aldrig gik ned. Skifter
+ * bredden, kasseres målingen og tages forfra.
+ */
+let fuldHoejdeVedBredde = 0;
+
+/** Var tastaturet oppe sidst, vi målte? */
+let varOppe = false;
+
+
+/**
+ * SLIPPER FELTET, når tastaturet er gået ned, men fokus blev hængende.
+ *
+ * ## Hvad der er målt
+ *
+ * På et skærmbillede fra en iPhone 15 Pro lå navigationens underkant 110,3
+ * CSS px over skærmens bund. Reglen siger `--bund-sikker + --luft-4`, altså
+ * 34 + 16 = 50. Mellemrummet mellem skriveren og navigationen var derimod
+ * rigtigt: 10,3 px mod 8 forventede.
+ *
+ * Hele den faste bundklynge lå altså 60 px for højt, og navigationens
+ * `bottom` rører aldrig `--tastatur`. Det udelukker, at variablen hang fast,
+ * og peger ét sted hen: LAYOUT-VIEWPORTEN var 60 px kortere end skærmen.
+ * `position: fixed` regner fra den, ikke fra glasset, så alt fast rykkede
+ * med. De 60 px forneden var appens egen baggrund, fordi `<html>`s farve
+ * bredes ud over hele lærredet.
+ *
+ * ## Hvorfor den bliver kortere
+ *
+ * `index.html` beder om `interactive-widget=resizes-content`. Den blev
+ * skrevet ind for Android, men nyere iOS er begyndt at følge den, og så
+ * KRYMPER iOS layout-viewporten, mens man skriver. Det er meningen.
+ *
+ * Problemet er tilbehørsbjælken over tastaturet. Den hører til FOKUS, ikke
+ * til tastaturet, så bliver feltet fokuseret, når man har slået tastaturet
+ * ned — ved at stryge det væk, eller ved at trykke på en fane — bliver
+ * bjælkens plads ved med at være reserveret. Cirka 60 px. Præcis det, der
+ * blev målt.
+ *
+ * ## Hvorfor et hardware-tastatur ikke rammes
+ *
+ * Vi slipper KUN feltet, hvis vi først har set noget forsvinde, der var
+ * stort nok til at være et rigtigt tastatur (`TASTATUR_MINDST`), og det
+ * derefter er kommet tilbage. På en iPad med fysisk tastatur sker det
+ * første aldrig — dér er der ingen skærmtastatur, kun en bjælke — så feltet
+ * bliver aldrig sluppet under en, der sidder og skriver.
+ */
+function slipFeltetNaarTastaturetErVaek(daekket: number): void {
+  const svar = tastaturskifte(
+    { fuld: fuldHoejde, bredde: fuldHoejdeVedBredde, varOppe },
+    { hoejde: window.innerHeight, bredde: window.innerWidth, daekket },
+  );
+
+  fuldHoejde = svar.fuld;
+  fuldHoejdeVedBredde = svar.bredde;
+  varOppe = svar.varOppe;
+
+  if (!svar.slip) return;
+
+  // Tastaturet er væk, men feltet har stadig fokus. Det er dét, der holder
+  // tilbehørsbjælkens plads reserveret.
+  const aktiv = document.activeElement;
+  if (aktiv instanceof HTMLElement) aktiv.blur();
+}
+
+/**
  * Har et felt, der kan skrives i, fokus lige nu?
  *
  * `isContentEditable` er med, selv om appen ikke bruger det i dag: en
- * fremtidig rig tekstboks ville ellers få tastaturet til at blive meldt nede,
- * mens man skrev i den.
+ * fremtidig rig tekstboks ville ellers få tastaturet meldt nede, mens man
+ * skrev i den.
  */
 function skrivefeltIFokus(): boolean {
   const aktiv = document.activeElement;
