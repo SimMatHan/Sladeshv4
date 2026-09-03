@@ -62,6 +62,7 @@ import {
   erRunderOpbrugt,
   laesPosition,
 } from "../convex/beaconRules.ts";
+import { VAPID_SUBJEKT_STANDARD, vapidSubjekt } from "../convex/pushRules.ts";
 import {
   alkoholGram,
   beregnPromille,
@@ -1778,6 +1779,69 @@ console.log("\n[Logic] tastaturets op og ned");
     daekket: 0,
   });
   check("foerste maal med tastatur oppe slipper intet", foersteMaal.slip, false);
+}
+
+console.log("\n[Logic] VAPID-subjektet");
+{
+  /*
+   * Den fejl, der kostede os hver push efter cutoveren: subjektet var sat til
+   * en bar mailadresse, og web-push KASTER paa alt andet end mailto:/https://.
+   * Broadcasten blev oprettet, notifikationen forsvandt, og intet i appen
+   * sagde fra.
+   */
+  const bar = vapidSubjekt("simonmathiashansen@gmail.com");
+  check("bar mailadresse faar mailto:", bar.subjekt, "mailto:simonmathiashansen@gmail.com");
+  check("og der advares om det", bar.advarsel !== null, true);
+  check(
+    "advarslen siger, hvad man skal skrive",
+    bar.advarsel?.includes('VAPID_SUBJECT "mailto:simonmathiashansen@gmail.com"'),
+    true,
+  );
+
+  // Det, der var meningen hele tiden, skal gaa igennem uden en lyd. En
+  // advarsel ved hver korrekt afsendelse er stoej, og stoej bliver ignoreret.
+  const rigtig = vapidSubjekt("mailto:simon@sladeshapp.dk");
+  check("mailto: gaar urort igennem", rigtig.subjekt, "mailto:simon@sladeshapp.dk");
+  check("og tier", rigtig.advarsel, null);
+
+  const https = vapidSubjekt("https://sladeshapp.dk");
+  check("https:// er ogsaa gyldigt", https.subjekt, "https://sladeshapp.dk");
+  check("og tier ligeledes", https.advarsel, null);
+
+  // Mellemrum omkring en indsat vaerdi er den naeste fejl, nogen laver.
+  const mellemrum = vapidSubjekt("  mailto:simon@sladeshapp.dk  ");
+  check("mellemrum trimmes", mellemrum.subjekt, "mailto:simon@sladeshapp.dk");
+  check("og tier bagefter", mellemrum.advarsel, null);
+
+  // Usat: standarden, og en linje om det. IKKE en kastet fejl.
+  const usat = vapidSubjekt(undefined);
+  check("usat giver standarden", usat.subjekt, VAPID_SUBJEKT_STANDARD);
+  check("og siger til", usat.advarsel !== null, true);
+  check("tom streng behandles som usat", vapidSubjekt("").subjekt, VAPID_SUBJEKT_STANDARD);
+
+  /*
+   * Uforstaaeligt: standarden frem for at kaste. Vi taber ALDRIG en
+   * notifikation, fordi en kontaktstreng er skrevet forkert — det er derfor
+   * denne funktion falder tilbage i stedet for at springe over, til forskel
+   * fra manglende noegler, hvor der ikke KAN sendes.
+   */
+  const skrald = vapidSubjekt("http://sladeshapp.dk");
+  check("http:// (ikke https) afvises", skrald.subjekt, VAPID_SUBJEKT_STANDARD);
+  check("og der advares", skrald.advarsel !== null, true);
+  check("vrovl falder tilbage", vapidSubjekt("simon hansen").subjekt, VAPID_SUBJEKT_STANDARD);
+  check("et bart @ er ikke en mail", vapidSubjekt("@").subjekt, VAPID_SUBJEKT_STANDARD);
+  check(
+    "mail uden punktum i domaenet er ikke en mail",
+    vapidSubjekt("simon@localhost").subjekt,
+    VAPID_SUBJEKT_STANDARD,
+  );
+
+  // Standarden skal selv kunne komme gennem web-push' krav.
+  check(
+    "standarden er selv gyldig",
+    vapidSubjekt(VAPID_SUBJEKT_STANDARD).advarsel,
+    null,
+  );
 }
 
 console.log(

@@ -133,18 +133,34 @@ PER DEPLOYMENT — dev og produktion deler ingenting:
 # Dev (BEMÆRK: uden --prod)
 npx convex env set VAPID_PUBLIC_KEY "<den offentlige nøgle>"
 npx convex env set VAPID_PRIVATE_KEY "<den private nøgle>"
-npx convex env set VAPID_SUBJECT "mailto:kontakt@sladesh.app"
+npx convex env set VAPID_SUBJECT "mailto:din@mail.dk"       # mailto: SKAL med
 
 # Produktion
 npx convex env set --prod VAPID_PUBLIC_KEY "<den offentlige nøgle>"
 npx convex env set --prod VAPID_PRIVATE_KEY "<den private nøgle>"
-npx convex env set --prod VAPID_SUBJECT "mailto:kontakt@sladesh.app"
+npx convex env set --prod VAPID_SUBJECT "mailto:din@mail.dk"
 ```
 
 `VAPID_SUBJECT` skal være enten `mailto:` eller en `https://`-URL — det er
 push-tjenesternes kontaktpunkt, hvis de har brug for at nå den, der sender.
-Uden den bruges en indbygget standardværdi i `convex/push.ts`, men den bør
-sættes til noget rigtigt før produktion.
+
+> **`mailto:` er ikke til at springe over, og fejlen er ubehagelig.**
+> `web-push` validerer feltet som en URL og **kaster** på alt andet, nede fra
+> `vapid-helper.js`. Sættes variablen til en bar mailadresse — den nærliggende
+> fejl — dør hver eneste push med `Vapid subject is not a valid URL`, *mens*
+> hændelsen selv (beskeden, broadcasten) bliver oprettet, som om intet var
+> hændt. Det skete på produktion ved cutoveren, og det var kun synligt i
+> `npx convex logs --prod`.
+>
+> `convex/pushRules.ts` fanger det nu: en bar mailadresse får sit `mailto:`
+> for den enkelte afsendelse, og loggen siger, hvad variablen skal rettes til.
+> Alt andet ugyldigt falder tilbage på standarden med en `[Push]`-advarsel.
+> Der kastes ikke længere. **Ret variablen alligevel** — værnet er der for at
+> gøre fejlen læselig, ikke for at gøre den holdbar.
+
+Er variablen usat, bruges `VAPID_SUBJEKT_STANDARD` fra `convex/pushRules.ts`
+(`https://sladeshapp.dk`). Standarden var før `mailto:kontakt@sladesh.app` —
+et domæne, projektet ikke ejer, altså et kontaktpunkt ingen kunne svare på.
 
 ### Test
 
@@ -182,3 +198,5 @@ sættes til noget rigtigt før produktion.
 - [ ] `web-push` importeres kun i filer med `"use node"` — aldrig noget der
       kan ende i klientbundlet
 - [ ] Ingen nøgle, hverken offentlig eller privat, hardkodet i kildekoden
+- [ ] Rene regler ligger i `convex/pushRules.ts`, ikke i `push.ts` — den
+      er `"use node"` og kan ikke nås fra `scripts/logic-test.ts`

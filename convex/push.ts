@@ -5,6 +5,7 @@ import webpush from "web-push";
 import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc } from "./_generated/dataModel";
+import { vapidSubjekt } from "./pushRules";
 
 /**
  * Afsendelse af Web Push.
@@ -84,11 +85,13 @@ export const sendTilBrugere = internalAction({
       return;
     }
 
-    webpush.setVapidDetails(
-      process.env.VAPID_SUBJECT ?? "mailto:kontakt@sladesh.app",
-      publicKey,
-      privateKey,
-    );
+    // Subjektet skal være en URL, ikke en mailadresse. Se vapidSubjekt for
+    // hvorfor det er værd at en hel funktion — kort fortalt: web-push kaster
+    // på alt andet, og den fejl kostede os hver push efter cutoveren.
+    const { subjekt, advarsel } = vapidSubjekt(process.env.VAPID_SUBJECT);
+    if (advarsel !== null) console.warn("[Push]", advarsel);
+
+    webpush.setVapidDetails(subjekt, publicKey, privateKey);
 
     const payload = JSON.stringify({ title: args.title, body: args.body, tag: args.tag });
 

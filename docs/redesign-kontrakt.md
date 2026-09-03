@@ -100,6 +100,22 @@ Ingen anden logik i service workeren er rørt, og `"opdater-nu"` virker
 uændret. Linjen kan fjernes igen, når det gamle site er slukket, og alle
 har været forbi mindst én gang.
 
+**Bevidst undtagelse 7:** `convex/pushRules.ts` er NY, og `convex/push.ts`
+kalder den. Den rører hverken schema, tabeller, mutations eller data — den
+oversætter én deploymentvariabel til noget, `web-push` accepterer.
+
+Den findes, fordi fejlen ramte produktion samme dag som cutoveren:
+`VAPID_SUBJECT` var sat til en bar mailadresse, `web-push` kaster på alt
+andet end `mailto:`/`https://`, og hver eneste push døde med et stakspor
+nede fra `node_modules` — mens broadcasten selv blev oprettet, som om intet
+var hændt. Fejlen var kun synlig i `convex logs`.
+
+Egen fil frem for en funktion i `push.ts`, af samme grund som
+`messageRules.ts` og `beaconRules.ts` har deres: `push.ts` er `"use node"`
+og trækker `web-push` med sig, så `scripts/logic-test.ts` kan ikke nå ind i
+den. Reglen har fire udfald og en regex, og det er præcis den slags, der
+skal kunne afprøves — atten tests dækker dem.
+
 ---
 
 ## 2. Afhængigheder
