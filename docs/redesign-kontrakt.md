@@ -79,6 +79,27 @@ fandtes (`by_recipient_and_created_at`, også ubrugt indtil nu).
 Grænsen for hvem der ser billederne er sat i queryen og med vilje snæver:
 kun de to parter i udfordringen. Se kommentaren ved `getSladeshHistorik`.
 
+**Bevidst undtagelse 6:** service workeren lytter nu også efter det gamle
+sites besked `{ type: "SKIP_WAITING" }`. Det er én linje i
+`scripts/sw-skabelon.js`, og den findes udelukkende for cutoveren.
+
+`sladeshapp.dk` bæres i dag af Sladesh2.0, som kører vite-plugin-pwa med
+`scope: "/"` og sin worker på `/sw.js` — samme sti som vores. Når domænet
+skifter, opdager browseren derfor godt, at scriptet er et andet, og
+installerer vores; men vores venter (ingen `skipWaiting` ved `install`), og
+en installeret PWA lukkes sjældent helt. Uden denne linje er den eneste vej
+videre at bede alle brugere lukke appen HELT — og de, der ikke gør det,
+sidder i den gamle app uden at vide det.
+
+Det gamle site har selv et opdateringsforløb, der aktiverer en ventende
+worker med netop den besked og derefter genindlæser. Ved at svare på den
+lader vi den gamle apps eget forløb lukke os ind ved brugerens næste
+opstart.
+
+Ingen anden logik i service workeren er rørt, og `"opdater-nu"` virker
+uændret. Linjen kan fjernes igen, når det gamle site er slukket, og alle
+har været forbi mindst én gang.
+
 ---
 
 ## 2. Afhængigheder
