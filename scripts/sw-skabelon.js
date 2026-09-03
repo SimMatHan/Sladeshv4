@@ -71,6 +71,33 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("message", (event) => {
   if (event.data === "opdater-nu") self.skipWaiting();
+
+  // Det GAMLE sites besked, og grunden til at den står her.
+  //
+  // Ved cutoveren arver vi `sladeshapp.dk` fra Sladesh2.0, som kører
+  // vite-plugin-pwa med `scope: "/"` og sin worker på netop `/sw.js`. Alle,
+  // der har appen installeret, har derfor allerede en registrering på den
+  // sti, og den serverer den gamle app fra sin egen cache — uanset hvor DNS
+  // peger hen. Browseren opdager ved sit næste tjek, at scriptet er et
+  // andet, og installerer vores. Men vores venter (ingen skipWaiting
+  // ovenfor), og en installeret PWA lukkes sjældent helt. Der kan gå dage,
+  // hvor nogen sidder med den gamle app uden at vide det.
+  //
+  // Det gamle site har imidlertid selv et opdateringsforløb: dets splash
+  // spørger ved hver opstart, om en worker står og venter, og aktiverer den
+  // så med `{ type: "SKIP_WAITING" }` — hvorefter siden genindlæses på
+  // `controllerchange`. Se src/lib/pwaUpdate.ts i Sladesh2.0.
+  //
+  // Lytter vi også efter DEN besked, bliver den gamle apps eget forløb det,
+  // der lukker os ind: brugeren åbner appen som altid, splashen finder os
+  // ventende, aktiverer os og genindlæser — og er i den nye app. Uden
+  // linjen skal de i stedet fortælles, at de skal lukke appen HELT.
+  //
+  // Advarslen ved `install` gælder ikke her: den handler om at rive
+  // grundlaget væk under en KØRENDE v4-side, som har hentet index.html med
+  // bestemte hashede filnavne. Her er den kørende side det gamle site, og
+  // det genindlæser af sig selv i samme øjeblik vi tager over.
+  if (event.data && event.data.type === "SKIP_WAITING") self.skipWaiting();
 });
 
 self.addEventListener("fetch", (event) => {
