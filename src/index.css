@@ -3663,6 +3663,69 @@ p.dagliste {
 }
 
 /*
+ * Opfordringen til at slå notifikationer til.
+ *
+ * Samme form og samme radius som broadcast-bjælken lige over — står de to
+ * oven på hinanden, skal de læses som samme slags ting — men DÆMPET:
+ * almindelig flade og almindelig kant, hvor broadcasten er tonet med
+ * accenten.
+ *
+ * Det er med vilje. Broadcasten er admins besked, der gælder nu;
+ * opfordringen er et tilbud, man kan lukke. Gav de to samme visuelle vægt,
+ * ville den vigtige af dem miste sin.
+ */
+.pushopfordring {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--luft-3);
+  margin-bottom: var(--luft-3);
+  padding: var(--luft-3) var(--luft-4);
+  border-radius: var(--radius-lille);
+  background: var(--flade);
+  border: 1px solid var(--kant);
+}
+
+.pushindhold {
+  flex: 1;
+  min-width: 0;
+}
+
+.pushtitel {
+  font-size: var(--tekst-s);
+  font-weight: var(--vaegt-fed);
+}
+
+.pushtekst {
+  font-size: var(--tekst-s);
+  color: var(--tekst-daempet);
+}
+
+/* Knappen står i indholdskolonnen, ikke ved siden af krydset: teksten
+   forklarer, knappen svarer, og de skal læses i den rækkefølge. */
+.pushindhold > .knap {
+  margin-top: var(--luft-3);
+}
+
+.pushluk {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  /* Krydset er en glyf, ikke tekst. */
+  font-size: var(--ikon);
+  line-height: 1;
+  color: var(--tekst-daempet);
+  background: none;
+  border: none;
+  border-radius: var(--radius-rund);
+  cursor: pointer;
+}
+
+.pushluk:active {
+  background: var(--flade-brik);
+}
+
+/*
  * Admin har otte faner — for mange til at stå på én telefonbredde. Striben
  * ruller vandret frem for at pakke om på to linjer, så indholdet under den
  * ikke flytter sig, når man skifter fane.

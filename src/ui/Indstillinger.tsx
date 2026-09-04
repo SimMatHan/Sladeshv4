@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { AVATAR_COLORS } from "../../convex/constants";
-import { aktiverPush, deaktiverPush, laesAbonnement, pushStoettet } from "../lib/push";
 import { fejltekst } from "../lib/visning";
 import { Ark } from "./Ark";
+import { usePush } from "./usePush";
 import { ProfilFelter, type Profilvaerdier } from "./ProfilFelter";
 
 /**
@@ -29,9 +29,11 @@ export function Indstillinger({
   const setPromille = useMutation(api.promille.setPromilleIndstilling);
   const minPromille = useQuery(api.promille.getMinPromille, {});
 
-  const vapidNoegle = useQuery(api.pushAbonnementer.getVapidPublicKey, {});
-  const gemPushAbonnement = useMutation(api.pushAbonnementer.gemAbonnement);
-  const sletPushAbonnement = useMutation(api.pushAbonnementer.sletAbonnement);
+  // Notifikationer har egen tilstand og egen fejl — aktivering rører
+  // browserens tilladelsesdialog i SAMME klik, brugeren trykker på, og kan
+  // derfor ikke vente på det fælles "Gem". Logikken deles med bjælken i
+  // toppen af appen; se usePush.ts.
+  const push = usePush();
 
   const [profil, setProfil] = useState<Profilvaerdier>({
     displayName: mig.displayName,
@@ -53,50 +55,6 @@ export function Indstillinger({
   const [arbejder, setArbejder] = useState(false);
   const [gemt, setGemt] = useState(false);
   const [fejl, setFejl] = useState<string | undefined>();
-
-  // Notifikationer — egen tilstand, egen fejl. Aktivering rører browserens
-  // tilladelsesdialog i SAMME klik, brugeren trykker på; at gemme den til
-  // det fælles "Gem" ville lægge en async tur over Convex ind imellem klik
-  // og tilladelsesspørgsmål, hvilket nogle browsere slet ikke tillader.
-  const [notifikationer, setNotifikationer] = useState<"ukendt" | "til" | "fra">("ukendt");
-  const [notifikationerArbejder, setNotifikationerArbejder] = useState(false);
-  const [notifikationsfejl, setNotifikationsfejl] = useState<string | undefined>();
-
-  useEffect(() => {
-    if (!pushStoettet()) return;
-    laesAbonnement()
-      .then((abonnement) => setNotifikationer(abonnement !== null ? "til" : "fra"))
-      .catch(() => setNotifikationer("fra"));
-  }, []);
-
-  const skiftNotifikationer = async () => {
-    setNotifikationerArbejder(true);
-    setNotifikationsfejl(undefined);
-
-    try {
-      if (notifikationer === "til") {
-        const endpoint = await deaktiverPush();
-        if (endpoint !== undefined) await sletPushAbonnement({ endpoint });
-        setNotifikationer("fra");
-        return;
-      }
-
-      if (vapidNoegle === undefined || vapidNoegle === "") {
-        throw new Error("Notifikationer er ikke sat op på serveren endnu.");
-      }
-
-      const noegler = await aktiverPush(vapidNoegle);
-      await gemPushAbonnement(noegler);
-      setNotifikationer("til");
-    } catch (error) {
-      // `fejltekst()` er skrevet til `ConvexError` og ville gemme browserens
-      // egen besked ("du sagde nej", "ikke understøttet") bag en generisk
-      // reserve — her er den rigtige besked netop den, brugeren skal se.
-      setNotifikationsfejl(error instanceof Error ? error.message : fejltekst(error));
-    } finally {
-      setNotifikationerArbejder(false);
-    }
-  };
 
   const gem = async () => {
     setArbejder(true);
@@ -202,37 +160,50 @@ export function Indstillinger({
         )}
       </div>
 
+      {/* Tilstandene og deres rækkefølge er forklaret i usePush.ts. Her
+          er de bare oversat til det, brugeren skal gøre — og de fire, der
+          ikke er en knap, siger hver især HVORFOR, i stedet for at vise en
+          knap, der ville fejle. */}
       <div className="arkgruppe">
         <h3>Notifikationer</h3>
 
-        {!pushStoettet() ? (
-          <p className="hjaelp">
-            Denne browser understøtter ikke notifikationer. På iPhone skal
-            appen først føjes til hjemmeskærmen.
-          </p>
-        ) : vapidNoegle === undefined ? (
+        {push.status === "ukendt" ? (
           <p className="midtstillet">Henter …</p>
-        ) : vapidNoegle === "" ? (
+        ) : push.status === "iosudenhjem" ? (
+          <p className="hjaelp">
+            På iPhone virker notifikationer kun, når appen er føjet til
+            hjemmeskærmen. Tryk på Del-knappen i Safari og vælg “Føj til
+            hjemmeskærm” — så kan du slå dem til herfra.
+          </p>
+        ) : push.status === "ikkestoettet" ? (
+          <p className="hjaelp">Denne browser understøtter ikke notifikationer.</p>
+        ) : push.status === "afvist" ? (
+          <p className="hjaelp">
+            Du har sagt nej til notifikationer i browseren, og den husker
+            det — appen kan ikke spørge igen. Du kan give lov igen under
+            indstillingerne for dette websted i din browser.
+          </p>
+        ) : push.status === "serverklarikke" ? (
           <p className="hjaelp">Notifikationer er ikke sat op på serveren endnu.</p>
         ) : (
           <>
             <button
               className="knap"
-              aria-pressed={notifikationer === "til"}
-              disabled={notifikationerArbejder || notifikationer === "ukendt"}
-              onClick={() => void skiftNotifikationer()}
+              aria-pressed={push.status === "til"}
+              disabled={push.arbejder}
+              onClick={() => void push.skift()}
             >
-              {notifikationer === "til"
+              {push.status === "til"
                 ? "✓ Notifikationer er slået til"
                 : "Slå notifikationer til"}
             </button>
             <p className="hjaelp">
-              Nye beskeder i chatten, mens du ikke sidder og læser med, og
-              beskeder fra admin.
+              Nye beskeder i chatten, en Sladesh på vej til dig, og når nogen
+              i Kanalen går ud i aften.
             </p>
           </>
         )}
-        {notifikationsfejl !== undefined && <p className="fejl">{notifikationsfejl}</p>}
+        {push.fejl !== undefined && <p className="fejl">{push.fejl}</p>}
       </div>
 
       <div className="arkgruppe">
