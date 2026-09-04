@@ -17,6 +17,7 @@ import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
 import { Kanaltema } from "./ui/Kanaltema";
 import { KanalVaelger } from "./ui/KanalVaelger";
+import { Pushopfordring } from "./ui/Pushopfordring";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
 import { Onboarding } from "./ui/Onboarding";
@@ -252,6 +253,11 @@ function Appen() {
       <main className="indhold">
         <Forbindelse />
         <Broadcastbjaelke />
+        {/* Under broadcasten: admins besked gælder nu, opfordringen kan
+            vente de to sekunder. Den vises kun til dem, der faktisk mangler
+            notifikationer, og kun indtil de lukker den — se
+            Pushopfordring.tsx. */}
+        <Pushopfordring />
 
         {jegErModtager && (
           <button className="sladeshbjaelke" onClick={() => setMinimeret(false)}>
