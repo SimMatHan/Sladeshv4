@@ -62,8 +62,13 @@ crons.interval(
  * altid et helt antal timer fra UTC, så minut 0 i UTC er også minut 0 i
  * København.
  */
+// BEMÆRK: cron-navne skal være printbar ASCII — Convex validerer dem mod
+// /^[ -~]*$/ og AFVISER hele pushet, hvis et navn indeholder æ, ø eller å.
+// Det er den ene slags dansk i dette repo, der ikke må skrives dansk. Der er
+// en prøve på det i scripts/logic-test.ts, så det ikke skal opdages af et
+// mislykket deploy igen.
 crons.hourly(
-  "mind om at logge fredag og lørdag",
+  "mind om at logge i weekenden",
   { minuteUTC: 0 },
   internal.paamindelser.mindOmAtLogge,
   {},
