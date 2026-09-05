@@ -187,3 +187,88 @@ export function aktivitetsVarsling(): { titel: string; tekst: string } {
     tekst: "Log din næste drink 🍹",
   };
 }
+
+// ---------------------------------------------------------------------------
+// Milepælshyldesten — til Kanalen, ikke til én selv
+// ---------------------------------------------------------------------------
+
+/**
+ * De runde tal, der fejres.
+ *
+ * Lukket liste, ikke "hver femte". Over 20 er der ikke noget at hylde —
+ * `full_bender` findes allerede ved netop 20 og har sin egen fejring i
+ * appen, og en notifikation ved 45 ville være en anden slags besked end en
+ * hyldest.
+ */
+export const MILEPAELE = [5, 10, 15, 20] as const;
+
+/**
+ * Den højeste milepæl, `genstande` har nået. `undefined` under den første.
+ *
+ * Tallet er VÆGTET som alt andet i appen — historiske rækker kan bære en
+ * `sizeMultiplier` på 1,5 eller 2, og en fortrydelse er en negativ række.
+ * Derfor `>=` mod hvert trin frem for at antage, at man rammer dem præcist.
+ */
+export function naaetMilepael(genstande: number): number | undefined {
+  let hoejeste: number | undefined;
+  for (const milepael of MILEPAELE) {
+    if (genstande >= milepael) hoejeste = milepael;
+  }
+  return hoejeste;
+}
+
+/**
+ * Skal Kanalen have besked — og om hvilken milepæl?
+ *
+ * ## Hvorfor der huskes en HØJESTE og ikke bare "sidst fejret"
+ *
+ * Totalen kan gå NED igen. En fortrydelse indsætter en negativ række, så en
+ * bruger på 10 kan falde til 9 og logge sig op igen. Uden hukommelsen ville
+ * det udløse "rundede 10" en gang til, og en Kanal kunne hyldes for det
+ * samme tal hele aftenen ved at trykke log/fortryd.
+ *
+ * Derfor: kun når den nåede milepæl er HØJERE end den, der allerede er
+ * fejret i dette run. Springer man fra 4 til 11 med en stor logning,
+ * fejres 10 — den højeste, man faktisk har nået — og ikke både 5 og 10.
+ * Én hyldest per logning.
+ *
+ * ## Hvorfor det er runnet og ikke drikkedagen
+ *
+ * `full_bender` måles på runnet (`run_drinks`, threshold 20). Målte
+ * hyldesten på drikkedagen, ville de to ramme 20 på hvert sit tidspunkt for
+ * en, der har nulstillet sit run — og så ville appen se i stykker ud.
+ */
+export function beslutMilepael(input: {
+  /** Vægtede genstande i runnet, EFTER den logning der udløste kaldet. */
+  genstande: number;
+  /** `users.fejretMilepael`, hvis den hører til dette run. */
+  alleredeFejret: number | undefined;
+}): number | undefined {
+  const naaet = naaetMilepael(input.genstande);
+  if (naaet === undefined) return undefined;
+  if (input.alleredeFejret !== undefined && naaet <= input.alleredeFejret) {
+    return undefined;
+  }
+  return naaet;
+}
+
+/**
+ * Teksten til Kanalen.
+ *
+ * Navnet forrest, som i "Anders er ude i aften" — det er det, man læser på
+ * en låst skærm. Titlen er Kanalens navn, så beskeden ligner de andre
+ * kanalvarslinger frem for at komme fra ingen steder.
+ */
+export function milepaelsVarsling(
+  navn: string,
+  milepael: number,
+): { titel: string; tekst: string } {
+  const rent = navn.trim() || "Nogen";
+  return {
+    titel: rent,
+    tekst:
+      milepael >= 20
+        ? `🥴 ${rent} har rundet ${milepael} genstande i aften. Full bender.`
+        : `🍻 ${rent} har rundet ${milepael} genstande i aften`,
+  };
+}

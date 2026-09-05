@@ -14,7 +14,7 @@ UI-redesign skal kunne gøre af sig selv.
 
 ## 1. Hvad der faktisk sender en notifikation i dag
 
-Otte. Seks af dem udløses af, at nogen GØR noget; de sidste to af klokken.
+Ni. Syv af dem udløses af, at nogen GØR noget; de sidste to af klokken.
 
 | # | Hvad udløser den | Hvor | Hvem får den | Tag |
 |---|---|---|---|---|
@@ -26,10 +26,34 @@ Otte. Seks af dem udløses af, at nogen GØR noget; de sidste to af klokken.
 | 6 | Beacon-evaluering (hvert 5. min) | `beacons.ts`, `evaluerAlleBeacons` | Indcheckede inden for radius, som ikke allerede er varslet for den beacon | `beacon-<id>` |
 | 7 | Fredag og lørdag kl. 20 | `paamindelser.ts`, `mindOmAtLogge` | Alle, der **ikke** er ude endnu i aften | `paamindelse` |
 | 8 | Hver time fra 14 til 02 | `paamindelser.ts`, `mindOmAktivitet` | Dem, der **er** ude — højst 4 per aften, og aldrig inden for en time efter en logning | `aktivitetspaamindelse` |
+| 9 | Man runder 5, 10, 15 eller 20 genstande i sit run | `kanaler.ts`, `varslingMilepael` (kaldt fra `drinkLogs.ts`) | Resten af Kanalen — **ikke** personen selv | `milepael-<kanal>-<person>-<tal>` |
 
 Nummer 3 har to veje ind i samme tilstand — aftenens første genstand
 (`drinkLogs.ts`) og et manuelt Check In på kortet (`checkIns.ts`) — og begge
 kalder `varslingUdeIAften`, så teksten og reglen kun findes ét sted.
+
+### Nummer 9 går til Kanalen, ikke til én selv
+
+En hyldest kræver et publikum. Man har lige selv trykket på knappen og står
+med telefonen i hånden, så en notifikation til én selv ville være en
+kvittering, ikke en fejring — samme grund som at achievement-oplåsninger
+ikke sendes som push (se nederst i afsnittet). De andre i Kanalen er derimod
+ikke nødvendigvis i appen, og det er dem, der kan hylde.
+
+Den måles på **runnet**, ikke på drikkedagen, fordi `full_bender` er
+`run_drinks` med threshold 20: målte de to på hver sin grænse, ville de ramme
+20 på hvert sit tidspunkt for en, der har nulstillet sit run.
+
+`users.fejretMilepael` (`{ run, milepael }`) husker den højeste, Kanalen
+allerede er blevet fortalt om. Uden den kunne en fortrydelse genudløse
+hyldesten: totalen kan gå ned igen, så en bruger på 10 kan falde til 9 og
+logge sig op — og med log/fortryd i skiftevis kunne man hylde sig selv hele
+aftenen. Springer man flere trin i ét hug, fejres kun det højeste: én
+hyldest per logning, ikke en byge.
+
+Listen er lukket ved 20. Over det er der ikke noget at hylde — `full_bender`
+findes allerede ved netop 20, og en notifikation ved 45 ville være en anden
+slags besked.
 
 ### De to sidste er anderledes
 

@@ -129,6 +129,26 @@ export default defineSchema({
     ),
 
     /**
+     * Den højeste milepæl (5/10/15/20), Kanalen allerede er blevet fortalt om.
+     *
+     * Uden den ville en fortrydelse kunne genudløse hyldesten: totalen kan gå
+     * NED igen — en fortrydelse er en negativ række — så en bruger på 10 kan
+     * falde til 9 og logge sig op igen. Med log/fortryd i skiftevis kunne man
+     * hylde sig selv hele aftenen.
+     *
+     * `run` er runnets start, ikke drikkedagens. Nulstiller man sit run,
+     * begynder hyldesterne forfra — samme grænse som `full_bender`, der også
+     * måles per run. Er `run` en anden end det nuværende, læses `milepael`
+     * som "ingen fejret endnu".
+     */
+    fejretMilepael: v.optional(
+      v.object({
+        run: v.number(),
+        milepael: v.number(),
+      }),
+    ),
+
+    /**
      * Nulpunkt for de achievements, der måler på kumulative tællere.
      *
      * "Stamgæst" belønner 25 aftener ude, men `checkInCount` havde talt op i
