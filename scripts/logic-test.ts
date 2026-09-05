@@ -91,6 +91,10 @@ import {
 } from "../convex/achievementRules.ts";
 import cronsModul from "../convex/crons.ts";
 import {
+  MILEPAELE,
+  beslutMilepael,
+  milepaelsVarsling,
+  naaetMilepael,
   AKTIVITET_MAX_PER_AFTEN,
   AKTIVITET_STILHED_MS,
   aktivitetsVarsling,
@@ -339,6 +343,76 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] milepælshyldesten");
+{
+  check("milepælene er 5, 10, 15, 20", [...MILEPAELE], [5, 10, 15, 20]);
+
+  check("under første milepæl", naaetMilepael(4), undefined);
+  check("præcis 5", naaetMilepael(5), 5);
+  check("mellem to trin", naaetMilepael(9), 5);
+  check("præcis 20", naaetMilepael(20), 20);
+  // Over 20 er der ikke flere trin — hyldesten stopper, den ruller ikke.
+  check("langt over 20", naaetMilepael(47), 20);
+  // Vægtet total: historiske rækker kan bære sizeMultiplier 1,5 eller 2.
+  check("skæve tal rammer stadig", naaetMilepael(10.5), 10);
+
+  // Første gang: der fejres.
+  check(
+    "første gang man runder 5",
+    beslutMilepael({ genstande: 5, alleredeFejret: undefined }),
+    5,
+  );
+
+  // Den vigtigste prøve. Totalen kan gå NED — en fortrydelse er en negativ
+  // række — så uden hukommelsen kunne man hylde sig selv hele aftenen ved at
+  // trykke log/fortryd/log.
+  check(
+    "samme milepæl igen efter en fortrydelse",
+    beslutMilepael({ genstande: 5, alleredeFejret: 5 }),
+    undefined,
+  );
+  check(
+    "faldet under og op igen",
+    beslutMilepael({ genstande: 6, alleredeFejret: 5 }),
+    undefined,
+  );
+
+  // Næste trin fejres.
+  check(
+    "10 efter at 5 er fejret",
+    beslutMilepael({ genstande: 10, alleredeFejret: 5 }),
+    10,
+  );
+
+  // Springer man flere trin i ét hug, fejres KUN det højeste — én hyldest
+  // per logning, ikke en byge.
+  check(
+    "spring fra 4 til 11 fejrer kun 10",
+    beslutMilepael({ genstande: 11, alleredeFejret: undefined }),
+    10,
+  );
+
+  check(
+    "over 20 udløser ikke mere",
+    beslutMilepael({ genstande: 33, alleredeFejret: 20 }),
+    undefined,
+  );
+
+  // Teksten. Navnet forrest, fordi det er det, man læser på en låst skærm.
+  check(
+    "navnet står forrest",
+    milepaelsVarsling("Anders", 10).tekst.startsWith("🍻 Anders"),
+    true,
+  );
+  check("titlen er navnet", milepaelsVarsling("Anders", 10).titel, "Anders");
+  check(
+    "20 får sin egen tekst",
+    milepaelsVarsling("Anders", 20).tekst.includes("Full bender"),
+    true,
+  );
+  check("et tomt navn falder tilbage", milepaelsVarsling("   ", 5).titel, "Nogen");
 }
 
 console.log("\n[Logic] cron-navne");

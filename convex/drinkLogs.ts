@@ -3,8 +3,9 @@ import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { evaluerAchievements } from "./achievements";
 import { getDrinkDayStart } from "./constants";
-import { beregnRunStart, erUdeIDag } from "./drinkRules";
-import { varslingUdeIAften } from "./kanaler";
+import { beregnRunStart, byggAggregat, erUdeIDag } from "./drinkRules";
+import { varslingMilepael, varslingUdeIAften } from "./kanaler";
+import { beslutMilepael } from "./paamindelseRules";
 import { requireCanViewUser, requireCurrentUser } from "./identity";
 import { computeStreak, pointsForDrink } from "./streaks";
 
@@ -156,6 +157,54 @@ export const logDrink = mutation({
     // her. Se `varslingUdeIAften` for den anden vej ind i samme tilstand.
     if (checkerInd && args.channelId !== undefined) {
       await varslingUdeIAften(ctx, args.channelId, user._id, user.displayName);
+    }
+
+    // ET RUNDT TAL — hyld personen over for de andre.
+    //
+    // Målt på RUNNET og ikke på drikkedagen, fordi `full_bender` er
+    // `run_drinks` med threshold 20: ramte de to 20 på hvert sit tidspunkt
+    // for en, der har nulstillet sit run, ville appen se i stykker ud.
+    //
+    // Ét indekseret opslag over dagens egne logninger. `evaluerAchievements`
+    // henter det samme, men returnerer kun id'er, og at give den en ekstra
+    // returværdi for det her ville binde to ting sammen, der ellers ikke
+    // rører hinanden. Livstidsopslagene — den dyre del — gentages ikke.
+    if (args.channelId !== undefined) {
+      const dayStart = getDrinkDayStart(now);
+      const dagensLogs = await ctx.db
+        .query("drinkLogs")
+        .withIndex("by_user_and_timestamp", (q) =>
+          q.eq("userId", user._id).gte("timestamp", dayStart),
+        )
+        .collect();
+
+      const runStart = beregnRunStart(dayStart, dagensLogs);
+      const genstande = byggAggregat(
+        dagensLogs.filter((log) => log.timestamp >= runStart),
+      ).genstande;
+
+      // Mærket fra et TIDLIGERE run betyder ingenting nu.
+      const fejret =
+        user.fejretMilepael !== undefined && user.fejretMilepael.run === runStart
+          ? user.fejretMilepael.milepael
+          : undefined;
+
+      const milepael = beslutMilepael({ genstande, alleredeFejret: fejret });
+      if (milepael !== undefined) {
+        // Mærket skrives FØR afsendelsen planlægges, som ved påmindelserne:
+        // mutationen er transaktionel, så enten står mærket og beskeden er
+        // planlagt, eller ingen af delene skete.
+        await ctx.db.patch(user._id, {
+          fejretMilepael: { run: runStart, milepael },
+        });
+        await varslingMilepael(
+          ctx,
+          args.channelId,
+          user._id,
+          user.displayName,
+          milepael,
+        );
+      }
     }
 
     return { logId, nyeAchievements };

@@ -5,6 +5,7 @@ import type { MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import type { Ctx } from "./identity";
 import { requireAdmin, requireCurrentUser, requireKanalMedlem } from "./identity";
+import { milepaelsVarsling } from "./paamindelseRules";
 
 /**
  * Kanal-mutations og -queries.
@@ -618,5 +619,48 @@ export async function varslingUdeIAften(
     // der var to. Med et tag per person stables de, og et gentaget forsøg
     // på den samme person erstatter sig selv.
     tag: `ude-${channelId}-${brugerId}`,
+  });
+}
+
+/**
+ * "Anders har rundet 10 genstande i aften" til resten af Kanalen.
+ *
+ * Søskende til `varslingUdeIAften` og bygget som den: kalderen har allerede
+ * regnet ud, at der ER en milepæl, og herinde ligger kun modtagerkredsen,
+ * teksten og afsendelsen.
+ *
+ * ## Hvorfor den går til Kanalen og ikke til én selv
+ *
+ * En hyldest kræver et publikum. Man har lige selv trykket på knappen og
+ * står med telefonen i hånden, så en notifikation til én selv ville være en
+ * kvittering, ikke en fejring — det er den samme grund til, at
+ * achievement-oplåsninger bevidst ikke sendes som push, se
+ * docs/notifikationer.md. De andre i Kanalen er derimod ikke nødvendigvis i
+ * appen, og det er dem, der kan hylde.
+ *
+ * Planlagt frem for afventet, som alle andre push i appen: logningen står,
+ * uanset om telefonerne kan nås.
+ */
+export async function varslingMilepael(
+  ctx: MutationCtx,
+  channelId: Id<"kanaler">,
+  brugerId: Id<"users">,
+  navn: string,
+  milepael: number,
+): Promise<void> {
+  const kanal = await kanalOgAndreMedlemmer(ctx, channelId, brugerId);
+  if (kanal === undefined || kanal.modtagere.length === 0) return;
+
+  const varsling = milepaelsVarsling(navn, milepael);
+
+  await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+    userIds: kanal.modtagere,
+    title: kanal.navn,
+    body: varsling.tekst,
+    // Per PERSON og per MILEPÆL. Med et tag per person ville "rundede 15"
+    // erstatte "rundede 10" på telefonen, og man ville aldrig se, at der
+    // var to — mens et gentaget forsøg på den SAMME milepæl erstatter sig
+    // selv, som det skal.
+    tag: `milepael-${channelId}-${brugerId}-${milepael}`,
   });
 }
