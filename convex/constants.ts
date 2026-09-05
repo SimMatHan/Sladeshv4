@@ -188,8 +188,15 @@ const DELE_FORMAT = new Intl.DateTimeFormat("en-US", {
   second: "numeric",
 });
 
-/** Væguret i dansk tid, opdelt. */
-function lokalDele(ms: number): LokaleDele {
+/**
+ * Væguret i dansk tid, opdelt.
+ *
+ * Eksporteret, fordi `paamindelseRules` skal kende den lokale DATO for at
+ * finde ugedagen — og fredag kl. 20 dansk tid er en anden UTC-dato om
+ * vinteren end om sommeren. At regne ugedagen af `now` direkte ville derfor
+ * være samme klasse af fejl som den, der er beskrevet ovenfor.
+ */
+export function lokalDele(ms: number): LokaleDele {
   const dele = DELE_FORMAT.formatToParts(new Date(ms));
 
   const hent = (type: Intl.DateTimeFormatPartTypes): number =>

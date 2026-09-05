@@ -96,6 +96,23 @@ export default defineSchema({
     checkInCount: v.optional(v.number()),
 
     /**
+     * Drikkedagen for den seneste fredags/lørdagspåmindelse, brugeren fik.
+     *
+     * Spærren mod at sende den samme påmindelse to gange. Jobbet kører hver
+     * time og afgør selv, om timen er den rigtige (se paamindelseRules.ts);
+     * uden et mærke ville en genkørsel inden for samme time sende igen.
+     *
+     * Drikkedagens start bruges som nøgle frem for et nyt tidsbegreb — fredag
+     * og lørdag kl. 20 ligger i hver sin drikkedag, så de skelnes af sig selv.
+     *
+     * Afløseren for det gamle repos `lastUsageReminderAt` +
+     * `lastUsageReminderSlot`, som var to felter om det samme. VALGFRI:
+     * fraværende betyder "aldrig varslet", hvilket er rigtigt for alle 32
+     * migrerede brugere såvel som for en ny.
+     */
+    sidstePaamindelse: v.optional(v.number()),
+
+    /**
      * Nulpunkt for de achievements, der måler på kumulative tællere.
      *
      * "Stamgæst" belønner 25 aftener ude, men `checkInCount` havde talt op i

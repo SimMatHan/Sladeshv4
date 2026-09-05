@@ -4,10 +4,14 @@ import { internal } from "./_generated/api";
 /**
  * Planlagte job.
  *
- * Alle er `interval` frem for faste klokkeslæt. Convex-crons regnes i UTC, og
- * appens grænser er danske — et fast klokkeslæt ville ramme en time forkert
- * det halve år. De job der findes her har ingen grund til at ligge på et
- * bestemt tidspunkt, så problemet undgås helt.
+ * De fleste er `interval` frem for faste klokkeslæt. Convex-crons regnes i
+ * UTC, og appens grænser er danske — et fast klokkeslæt ville ramme en time
+ * forkert det halve år. De job der bare skal køre jævnligt, har ingen grund
+ * til at ligge på et bestemt tidspunkt, så problemet undgås helt.
+ *
+ * ÉN skal ligge på et klokkeslæt: fredags- og lørdagspåmindelsen kl. 20.
+ * Den er derfor `hourly` og afgør SELV, om timen er den rigtige — regnet i
+ * dansk tid, hvor sommertiden er kendt. Se paamindelser.ts.
  */
 const crons = cronJobs();
 
@@ -43,6 +47,25 @@ crons.interval(
   "ryd gamle chatbeskeder",
   { hours: 1 },
   internal.messages.ryddGamleBeskeder,
+  {},
+);
+
+/**
+ * Fredags- og lørdagspåmindelsen.
+ *
+ * Kører hver time på minut 0; `mindOmAtLogge` returnerer med det samme de 22
+ * gange i døgnet, hvor timen ikke er kl. 20 dansk tid, og de fem dage om
+ * ugen, der ikke er fredag eller lørdag. Det er billigere end at have en
+ * cron, der rammer forkert to gange om året.
+ *
+ * `minuteUTC: 0` er hele UTC-timen, ikke et dansk klokkeslæt — dansk tid er
+ * altid et helt antal timer fra UTC, så minut 0 i UTC er også minut 0 i
+ * København.
+ */
+crons.hourly(
+  "mind om at logge fredag og lørdag",
+  { minuteUTC: 0 },
+  internal.paamindelser.mindOmAtLogge,
   {},
 );
 
