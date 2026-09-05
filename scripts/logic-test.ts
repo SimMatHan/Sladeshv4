@@ -89,6 +89,7 @@ import {
   taerskelFor,
   type Maalinger,
 } from "../convex/achievementRules.ts";
+import cronsModul from "../convex/crons.ts";
 import {
   AKTIVITET_MAX_PER_AFTEN,
   AKTIVITET_STILHED_MS,
@@ -338,6 +339,34 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] cron-navne");
+{
+  // Convex validerer cron-navne mod /^[ -~]*$/ — printbar ASCII — og AFVISER
+  // hele pushet, hvis ét navn indeholder æ, ø eller å. Fejlen kommer ikke fra
+  // `tsc`, `lint` eller `vite build`; den kommer først fra `convex deploy`,
+  // altså midt i en udrulning. Det skete: "mind om at logge fredag og lørdag"
+  // væltede et produktions-deploy.
+  //
+  // Prøven importerer det RIGTIGE cron-modul frem for at gentage regexet, så
+  // den også fanger et navn, en fremtidig Convex-version afviser af en anden
+  // grund. Går importen galt, er det i sig selv svaret.
+  let navne: string[] = [];
+  let importfejl: string | undefined;
+  try {
+    // `crons.crons` er det interne register, `cronJobs()` bygger op.
+    navne = Object.keys((cronsModul as unknown as { crons: Record<string, unknown> }).crons);
+  } catch (fejl) {
+    importfejl = fejl instanceof Error ? fejl.message : String(fejl);
+  }
+
+  check("crons.ts kunne indlæses", importfejl, undefined);
+  check("der ER cron-job registreret", navne.length > 0, true);
+
+  for (const navn of navne) {
+    check(`ASCII: ${navn}`, /^[ -~]*$/.test(navn), true);
+  }
 }
 
 console.log("\n[Logic] fredags- og lørdagspåmindelsen");
