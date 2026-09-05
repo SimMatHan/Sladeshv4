@@ -90,6 +90,11 @@ import {
   type Maalinger,
 } from "../convex/achievementRules.ts";
 import {
+  AKTIVITET_MAX_PER_AFTEN,
+  AKTIVITET_STILHED_MS,
+  aktivitetsVarsling,
+  beslutAktivitetsvarsling,
+  erAktivitetstid,
   erPaamindelsestid,
   paamindelsesNoegle,
   paamindelsesVarsling,
@@ -385,6 +390,125 @@ console.log("\n[Logic] fredags- og lørdagspåmindelsen");
   const varsling = paamindelsesVarsling();
   check("varslingen har en titel", varsling.titel.length > 0, true);
   check("varslingen har en tekst", varsling.tekst.length > 0, true);
+}
+
+console.log("\n[Logic] aktivitetspåmindelsen");
+{
+  // Vinduet er 14 → 02 og krydser altså midnat. Skrevet som ét interval
+  // ville det være tomt; skrevet forkert ville det dække hele døgnet.
+  check("kl. 14 er ind i vinduet", erAktivitetstid(cest("2026-08-14T14:00:00")), true);
+  check("kl. 13:59 er udenfor", erAktivitetstid(cest("2026-08-14T13:00:00")), false);
+  check("kl. 20 midt i vinduet", erAktivitetstid(cest("2026-08-14T20:00:00")), true);
+  check("kl. 23 stadig indenfor", erAktivitetstid(cest("2026-08-14T23:00:00")), true);
+  check("midnat er indenfor", erAktivitetstid(cest("2026-08-15T00:00:00")), true);
+  check("kl. 02 er sidste time", erAktivitetstid(cest("2026-08-15T02:00:00")), true);
+  check("kl. 03 er slut", erAktivitetstid(cest("2026-08-15T03:00:00")), false);
+  check("formiddag er udenfor", erAktivitetstid(cest("2026-08-15T10:00:00")), false);
+
+  // Vinduet må ikke skride med sommertiden, ligesom weekendpåmindelsen.
+  check("kl. 14 om vinteren", erAktivitetstid(cet("2026-01-16T14:00:00")), true);
+  check("kl. 13 om vinteren", erAktivitetstid(cet("2026-01-16T13:00:00")), false);
+
+  const nu = cest("2026-08-14T22:00:00");
+  const dayStart = getDrinkDayStart(nu);
+  const TIME = 60 * 60 * 1000;
+
+  // Spærre 1: loggede for nylig. Den fritager den, der ER i gang — pointen
+  // med hele justeringen i forhold til det gamle repo, som sendte alligevel.
+  check(
+    "loggede for ti minutter siden",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: nu - 10 * 60 * 1000,
+      taeller: undefined,
+      dayStart,
+      now: nu,
+    }).aarsag,
+    "loggede-for-nylig",
+  );
+  check(
+    "loggede for to timer siden",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: nu - 2 * TIME,
+      taeller: undefined,
+      dayStart,
+      now: nu,
+    }).varsl,
+    true,
+  );
+  // Grænsen selv: præcis en time er ikke længere "for nylig".
+  check(
+    "præcis en time siden",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: nu - AKTIVITET_STILHED_MS,
+      taeller: undefined,
+      dayStart,
+      now: nu,
+    }).varsl,
+    true,
+  );
+  // Checket ind uden at logge endnu: der er intet at være for nylig.
+  check(
+    "aldrig logget",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: undefined,
+      taeller: undefined,
+      dayStart,
+      now: nu,
+    }).varsl,
+    true,
+  );
+
+  // Spærre 2: loftet. Den fritager den, der er holdt op uden at checke ud.
+  check(
+    "under loftet",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: undefined,
+      taeller: { dag: dayStart, antal: AKTIVITET_MAX_PER_AFTEN - 1 },
+      dayStart,
+      now: nu,
+    }).varsl,
+    true,
+  );
+  check(
+    "loftet er nået",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: undefined,
+      taeller: { dag: dayStart, antal: AKTIVITET_MAX_PER_AFTEN },
+      dayStart,
+      now: nu,
+    }).aarsag,
+    "loft-naaet",
+  );
+
+  // Tælleren nulstiller sig selv ved døgnskiftet — ellers ville en, der
+  // ramte loftet i går, aldrig få en påmindelse igen.
+  check(
+    "gårsdagens tæller gælder ikke i aften",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: undefined,
+      taeller: { dag: dayStart - DAY, antal: AKTIVITET_MAX_PER_AFTEN },
+      dayStart,
+      now: nu,
+    }).varsl,
+    true,
+  );
+
+  // Stilheden vurderes FØR loftet: den, der lige har logget, skal have den
+  // besked, ikke "du har fået nok".
+  check(
+    "loggede lige, og loftet er nået",
+    beslutAktivitetsvarsling({
+      sidsteGenstandAt: nu - 60_000,
+      taeller: { dag: dayStart, antal: AKTIVITET_MAX_PER_AFTEN },
+      dayStart,
+      now: nu,
+    }).aarsag,
+    "loggede-for-nylig",
+  );
+
+  const varsling = aktivitetsVarsling();
+  check("aktivitetsvarslingen har en titel", varsling.titel.length > 0, true);
+  check("aktivitetsvarslingen har en tekst", varsling.tekst.length > 0, true);
 }
 
 console.log("\n[Logic] er man ude i dag?");

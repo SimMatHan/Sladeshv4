@@ -5,6 +5,9 @@ import type { Id } from "./_generated/dataModel";
 import { getDrinkDayStart } from "./constants";
 import { erUdeIDag } from "./drinkRules";
 import {
+  aktivitetsVarsling,
+  beslutAktivitetsvarsling,
+  erAktivitetstid,
   erPaamindelsestid,
   paamindelsesNoegle,
   paamindelsesVarsling,
@@ -63,7 +66,7 @@ export const mindOmAtLogge = internalMutation({
     for (const bruger of brugere) {
       // Allerede varslet for denne drikkedag. Spærren mod at en genkørsel
       // inden for samme time sender påmindelsen igen.
-      if (bruger.sidstePaamindelse === noegle) continue;
+      if (bruger.sidsteWeekendpaamindelse === noegle) continue;
 
       // Allerede i gang. Det er hele pointen med påmindelsen, at den ikke
       // går til dem.
@@ -85,7 +88,7 @@ export const mindOmAtLogge = internalMutation({
     // tilbage, og næste kørsel prøver igen — hvilket er den rigtige vej at
     // fejle for en påmindelse.
     for (const brugerId of modtagere) {
-      await ctx.db.patch(brugerId, { sidstePaamindelse: noegle });
+      await ctx.db.patch(brugerId, { sidsteWeekendpaamindelse: noegle });
     }
 
     const varsling = paamindelsesVarsling();
@@ -104,5 +107,94 @@ export const mindOmAtLogge = internalMutation({
     });
 
     console.log("[Paamindelse] sendt", { noegle, antal: modtagere.length });
+  },
+});
+
+/**
+ * Aktivitetspåmindelsen — "Log din næste drink".
+ *
+ * Spejlbilledet af `mindOmAtLogge`: den går til dem, der ER ude, hver time
+ * fra 14 til 02. Den ene henter folk ind, den anden holder dem i gang, og
+ * `erUdeIDag` er grænsen mellem dem — så ingen kan få begge på én aften.
+ *
+ * Fandtes i det gamle repo som `functions/src/scheduled/usageReminder.ts`
+ * med `schedule: "0 14,15,…,2 * * *"` og modtagerkredsen
+ * `where("checkInStatus", "==", true)`. (Filens egen kommentar dér siger
+ * "every 2 hours"; cron-udtrykket ved siden af siger hver time, og det er
+ * cron'en, der kører.)
+ *
+ * ## To spærrer, som den gamle ikke havde
+ *
+ * Tretten timer med en påmindelse i hver er ikke en påmindelse, det er en
+ * alarm. De to spærrer i `beslutAktivitetsvarsling` rammer hver sin slags
+ * bruger:
+ *
+ *   stilhedskravet   fritager den, der ER i gang — hun loggede for lidt
+ *                    siden og skal ikke mindes om at gøre det, hun lige
+ *                    har gjort
+ *   loftet           fritager den, der er holdt op uden at checke ud, så
+ *                    aftenen ikke ender med tretten pip
+ *
+ * Se `AKTIVITET_STILHED_MS` og `AKTIVITET_MAX_PER_AFTEN`.
+ */
+export const mindOmAktivitet = internalMutation({
+  args: {
+    /** Kun til test. Uden den er det nu. */
+    now: v.optional(v.number()),
+  },
+  handler: async (ctx, args): Promise<void> => {
+    const now = args.now ?? Date.now();
+
+    if (!erAktivitetstid(now)) return;
+
+    const dayStart = getDrinkDayStart(now);
+    const brugere = await ctx.db.query("users").collect();
+
+    const modtagere: { id: Id<"users">; brugt: number }[] = [];
+    for (const bruger of brugere) {
+      // Kun dem der er ude. Modsat `mindOmAtLogge`, som netop tager de andre.
+      if (!erUdeIDag(bruger, dayStart)) continue;
+
+      const beslutning = beslutAktivitetsvarsling({
+        sidsteGenstandAt: bruger.lastDrinkAt,
+        taeller: bruger.aktivitetspaamindelser,
+        dayStart,
+        now,
+      });
+      if (!beslutning.varsl) continue;
+
+      const taeller = bruger.aktivitetspaamindelser;
+      const brugt = taeller !== undefined && taeller.dag === dayStart ? taeller.antal : 0;
+      modtagere.push({ id: bruger._id, brugt });
+    }
+
+    if (modtagere.length === 0) return;
+
+    // Tælleren skrives FØR afsendelsen planlægges, af samme grund som
+    // mærkerne i `mindOmAtLogge`: mutationen er transaktionel, så enten
+    // står alle tællerne og beskeden er planlagt, eller ingen af delene
+    // skete — og så prøver næste time igen.
+    for (const modtager of modtagere) {
+      await ctx.db.patch(modtager.id, {
+        aktivitetspaamindelser: { dag: dayStart, antal: modtager.brugt + 1 },
+      });
+    }
+
+    const varsling = aktivitetsVarsling();
+
+    await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+      userIds: modtagere.map((modtager) => modtager.id),
+      title: varsling.titel,
+      body: varsling.tekst,
+      // Ét fælles tag. Aftenens anden påmindelse skal ERSTATTE den første
+      // på telefonen — to uåbnede kopier af "log din næste drink" siger
+      // ikke mere end én.
+      tag: "aktivitetspaamindelse",
+    });
+
+    console.log("[Paamindelse] aktivitet sendt", {
+      dayStart,
+      antal: modtagere.length,
+    });
   },
 });
