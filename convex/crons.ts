@@ -69,4 +69,23 @@ crons.hourly(
   {},
 );
 
+/**
+ * Aktivitetspåmindelsen — spejlbilledet af den ovenfor.
+ *
+ * Hver time fra 14 til 02 dansk tid, og kun til dem der ER ude. Samme
+ * konstruktion og af samme grund: timen afgøres i dansk tid inde i
+ * funktionen, ikke af et UTC-klokkeslæt her.
+ *
+ * De to job kunne have delt én kørsel, men de deler ikke andet end klokken:
+ * hver sin modtagerkreds, hver sin spærre og hver sin tekst. To navne i
+ * Convex-dashboardet, der siger hvad de gør, er mere værd end ét kald sparet
+ * i timen.
+ */
+crons.hourly(
+  "mind om at logge videre, mens man er ude",
+  { minuteUTC: 0 },
+  internal.paamindelser.mindOmAktivitet,
+  {},
+);
+
 export default crons;

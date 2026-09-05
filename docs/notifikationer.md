@@ -14,8 +14,7 @@ UI-redesign skal kunne gøre af sig selv.
 
 ## 1. Hvad der faktisk sender en notifikation i dag
 
-Syv. Seks af dem udløses af, at nogen GØR noget; den syvende af, at der ikke
-sker noget.
+Otte. Seks af dem udløses af, at nogen GØR noget; de sidste to af klokken.
 
 | # | Hvad udløser den | Hvor | Hvem får den | Tag |
 |---|---|---|---|---|
@@ -25,17 +24,26 @@ sker noget.
 | 4 | En Sladesh sendes | `sladesh.ts`, `sendSladesh` | Kun modtageren | `sladesh-<id>` |
 | 5 | En Sladesh afgøres | `sladesh.ts`, `varslAfsender` | Kun afsenderen | `sladesh-<id>` |
 | 6 | Beacon-evaluering (hvert 5. min) | `beacons.ts`, `evaluerAlleBeacons` | Indcheckede inden for radius, som ikke allerede er varslet for den beacon | `beacon-<id>` |
-| 7 | Fredag og lørdag kl. 20 | `paamindelser.ts`, `mindOmAtLogge` | Alle, der IKKE er ude endnu i aften | `paamindelse` |
+| 7 | Fredag og lørdag kl. 20 | `paamindelser.ts`, `mindOmAtLogge` | Alle, der **ikke** er ude endnu i aften | `paamindelse` |
+| 8 | Hver time fra 14 til 02 | `paamindelser.ts`, `mindOmAktivitet` | Dem, der **er** ude — højst 4 per aften, og aldrig inden for en time efter en logning | `aktivitetspaamindelse` |
 
 Nummer 3 har to veje ind i samme tilstand — aftenens første genstand
 (`drinkLogs.ts`) og et manuelt Check In på kortet (`checkIns.ts`) — og begge
 kalder `varslingUdeIAften`, så teksten og reglen kun findes ét sted.
 
-### Den syvende er anderledes
+### De to sidste er anderledes
 
-De seks første er reaktioner. Nummer 7 er den eneste, der findes for dem, der
-ikke har åbnet appen, og den er derfor også den eneste, der har brug for
-**et klokkeslæt** og **en spærre mod at sende to gange**.
+De seks første er reaktioner. 7 og 8 er tidsstyrede og hinandens spejlbillede:
+den ene henter folk ind, den anden holder dem i gang. `erUdeIDag` er grænsen
+mellem dem, så **ingen kan få begge på én aften**.
+
+Begge fandtes i det gamle repo og faldt ud under migreringen —
+`functions/src/scheduled/weekendLoggingReminder.ts` (`"0 20 * * 5,6"`) og
+`.../usageReminder.ts` (`"0 14,15,…,2 * * *"`, modtagerkreds
+`where("checkInStatus", "==", true)`).
+
+De deler to problemer, som reaktionerne ikke har: **et klokkeslæt** og **en
+spærre mod at sende for meget**.
 
 - **Klokkeslættet.** Convex-crons regnes i UTC, og kl. 20 dansk tid er 18:00
   UTC om sommeren og 19:00 om vinteren. Cron'en kører derfor hver time på
@@ -43,19 +51,28 @@ ikke har åbnet appen, og den er derfor også den eneste, der har brug for
   den rigtige — regnet i dansk tid med den samme `lokalDele`, som resten af
   appens døgngrænser bruger. De 22 kørsler i døgnet, der ikke rammer,
   returnerer uden at røre databasen.
-- **Spærren.** `users.sidstePaamindelse` gemmer drikkedagens start for den
-  seneste påmindelse. Fredag og lørdag kl. 20 ligger i hver sin drikkedag
-  (10:00 → 10:00), så de to skelnes af sig selv. Afløser det gamle repos
-  `lastUsageReminderAt` + `lastUsageReminderSlot`, som var to felter om det
-  samme.
+- **Spærrerne.** `users.sidsteWeekendpaamindelse` gemmer drikkedagens start
+  for nummer 7, så en genkørsel inden for samme time ikke sender igen. Fredag
+  og lørdag kl. 20 ligger i hver sin drikkedag (10:00 → 10:00), så de to
+  skelnes af sig selv. Nummer 8 har i stedet `users.aktivitetspaamindelser`
+  — `{ dag, antal }`, hvor `dag` er drikkedagen, så tælleren nulstiller sig
+  selv ved døgnskiftet frem for at skulle ryddes af et job.
 - **Hvem der slipper.** `erUdeIDag` er appens ene definition af "med i
-  aften", og påmindelsen genbruger den frem for at spørge om logrækker for
-  sig. Det betyder, at også den, der har checket ind på kortet uden at logge
-  endnu, slipper — hun sidder allerede i appen.
+  aften", og begge genbruger den frem for at spørge om logrækker for sig.
+  For nummer 7 betyder det, at også den, der har checket ind på kortet uden
+  at logge endnu, slipper — hun sidder allerede i appen.
+- **Nummer 8's to justeringer i forhold til den gamle.** Det gamle job sendte
+  i hver af de tretten timer, til alle indcheckede, uden loft. Her fritager
+  `AKTIVITET_STILHED_MS` (én time) den, der ER i gang — hun skal ikke mindes
+  om det, hun lige har gjort — og `AKTIVITET_MAX_PER_AFTEN` (fire) fritager
+  den, der er holdt op uden at checke ud. Stilheden vurderes før loftet, så
+  den, der lige har logget, får den rigtige forklaring i loggen.
 
-Reglerne er rene funktioner netop fordi tiden er det, der kan gå galt: de
-femten prøver i `scripts/logic-test.ts` kører den samme fredag kl. 20 på
-begge sider af sommertidsskiftet.
+Reglerne er rene funktioner netop fordi tiden er det, der kan gå galt.
+Prøverne i `scripts/logic-test.ts` kører den samme fredag kl. 20 på begge
+sider af sommertidsskiftet — og for nummer 8 hele vejen rundt om midnat,
+fordi dens vindue (14 → 02) krydser døgngrænsen og hverken må være tomt
+eller dække hele døgnet.
 
 **Bevidst stadig udeladt:** achievement-oplåsning. Den har allerede en
 tilstand i appen, der viser den, mens man kigger (fejringen fra

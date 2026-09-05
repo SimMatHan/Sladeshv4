@@ -105,12 +105,28 @@ export default defineSchema({
      * Drikkedagens start bruges som nøgle frem for et nyt tidsbegreb — fredag
      * og lørdag kl. 20 ligger i hver sin drikkedag, så de skelnes af sig selv.
      *
-     * Afløseren for det gamle repos `lastUsageReminderAt` +
-     * `lastUsageReminderSlot`, som var to felter om det samme. VALGFRI:
-     * fraværende betyder "aldrig varslet", hvilket er rigtigt for alle 32
-     * migrerede brugere såvel som for en ny.
+     * VALGFRI: fraværende betyder "aldrig varslet", hvilket er rigtigt for
+     * alle 32 migrerede brugere såvel som for en ny.
      */
-    sidstePaamindelse: v.optional(v.number()),
+    sidsteWeekendpaamindelse: v.optional(v.number()),
+
+    /**
+     * Hvor mange aktivitetspåmindelser brugeren har fået i aften.
+     *
+     * Aktivitetspåmindelsen går til dem, der ER ude, hver time fra 14 til 02
+     * — altså op til tretten gange på én aften, hvis intet holder den i ave.
+     * Det gamle repo havde intet loft. `antal` er det.
+     *
+     * `dag` er drikkedagens start, så tælleren nulstiller sig selv ved
+     * døgnskiftet frem for at skulle ryddes af et job. Er `dag` en anden end
+     * i aften, er `antal` uden betydning og læses som nul.
+     */
+    aktivitetspaamindelser: v.optional(
+      v.object({
+        dag: v.number(),
+        antal: v.number(),
+      }),
+    ),
 
     /**
      * Nulpunkt for de achievements, der måler på kumulative tællere.
