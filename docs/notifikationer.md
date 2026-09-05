@@ -14,21 +14,54 @@ UI-redesign skal kunne gøre af sig selv.
 
 ## 1. Hvad der faktisk sender en notifikation i dag
 
-To ting, og kun to:
+Syv. Seks af dem udløses af, at nogen GØR noget; den syvende af, at der ikke
+sker noget.
 
-1. **En ny chatbesked** (`convex/messages.ts`, `sendMessage`) — til
-   Kanalens medlemmer, minus afsenderen, minus dem der har chatten åben lige
-   nu (`setAktivChat` — samme regel som i `getVarslingsmodtagere`, som
-   fandtes fra før og nu er en tynd wrapper om den samme funktion).
-2. **En ny broadcast** (`convex/broadcasts.ts`, `opretBroadcast`) — til
-   Kanalens medlemmer, eller alle, hvis broadcasten er global.
+| # | Hvad udløser den | Hvor | Hvem får den | Tag |
+|---|---|---|---|---|
+| 1 | En ny chatbesked | `messages.ts`, `sendMessage` | Kanalens medlemmer, minus afsenderen, minus dem der har chatten åben lige nu (`activeChatChannelId`) | `chat-<kanal>` |
+| 2 | En ny broadcast | `broadcasts.ts`, `opretBroadcast` | Kanalens medlemmer — eller alle, hvis broadcasten er global | `broadcast` |
+| 3 | Aftenens FØRSTE genstand, eller et Check In | `kanaler.ts`, `varslingUdeIAften` | Resten af Kanalen | `ude-<kanal>-<person>` |
+| 4 | En Sladesh sendes | `sladesh.ts`, `sendSladesh` | Kun modtageren | `sladesh-<id>` |
+| 5 | En Sladesh afgøres | `sladesh.ts`, `varslAfsender` | Kun afsenderen | `sladesh-<id>` |
+| 6 | Beacon-evaluering (hvert 5. min) | `beacons.ts`, `evaluerAlleBeacons` | Indcheckede inden for radius, som ikke allerede er varslet for den beacon | `beacon-<id>` |
+| 7 | Fredag og lørdag kl. 20 | `paamindelser.ts`, `mindOmAtLogge` | Alle, der IKKE er ude endnu i aften | `paamindelse` |
 
-**Bevidst udeladt:** achievement-oplåsning, Check In, Sladesh. De har alle
-allerede en tilstand i appen, der viser dem, mens man kigger (fejringen fra
-`AchievementOplaasning.tsx`, kortet, Sladesh-arket) — push ville kun være
-værd noget, mens appen er lukket, og det var ikke en del af det, der blev
-bedt om. De kan kobles på samme måde som beskeder/broadcasts, den dag det
-efterspørges — se afsnit 3.
+Nummer 3 har to veje ind i samme tilstand — aftenens første genstand
+(`drinkLogs.ts`) og et manuelt Check In på kortet (`checkIns.ts`) — og begge
+kalder `varslingUdeIAften`, så teksten og reglen kun findes ét sted.
+
+### Den syvende er anderledes
+
+De seks første er reaktioner. Nummer 7 er den eneste, der findes for dem, der
+ikke har åbnet appen, og den er derfor også den eneste, der har brug for
+**et klokkeslæt** og **en spærre mod at sende to gange**.
+
+- **Klokkeslættet.** Convex-crons regnes i UTC, og kl. 20 dansk tid er 18:00
+  UTC om sommeren og 19:00 om vinteren. Cron'en kører derfor hver time på
+  minut 0, og `erPaamindelsestid` i `paamindelseRules.ts` afgør, om timen er
+  den rigtige — regnet i dansk tid med den samme `lokalDele`, som resten af
+  appens døgngrænser bruger. De 22 kørsler i døgnet, der ikke rammer,
+  returnerer uden at røre databasen.
+- **Spærren.** `users.sidstePaamindelse` gemmer drikkedagens start for den
+  seneste påmindelse. Fredag og lørdag kl. 20 ligger i hver sin drikkedag
+  (10:00 → 10:00), så de to skelnes af sig selv. Afløser det gamle repos
+  `lastUsageReminderAt` + `lastUsageReminderSlot`, som var to felter om det
+  samme.
+- **Hvem der slipper.** `erUdeIDag` er appens ene definition af "med i
+  aften", og påmindelsen genbruger den frem for at spørge om logrækker for
+  sig. Det betyder, at også den, der har checket ind på kortet uden at logge
+  endnu, slipper — hun sidder allerede i appen.
+
+Reglerne er rene funktioner netop fordi tiden er det, der kan gå galt: de
+femten prøver i `scripts/logic-test.ts` kører den samme fredag kl. 20 på
+begge sider af sommertidsskiftet.
+
+**Bevidst stadig udeladt:** achievement-oplåsning. Den har allerede en
+tilstand i appen, der viser den, mens man kigger (fejringen fra
+`AchievementOplaasning.tsx`), og en oplåsning sker altid, mens man selv står
+med telefonen — push ville aldrig nå frem på et tidspunkt, hvor den kunne
+fortælle én noget nyt.
 
 ---
 

@@ -89,6 +89,11 @@ import {
   taerskelFor,
   type Maalinger,
 } from "../convex/achievementRules.ts";
+import {
+  erPaamindelsestid,
+  paamindelsesNoegle,
+  paamindelsesVarsling,
+} from "../convex/paamindelseRules.ts";
 import { kendteFelter, valider, type AnyValidator } from "./lib/validate.ts";
 
 let passed = 0;
@@ -328,6 +333,58 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] fredags- og lørdagspåmindelsen");
+{
+  // Hele pointen med at lade en ren funktion afgøre timen — frem for at
+  // skrive et klokkeslæt i cron'en — er sommertiden. Derfor er den første
+  // prøve den samme fredag kl. 20 på hver side af skiftet: cest() og cet()
+  // er to FORSKELLIGE UTC-tidspunkter, og begge skal svare ja.
+  check("fredag kl. 20, sommertid", erPaamindelsestid(cest("2026-08-14T20:00:00")), true);
+  check("fredag kl. 20, vintertid", erPaamindelsestid(cet("2026-01-16T20:00:00")), true);
+  check("lørdag kl. 20, sommertid", erPaamindelsestid(cest("2026-08-15T20:00:00")), true);
+  check("lørdag kl. 20, vintertid", erPaamindelsestid(cet("2026-01-17T20:00:00")), true);
+
+  // Havde vi skrevet "18:00 UTC" i cron'en, ville netop denne linje være
+  // sand om vinteren — altså en påmindelse kl. 19.
+  check("fredag kl. 19 er for tidligt", erPaamindelsestid(cest("2026-08-14T19:00:00")), false);
+  check("fredag kl. 21 er for sent", erPaamindelsestid(cest("2026-08-14T21:00:00")), false);
+  check("fredag kl. 20:59 er stadig timen", erPaamindelsestid(cest("2026-08-14T20:59:00")), true);
+
+  // De fem andre dage.
+  check("torsdag kl. 20", erPaamindelsestid(cest("2026-08-13T20:00:00")), false);
+  check("søndag kl. 20", erPaamindelsestid(cest("2026-08-16T20:00:00")), false);
+  check("mandag kl. 20", erPaamindelsestid(cest("2026-08-17T20:00:00")), false);
+
+  // Nøglen skal skelne fredag fra lørdag, ellers ville lørdagens påmindelse
+  // se ud som allerede sendt. De to ligger i hver sin drikkedag.
+  const fredag = paamindelsesNoegle(cest("2026-08-14T20:00:00"));
+  const loerdag = paamindelsesNoegle(cest("2026-08-15T20:00:00"));
+  check("fredag og lørdag er to nøgler", fredag === loerdag, false);
+
+  // Samme aften, en time senere: samme nøgle. Det er den, der gør, at en
+  // genkørsel ikke sender påmindelsen igen.
+  check(
+    "samme aften giver samme nøgle",
+    paamindelsesNoegle(cest("2026-08-14T20:00:00")) ===
+      paamindelsesNoegle(cest("2026-08-14T23:30:00")),
+    true,
+  );
+
+  // Kl. 02 om natten hører stadig til fredagens drikkedag (10:00 → 10:00).
+  // Nøglen skal derfor være fredagens, ikke lørdagens.
+  check(
+    "natten til lørdag hører til fredagens nøgle",
+    paamindelsesNoegle(cest("2026-08-15T02:00:00")) === fredag,
+    true,
+  );
+
+  // Teksten nævner hverken navne eller tal, så der er intet at få galt i
+  // halsen — men den skal ikke være tom.
+  const varsling = paamindelsesVarsling();
+  check("varslingen har en titel", varsling.titel.length > 0, true);
+  check("varslingen har en tekst", varsling.tekst.length > 0, true);
 }
 
 console.log("\n[Logic] er man ude i dag?");

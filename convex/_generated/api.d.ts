@@ -29,6 +29,8 @@ import type * as kort from "../kort.js";
 import type * as messageRules from "../messageRules.js";
 import type * as messages from "../messages.js";
 import type * as migrering from "../migrering.js";
+import type * as paamindelseRules from "../paamindelseRules.js";
+import type * as paamindelser from "../paamindelser.js";
 import type * as promille from "../promille.js";
 import type * as promilleRules from "../promilleRules.js";
 import type * as push from "../push.js";
@@ -69,6 +71,8 @@ declare const fullApi: ApiFromModules<{
   messageRules: typeof messageRules;
   messages: typeof messages;
   migrering: typeof migrering;
+  paamindelseRules: typeof paamindelseRules;
+  paamindelser: typeof paamindelser;
   promille: typeof promille;
   promilleRules: typeof promilleRules;
   push: typeof push;
