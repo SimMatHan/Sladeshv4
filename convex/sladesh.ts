@@ -4,7 +4,7 @@ import type { MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { evaluerAchievements } from "./achievements";
-import { requireCanViewUser, requireCurrentUser } from "./identity";
+import { requireCanViewUser, requireCurrentUser, requireKanalMedlem } from "./identity";
 import type { Ctx } from "./identity";
 import {
   SLADESH_ERRORS,
@@ -13,6 +13,7 @@ import {
   erAfsluttetStatus,
   erCooldownAktiv,
   erFremadrettet,
+  erLiveNu,
   erUdloebet,
   sladeshUdfaldVarsling,
   sladeshVarsling,
@@ -448,6 +449,14 @@ export const sendSladesh = mutation({
  * billeder, der har været synlige for hele Kanalen, og som man så trækker
  * tilbage — kan ikke gøres om.
  *
+ * UDVIDET ÉN GANG, og kun på tid: `getLiveSladesh` viser billederne til hele
+ * Kanalen, MENS udfordringen kører. Denne query — arkivet — er uændret og
+ * viser dem stadig kun til de to parter. Det er den forskel, der gør
+ * udvidelsen mulig uden at bryde løftet bagud: en aktiv udfordring lever
+ * højst ti minutter, så intet billede taget før den ændring kan nås af den.
+ * Skal arkivet nogensinde åbnes, er det en ny og rigtig beslutning, ikke en
+ * konsekvens af denne.
+ *
  * ## URL'erne slås op HER
  *
  * `getBevisUrl` findes og tager ét storage-id. Havde klienten brugt den,
@@ -801,5 +810,93 @@ export const fejlEfterladte = internalMutation({
       console.log("[Sladesh] efterladte udfordringer lukket", { antal });
     }
     return antal;
+  },
+});
+
+/**
+ * Den Sladesh, der kører i Kanalen LIGE NU — med beviserne, mens de kommer.
+ *
+ * ## Hvorfor denne findes ved siden af `getSladeshHistorik`
+ *
+ * De to har med vilje hver sin grænse for, hvem der ser billederne, og
+ * forskellen er TIDEN:
+ *
+ *   live       mens udfordringen kører      hele Kanalen ser billederne
+ *   historik   når den er afgjort           kun de to parter
+ *
+ * Det er ikke en inkonsekvens. En Sladesh er noget, Kanalen ser på, mens den
+ * sker — det er hele legen, og indtil nu skete den usynligt for alle andre
+ * end de to. Et arkiv er noget andet: det er billeder fra en bar, med
+ * ansigter og lokaler i baggrunden, som stadig ligger dér om et halvt år.
+ *
+ * ## Den udvider ikke bagud
+ *
+ * Fordi kun AKTIVE udfordringer svares på, og en aktiv udfordring lever
+ * højst ti minutter, kan denne query ikke vise et eneste billede taget før
+ * den blev udrullet. Alt, der allerede ligger i storage, er taget under det
+ * snævre løfte og bliver dér — `getSladeshHistorik` er uændret.
+ *
+ * Det var betingelsen for overhovedet at kunne udvide: den anden vej —
+ * billeder, der har været synlige for hele Kanalen, og som man så trækker
+ * tilbage — kan ikke gøres om.
+ *
+ * Modtageren får det at vide på selve optagelsesskærmen, se
+ * `SladeshOvertagelse.tsx`. Man skal ikke opdage bagefter, hvem der kiggede
+ * med.
+ *
+ * ## Kun medlemmer
+ *
+ * `requireKanalMedlem` er samme grænse som stillingen. "Hele Kanalen" og
+ * ikke "alle": appen har ingen offentlig flade, og det skal den blive ved
+ * med ikke at have.
+ */
+export const getLiveSladesh = query({
+  args: {
+    channelId: v.id("kanaler"),
+    /** Overstyrer "nu" — kun til test. */
+    now: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const now = args.now ?? Date.now();
+    await requireKanalMedlem(ctx, args.channelId);
+
+    // Bagud fra to gange fristen. Én ville være nok for en udfordring, der
+    // opfører sig, men en pending, hvis planlagte lukning aldrig skete,
+    // ryddes først af cron'en inden for ti minutter — og indtil da skal den
+    // stadig kunne findes, saa `deadlineAt`-tjekket nedenfor kan afvise den.
+    const fra = now - 2 * SLADESH_TIME_LIMIT_MS;
+
+    const raekker = await ctx.db
+      .query("sladeshChallenges")
+      .withIndex("by_kanal_and_created_at", (q) =>
+        q.eq("channelId", args.channelId).gte("createdAt", fra),
+      )
+      .collect();
+
+    // Grænsen for hvem der ser billederne, som en prøvet funktion. Se
+    // `erLiveNu` i sladeshRules.ts for hvorfor den ikke er to linjer her.
+    const aktive = raekker.filter((r) => erLiveNu(r.status, r.deadlineAt, now));
+
+    return await Promise.all(
+      aktive.map(async (r) => ({
+        challengeId: r._id,
+        senderId: r.senderId,
+        recipientId: r.recipientId,
+        senderName: r.senderName,
+        recipientName: r.recipientName,
+        deadlineAt: r.deadlineAt,
+        phase: r.phase,
+        // `null` og ikke udeladt: skærmen skal kunne skelne "ikke taget
+        // endnu" fra "taget", og den forskel ER fremdriften.
+        foerBillede:
+          r.proofBeforeImage !== undefined
+            ? await ctx.storage.getUrl(r.proofBeforeImage)
+            : null,
+        efterBillede:
+          r.proofAfterImage !== undefined
+            ? await ctx.storage.getUrl(r.proofAfterImage)
+            : null,
+      })),
+    );
   },
 });

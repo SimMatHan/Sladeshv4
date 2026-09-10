@@ -322,3 +322,24 @@ export function sladeshForStilling(input: {
     brugt: erCooldownAktiv(lastSladeshSentAt, now),
   };
 }
+
+/**
+ * Kører udfordringen LIGE NU?
+ *
+ * Grænsen for, hvem der ser bevisbillederne. `getLiveSladesh` viser dem til
+ * hele Kanalen, mens den er sand, og `getSladeshHistorik` viser dem kun til
+ * de to parter, når den ikke er. Derfor er den en egen, prøvet funktion og
+ * ikke to linjer inde i en query: driver den, skifter det, hvem der kan se
+ * et fotografi taget i en bar.
+ *
+ * Begge betingelser skal holde. En udfordring, hvis frist er passeret, men
+ * som cron'en endnu ikke har nået at lukke, står stadig som `pending` — og
+ * den er ikke live, uanset hvad statusfeltet siger.
+ */
+export function erLiveNu(
+  status: SladeshStatus,
+  deadlineAt: number,
+  now: number,
+): boolean {
+  return !erAfsluttetStatus(status) && deadlineAt > now;
+}

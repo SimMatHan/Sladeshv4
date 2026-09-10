@@ -1815,6 +1815,109 @@ input {
   gap: var(--luft-2);
 }
 
+/* ---------------------------------------------------------- live sladesh */
+
+/*
+ * En Sladesh, mens den sker — øverst på stillingen.
+ *
+ * Accenttonet som broadcast-bjælken og Sladesh-mærket, fordi det er samme
+ * slags oplysning: noget, der foregår NU. Den ligger over listen og ikke i
+ * den, fordi den ikke handler om én persons placering — den handler om noget,
+ * hele Kanalen ser på.
+ */
+.livesladesher {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+  margin-bottom: var(--luft-4);
+}
+
+.livesladesh {
+  padding: var(--luft-3) var(--luft-4);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 12%, var(--flade));
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
+}
+
+.livetop {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-3);
+}
+
+.livenavne {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--tekst-s);
+}
+
+.liveur {
+  flex: 0 0 auto;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+  /* Som `.sladeshur`: tabulære tal alene er ikke nok, når "9:59" og "10:00"
+     har forskelligt tegnantal. Uden et gulv hopper navnene ved skiftet. */
+  min-width: 4ch;
+  text-align: right;
+}
+
+/*
+ * De to beviser side om side, og ALTID begge pladser.
+ *
+ * Den tomme ramme er ikke en manglende ting — den er fremdriften. Uden den
+ * ville kortet vokse, når det andet billede kom, og man ville ikke kunne se
+ * på det, at der stadig mangler noget.
+ */
+.livebeviser {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--luft-2);
+  margin-top: var(--luft-3);
+}
+
+.bevis {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-lille);
+  background: var(--flade-saenket);
+}
+
+.bevis img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* Etiketten ligger PÅ billedet, ikke under det: to linjer tekst under to
+   billeder ville fylde mere end billederne selv på en telefonbredde. */
+.bevis .etiket {
+  position: absolute;
+  left: var(--luft-2);
+  bottom: var(--luft-1);
+  color: #fff;
+  /* Billedet nedenunder er ukendt — en skygge er det eneste, der virker
+     mod både en mørk bar og et hvidt loft. */
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+}
+
+/* Pladsen, før billedet er taget. Etiketten står midt i, uden skygge —
+   der er ingen billede at stå oven på. */
+.bevis.mangler {
+  display: grid;
+  place-items: center;
+  border: 1px dashed var(--kant);
+}
+
+.bevis.mangler .etiket {
+  position: static;
+  color: var(--tekst-svag);
+  text-shadow: none;
+}
+
 .raekke {
   display: flex;
   align-items: center;

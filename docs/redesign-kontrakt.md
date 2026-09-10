@@ -119,6 +119,25 @@ localStorage-cachen ikke kan kende tilstanden, og "ingen markering" er det
 scanne `by_kanal`, som ville læse hver udfordring Kanalen nogensinde har
 haft.
 
+**Bevidst undtagelse 8:** bevisbillederne fra en Sladesh vises nu til hele
+Kanalen, MENS udfordringen kører. Ny query `getLiveSladesh` i
+`convex/sladesh.ts`.
+
+Det er en udvidelse af den privatlivsgrænse, undtagelse 5 satte snævert, og
+den er derfor værd at skrive ned præcist. Arkivet — `getSladeshHistorik` —
+er **uændret** og viser stadig kun billeder til de to parter. Kun aktive
+udfordringer besvares af den nye query, og en aktiv udfordring lever højst
+ti minutter (`SLADESH_TIME_LIMIT_MS`), så den kan ikke vise et eneste
+billede taget før udrulningen. Løftet bagud er intakt.
+
+Grænsen står som `erLiveNu` i `convex/sladeshRules.ts` med sine egne prøver,
+netop fordi det er en privatlivsgrænse og ikke en visningsdetalje.
+Modtageren får det at vide på optagelsesskærmen, før hun trykker på
+kameraet — man skal ikke opdage bagefter, hvem der kiggede med.
+
+Skal arkivet nogensinde åbnes, er det en ny beslutning. Den følger ikke af
+denne.
+
 ---
 
 ## 2. Afhængigheder
