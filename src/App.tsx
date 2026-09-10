@@ -6,7 +6,7 @@ import type { LogDrinkResultat } from "../convex/drinkLogs";
 import { useAuth } from "./contexts/AuthContext";
 import { useCachetQuery } from "./lib/oejebliksbillede";
 import { udenGenstand } from "./lib/optimistisk";
-import { fejltekst, formatUr } from "./lib/visning";
+import { fejltekst } from "./lib/visning";
 import { AchievementOplaasning } from "./ui/AchievementOplaasning";
 import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
@@ -18,6 +18,7 @@ import { Historik } from "./ui/Historik";
 import { Kanaltema } from "./ui/Kanaltema";
 import { KanalVaelger } from "./ui/KanalVaelger";
 import { Pushopfordring } from "./ui/Pushopfordring";
+import { Ur } from "./ui/Ur";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
 import { Onboarding } from "./ui/Onboarding";
@@ -433,21 +434,6 @@ function Appen() {
       )}
     </div>
   );
-}
-
-/**
- * Nedtællingen i en bjælke.
- *
- * Egen komponent, så kun den gentegner hvert sekund. Lå tikket i skallen,
- * ville hele appen gentegne 600 gange i løbet af en Sladesh.
- */
-function Ur({ deadlineAt }: { deadlineAt: number }) {
-  const [nu, setNu] = useState(Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNu(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  return <>{formatUr(deadlineAt - nu)}</>;
 }
 
 /** Kanalens navn i toppen. Egen komponent, så kun den henter opslaget. */

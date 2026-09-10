@@ -10,6 +10,7 @@ import {
 import { beregnRunStart } from "./drinkRules";
 import { requireKanalMedlem } from "./identity";
 import { beregnPromille, kanBeregnePromille } from "./promilleRules";
+import { sladeshForStilling, type StillingSladesh } from "./sladeshRules";
 
 /**
  * Scoreboard.
@@ -69,6 +70,21 @@ export type ScoreboardRow = {
   /** Seneste logning i dag — bruges som tie-breaker. */
   lastDrinkAt?: number;
   isOnline: boolean;
+  /**
+   * Sladesh-tilstand: i gang lige nu, taget i aften, brugt sin egen.
+   *
+   * Stod ingen steder før. De to bjælker i toppen af appen viste kun en
+   * igangværende udfordring, og kun hvis man selv var indblandet — stod man
+   * udenfor, skete hele legen usynligt. Se `sladeshForStilling`.
+   *
+   * VALGFRI, og det er ikke en bekvemmelighed. To slags rækker kan ikke
+   * kende tilstanden: den OPTIMISTISKE række, `udenGenstand` bygger, før
+   * serveren har svaret (src/lib/optimistisk.ts), og en række malet fra
+   * localStorage-cachen, som kan stamme fra før feltet fandtes. Begge skal
+   * kunne vise en stilling uden at lyve om Sladesh — og "ingen markering"
+   * er det ærlige svar, når man ikke ved det.
+   */
+  sladesh?: StillingSladesh;
 };
 
 export const getScoreboard = query({
@@ -89,6 +105,23 @@ export const getScoreboard = query({
       kanal: kanal.name,
       fra: new Date(dayStart).toISOString(),
     });
+
+    // Ét indekseret scan over Kanalens Sladesh-udfordringer i drikkedagen.
+    //
+    // Fra `dayStart` og ikke længere tilbage: "taget i aften" er netop
+    // drikkedagen, som resten af stillingen, og en aktiv udfordring lever
+    // højst ti minutter (`SLADESH_TIME_LIMIT_MS`), saa den kan ikke være
+    // ældre end vinduet uden allerede at være lukket af cron'en.
+    //
+    // Udfordringer uden `channelId` falder uden for scannet. Klienten sætter
+    // den altid — Personkortet er kun aabent inde i en Kanal — saa det er en
+    // teoretisk raekke, og prisen er en manglende markering, ikke en fejl.
+    const udfordringer = await ctx.db
+      .query("sladeshChallenges")
+      .withIndex("by_kanal_and_created_at", (q) =>
+        q.eq("channelId", args.channelId).gte("createdAt", dayStart),
+      )
+      .collect();
 
     // Ét indekseret scan over Kanalens logninger i den aktuelle drikkedag.
     const logs = await ctx.db
@@ -167,6 +200,12 @@ export const getScoreboard = query({
         lastDrinkAt,
         // Alle på listen er "med i dag" — det er selve deltagerkriteriet.
         isOnline: true,
+        sladesh: sladeshForStilling({
+          udfordringer,
+          brugerId: user._id,
+          lastSladeshSentAt: user.lastSladeshSentAt,
+          now,
+        }),
       });
     }
 

@@ -544,6 +544,13 @@ export default defineSchema({
     .index("by_idempotency_key", ["idempotencyKey"])
     .index("by_sender_and_created_at", ["senderId", "createdAt"])
     .index("by_recipient_and_created_at", ["recipientId", "createdAt"])
+    // Stillingen viser Sladesh-tilstand per række. Uden dette index måtte
+    // den enten scanne `by_kanal` — altsaa hver udfordring Kanalen
+    // nogensinde har haft — eller slaa op per medlem, hvilket ville være
+    // op til 50 opslag ved hver eneste opdatering af en liste, der er
+    // reaktiv. Med det er det ét range-scan fra drikkedagens start, samme
+    // form som stillingens eget scan over `drinkLogs`.
+    .index("by_kanal_and_created_at", ["channelId", "createdAt"])
     // De to status-indexes gør opslaget af en brugers AKTIVE udfordring til et
     // præcist indeks-opslag i begge retninger. Uden `by_sender_and_status`
     // måtte afsender-siden scanne de seneste N afsendte og filtrere i
