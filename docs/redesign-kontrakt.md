@@ -100,6 +100,25 @@ Ingen anden logik i service workeren er rørt, og `"opdater-nu"` virker
 uændret. Linjen kan fjernes igen, når det gamle site er slukket, og alle
 har været forbi mindst én gang.
 
+**Bevidst undtagelse 7:** stillingen viser nu Sladesh-tilstand per række —
+en igangværende udfordring med sit ur, hvem der har taget en i aften, og
+hvem der har brugt sin. Det krævede `convex/scoreboard.ts`,
+`convex/sladeshRules.ts` og ét nyt index i `convex/schema.ts`.
+
+Det kunne ikke laves i `src/ui/**` alene, og det er hele grunden til, at
+undtagelsen findes: oplysningen står i `sladeshChallenges` og i
+`users.lastSladeshSentAt`, og en klient, der selv skulle hente den, ville
+enten kræve op til 50 opslag per opdatering af en reaktiv liste eller
+udlevere hele Kanalens udfordringshistorik til hver enkelt bruger.
+
+Ingen mutation, intet felt og ingen eksisterende query er ændret.
+`ScoreboardRow` har fået ét NYT valgfrit felt (`sladesh`) — valgfrit, fordi
+den optimistiske række i `src/lib/optimistisk.ts` og en række malet fra
+localStorage-cachen ikke kan kende tilstanden, og "ingen markering" er det
+ærlige svar dér. Indekset `by_kanal_and_created_at` er tilføjet frem for at
+scanne `by_kanal`, som ville læse hver udfordring Kanalen nogensinde har
+haft.
+
 ---
 
 ## 2. Afhængigheder

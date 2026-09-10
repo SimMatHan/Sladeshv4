@@ -1877,6 +1877,81 @@ input {
   text-align: right;
 }
 
+/*
+ * Sladesh-mærket på en række.
+ *
+ * Egen linje under navnet, ikke endnu et element i `.under`. Den linje
+ * bærer stimen og promillen — to tal, man skimmer — og Sladesh er en
+ * TILSTAND, som skal kunne læses uden at blive forvekslet med dem.
+ *
+ * `display: flex` gør den til sin egen linje i `.midt`, hvor `.navn` er
+ * inline. Samme grund som at `.under` er flex.
+ */
+.sladeshmaerke {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-2);
+  width: fit-content;
+  max-width: 100%;
+  margin-top: var(--luft-1);
+  padding: 2px var(--luft-2);
+  border-radius: var(--radius-rund);
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-medium);
+}
+
+/*
+ * I GANG — den eneste af de fire, der ændrer sig, mens man kigger.
+ *
+ * Accenttonet som broadcast-bjælken, fordi den skal findes med et blik i en
+ * liste på tredive rækker. Ingen animation: uret ved siden af tikker
+ * allerede hvert sekund, og det ER bevægelsen. En puls oveni ville
+ * konkurrere med den om det samme øje.
+ */
+.sladeshmaerke.igang {
+  background: color-mix(in srgb, var(--accent) 16%, var(--flade));
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
+  color: var(--tekst);
+}
+
+/* Navnet må klippes; uret må ALDRIG — det er hele pointen med mærket. */
+.sladeshmaerke .sladeshtekst {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sladeshmaerke .sladeshur {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-weight: var(--vaegt-fed);
+  /* Tabular tal alene er ikke nok: "9:59" og "10:00" er forskellige
+     tegnantal, og uden et gulv hopper mærkets bredde ved skiftet. */
+  min-width: 4ch;
+  text-align: right;
+}
+
+/* TOG — en præstation. Grøn, som alt andet der gik godt i appen. */
+.sladeshmaerke.tog {
+  background: color-mix(in srgb, var(--medgang) 14%, var(--flade));
+  border: 1px solid color-mix(in srgb, var(--medgang) 40%, var(--kant));
+  color: var(--tekst);
+}
+
+/*
+ * BRUGT — hverken godt eller skidt, bare en tilstand.
+ *
+ * Derfor ingen farve: den skal kunne ses, hvis man leder efter den, og
+ * forsvinde, hvis man ikke gør. En rød "opbrugt" ville læse som en fejl,
+ * og det er det modsatte af, hvad der er sket — personen har brugt sin
+ * Sladesh, hvilket var meningen med den.
+ */
+.sladeshmaerke.brugt {
+  padding-left: 0;
+  color: var(--tekst-svag);
+}
+
 
 /* ------------------------------------------------------------------- mig */
 

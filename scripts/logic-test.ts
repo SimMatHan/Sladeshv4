@@ -40,6 +40,8 @@ import {
   SLADESH_TIME_LIMIT_MS,
   sladeshUdfaldVarsling,
   sladeshVarsling,
+  sladeshForStilling,
+  type UdfordringLite,
 } from "../convex/sladeshRules.ts";
 import {
   BESKED_MAX_LAENGDE,
@@ -343,6 +345,119 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] Sladesh på stillingen");
+{
+  const nu = cest("2026-08-14T20:00:00");
+  const frist = nu + 5 * 60 * 1000;
+
+  const u = (
+    over: Partial<UdfordringLite> & Pick<UdfordringLite, "status">,
+  ): UdfordringLite => ({
+    senderId: "afsender",
+    recipientId: "modtager",
+    senderName: "Anders",
+    recipientName: "Mathias",
+    deadlineAt: frist,
+    ...over,
+  });
+
+  const opgoer = (
+    udfordringer: readonly UdfordringLite[],
+    brugerId: string,
+    sendt?: number,
+  ) =>
+    sladeshForStilling({
+      udfordringer,
+      brugerId,
+      lastSladeshSentAt: sendt,
+      now: nu,
+    });
+
+  // Ingenting at sige.
+  check("tom liste", opgoer([], "modtager"), { tog: 0, brugt: false });
+
+  // I GANG — modtageren skal drikke, og mærket skal nævne afsenderen.
+  const igang = opgoer([u({ status: "pending" })], "modtager");
+  check("modtager er i gang", igang.aktiv?.rolle, "modtager");
+  check("modpart er afsenderen", igang.aktiv?.modpart, "Anders");
+  check("fristen følger med", igang.aktiv?.deadlineAt, frist);
+
+  // Afsenderen ser den samme udfordring fra den anden side.
+  const sendt = opgoer([u({ status: "in_progress" })], "afsender");
+  check("afsender venter", sendt.aktiv?.rolle, "afsender");
+  check("modpart er modtageren", sendt.aktiv?.modpart, "Mathias");
+
+  // En udfordring, man ikke er part i, rører ikke ens egen række.
+  check("uvedkommende udfordring", opgoer([u({ status: "pending" })], "tredje"), {
+    tog: 0,
+    brugt: false,
+  });
+
+  // TOG — kun `completed`. `failed` og `expired` er ikke noget, man tog.
+  check("gennemført tæller", opgoer([u({ status: "completed" })], "modtager").tog, 1);
+  check("fejlet tæller ikke", opgoer([u({ status: "failed" })], "modtager").tog, 0);
+  check("udløbet tæller ikke", opgoer([u({ status: "expired" })], "modtager").tog, 0);
+  check(
+    "to gennemførte",
+    opgoer([u({ status: "completed" }), u({ status: "completed" })], "modtager").tog,
+    2,
+  );
+  // Afsenderen af en gennemført tog den ikke — det gjorde modtageren.
+  check(
+    "afsenderen tog den ikke",
+    opgoer([u({ status: "completed" })], "afsender").tog,
+    0,
+  );
+
+  // Modtagerrollen vinder over afsenderrollen: er man både udfordret og har
+  // en ude, er det DEN, man skal handle på nu.
+  const begge = opgoer(
+    [
+      u({ status: "pending", senderId: "x", recipientId: "mig", senderName: "X" }),
+      u({ status: "pending", senderId: "mig", recipientId: "y", recipientName: "Y" }),
+    ],
+    "mig",
+  );
+  check("modtagerrollen vinder", begge.aktiv?.rolle, "modtager");
+  check("og viser den rigtige modpart", begge.aktiv?.modpart, "X");
+
+  // Rækkefølgen i listen må ikke afgøre det.
+  const omvendt = opgoer(
+    [
+      u({ status: "pending", senderId: "mig", recipientId: "y", recipientName: "Y" }),
+      u({ status: "pending", senderId: "x", recipientId: "mig", senderName: "X" }),
+    ],
+    "mig",
+  );
+  check("uanset rækkefølge", omvendt.aktiv?.rolle, "modtager");
+
+  // BRUGT kommer fra brugeren, ikke fra listen — cooldownen er 12-timers
+  // blokke (00–12/12–24), en anden grænse end drikkedagens 10:00.
+  check("har aldrig sendt", opgoer([], "mig").brugt, false);
+  check(
+    "sendt i denne blok",
+    opgoer([], "mig", cest("2026-08-14T13:00:00")).brugt,
+    true,
+  );
+  check(
+    "sendt i forrige blok",
+    opgoer([], "mig", cest("2026-08-14T09:00:00")).brugt,
+    false,
+  );
+  // Kl. 08 er uden for drikkedagens vindue, men INDEN for blokken kl. 11 —
+  // netop derfor må `brugt` ikke udledes af de hentede udfordringer.
+  check(
+    "brugt uden for stillingens vindue",
+    sladeshForStilling({
+      udfordringer: [],
+      brugerId: "mig",
+      lastSladeshSentAt: cest("2026-08-14T08:00:00"),
+      now: cest("2026-08-14T11:00:00"),
+    }).brugt,
+    true,
+  );
 }
 
 console.log("\n[Logic] milepælshyldesten");

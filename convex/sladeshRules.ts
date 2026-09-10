@@ -223,3 +223,102 @@ export function sladeshUdfaldVarsling(
     tekst: `${navn} nåede det ikke inden for ${minutter} minutter.`,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Sladesh-tilstand på stillingen
+// ---------------------------------------------------------------------------
+
+/**
+ * Hvad stillingen skal kunne sige om én person.
+ *
+ * Der var tre ting, man ikke kunne se nogen steder: at en Sladesh er I GANG
+ * lige nu (og hvor længe der er igen), hvem der har TAGET en i aften, og
+ * hvem der har BRUGT sin. De to bjælker i toppen af appen dækkede kun den
+ * første, og kun hvis man selv var indblandet — stod man udenfor, skete
+ * hele legen usynligt.
+ */
+export type StillingSladesh = {
+  /**
+   * En udfordring, der stadig kan gennemføres.
+   *
+   * Vigtigst af de tre, fordi den har et ur: den fortæller noget, der
+   * ændrer sig, mens man kigger.
+   */
+  aktiv?: {
+    /** `modtager` skal drikke; `afsender` venter på svar. */
+    rolle: "modtager" | "afsender";
+    deadlineAt: number;
+    /** Den anden part, så rækken kan sige hvem det er imellem. */
+    modpart: string;
+  };
+  /** Gennemførte Sladesh, personen har TAGET i denne drikkedag. */
+  tog: number;
+  /** Har brugt sin ene Sladesh i den nuværende 12-timers blok. */
+  brugt: boolean;
+};
+
+/** Kun de felter opgørelsen bruger — så prøverne ikke skal bygge hele rækken. */
+export type UdfordringLite = {
+  senderId: string;
+  recipientId: string;
+  senderName: string;
+  recipientName: string;
+  status: SladeshStatus;
+  deadlineAt: number;
+};
+
+/**
+ * Gør Sladesh-tilstanden op for én person ud fra Kanalens udfordringer.
+ *
+ * ## Hvorfor `brugt` kommer fra brugeren og ikke fra listen
+ *
+ * Cooldownen er per 12-timers blok (00–12 / 12–24), og stillingen ser kun
+ * drikkedagen (10:00 → 10:00). De to grænser er bevidst forskellige, saa en
+ * Sladesh sendt kl. 08:00 er stadig "brugt" kl. 11, selvom den ligger uden
+ * for det, listen har hentet. `users.lastSladeshSentAt` kender hele
+ * historikken og er allerede hentet, saa den er baade billigere og rigtigere.
+ *
+ * ## Hvorfor kun `completed` tæller som "tog"
+ *
+ * `failed` og `expired` er ikke noget, man tog — det er noget, man ikke nåede.
+ * At tælle dem med ville gøre tallet til "hvor mange blev sendt efter dig",
+ * hvilket er en anden og mindre interessant oplysning.
+ */
+export function sladeshForStilling(input: {
+  udfordringer: readonly UdfordringLite[];
+  brugerId: string;
+  lastSladeshSentAt: number | undefined;
+  now: number;
+}): StillingSladesh {
+  const { udfordringer, brugerId, lastSladeshSentAt, now } = input;
+
+  let aktiv: StillingSladesh["aktiv"];
+  let tog = 0;
+
+  for (const udfordring of udfordringer) {
+    const erModtager = udfordring.recipientId === brugerId;
+    const erAfsender = udfordring.senderId === brugerId;
+    if (!erModtager && !erAfsender) continue;
+
+    if (erAktivStatus(udfordring.status)) {
+      // Modtagerrollen vinder: er man på én gang udfordret og har en
+      // udfordring ude, er det DEN, man skal handle på nu.
+      if (aktiv === undefined || (erModtager && aktiv.rolle === "afsender")) {
+        aktiv = {
+          rolle: erModtager ? "modtager" : "afsender",
+          deadlineAt: udfordring.deadlineAt,
+          modpart: erModtager ? udfordring.senderName : udfordring.recipientName,
+        };
+      }
+      continue;
+    }
+
+    if (erModtager && udfordring.status === "completed") tog++;
+  }
+
+  return {
+    ...(aktiv !== undefined ? { aktiv } : {}),
+    tog,
+    brugt: erCooldownAktiv(lastSladeshSentAt, now),
+  };
+}
