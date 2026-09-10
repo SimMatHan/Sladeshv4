@@ -9,6 +9,7 @@ import { vaegtForGenstand } from "../lib/optimistisk";
 import { useLogDrink } from "../lib/optimistiskeKald";
 import { Ark } from "./Ark";
 import { tik } from "./haptik";
+import { Tilfaeldig } from "./Tilfaeldig";
 
 /**
  * Log en genstand.
@@ -76,6 +77,7 @@ export function LogArk({
   const logDrink = useLogDrink();
 
   const [soegning, setSoegning] = useState("");
+  const [hjulAabent, setHjulAabent] = useState(false);
 
   const saedvanlige = useMemo(() => udledSaedvanlige(mineLogs), [mineLogs]);
 
@@ -125,111 +127,167 @@ export function LogArk({
     onLuk();
   };
 
-  return (
-    <Ark titel="Log en genstand" onLuk={onLuk}>
-      <input
-        className="felt soegefelt"
-        type="search"
-        value={soegning}
-        placeholder="Søg …"
-        // Ingen autofokus. Tastaturet ville springe op og dække de genveje,
-        // der dækker det almindelige tilfælde med ét tryk.
-        aria-label="Søg i kataloget"
-        onChange={(event) => setSoegning(event.target.value)}
-      />
+  /**
+   * Hjulet har landet: log, men LUK IKKE.
+   *
+   * `log()` ovenfor lukker arket på trykket, fordi man dér selv har valgt
+   * og ved, hvad man valgte. Her er hele pointen den modsatte: man skal se
+   * hvad skæbnen fandt, og at man nu skal skaffe det. Lukningen sker, når
+   * man selv trykker sig videre.
+   */
+  const logFraHjul = (kandidat: { categoryId: string; name: string }) => {
+    const svar = logDrink({
+      channelId,
+      categoryId: kandidat.categoryId,
+      variationName: kandidat.name,
+    });
+    onLogget(kandidat.name, vaegtForGenstand(kandidat.categoryId), svar);
+  };
 
-      {/* Søger man, ER resultatet skærmen. Genveje og kategorier ville stå
-          som støj under noget, man netop har bedt om at få skåret ned. */}
-      {traeffere !== undefined ? (
-        traeffere.length === 0 ? (
-          <div className="tom">
-            <p>Ingen træffere på "{soegning.trim()}".</p>
-            <p className="hjaelp">
-              Kataloget styres af en admin — mangler der noget, kan det
-              tilføjes dér.
-            </p>
-          </div>
-        ) : (
-          <div className="arkgruppe">
-            <h3>{traeffere.length === 1 ? "1 træffer" : `${traeffere.length} træffere`}</h3>
-            <div className="chips">
-              {traeffere.map((variant) => (
-                <button
-                  key={`${variant.categoryId}::${variant.name}`}
-                  className="chip"
-                  onClick={() => log(variant.categoryId, variant.name)}
-                >
-                  {/* Kategorien står med, fordi listen er flad: uden den
-                      kan to varianter med samme navn ikke skelnes. */}
-                  <span className="emoji">{emojiFor(variant.categoryId)}</span>
-                  {variant.name}
-                </button>
-              ))}
+  return (
+    <>
+      {/*
+        UDEN FOR arket med vilje.
+        
+        `.ark` bærer en `transform` under både indkørsel og træk, og et
+        `position: fixed` barn regner fra nærmeste transformerede forfar —
+        altså fra arket i stedet for fra skærmen. Hjulets dug ville da kun
+        dække arket, og kortet ville hoppe med, hvis nogen trak i arket
+        bagved. Her ude er der ingen transform mellem hjulet og skærmen.
+      */}
+      {hjulAabent && (
+        <Tilfaeldig
+          katalog={katalog ?? []}
+          onValgt={logFraHjul}
+          onLuk={() => {
+            setHjulAabent(false);
+            onLuk();
+          }}
+        />
+      )}
+
+      <Ark
+        titel="Log en genstand"
+        onLuk={onLuk}
+        handling={
+          <button
+            className="hjulknap"
+            aria-label="Lad skæbnen vælge"
+            disabled={(katalog ?? []).length === 0}
+            onClick={() => {
+              tik();
+              setHjulAabent(true);
+            }}
+          >
+            🎲
+          </button>
+        }
+      >
+
+        <input
+          className="felt soegefelt"
+          type="search"
+          value={soegning}
+          placeholder="Søg …"
+          // Ingen autofokus. Tastaturet ville springe op og dække de genveje,
+          // der dækker det almindelige tilfælde med ét tryk.
+          aria-label="Søg i kataloget"
+          onChange={(event) => setSoegning(event.target.value)}
+        />
+
+        {/* Søger man, ER resultatet skærmen. Genveje og kategorier ville stå
+            som støj under noget, man netop har bedt om at få skåret ned. */}
+        {traeffere !== undefined ? (
+          traeffere.length === 0 ? (
+            <div className="tom">
+              <p>Ingen træffere på "{soegning.trim()}".</p>
+              <p className="hjaelp">
+                Kataloget styres af en admin — mangler der noget, kan det
+                tilføjes dér.
+              </p>
             </div>
-          </div>
-        )
-      ) : (
-        <>
-          {saedvanlige.length > 0 && (
+          ) : (
             <div className="arkgruppe">
-              <h3>Dine sædvanlige</h3>
+              <h3>{traeffere.length === 1 ? "1 træffer" : `${traeffere.length} træffere`}</h3>
               <div className="chips">
-                {saedvanlige.map((vane) => (
+                {traeffere.map((variant) => (
                   <button
-                    key={`${vane.categoryId}::${vane.variationName}`}
-                    className="chip stor fyldt"
-                    onClick={() => log(vane.categoryId, vane.variationName)}
+                    key={`${variant.categoryId}::${variant.name}`}
+                    className="chip"
+                    onClick={() => log(variant.categoryId, variant.name)}
                   >
-                    <span className="emoji">{emojiFor(vane.categoryId)}</span>
-                    {vane.variationName}
+                    {/* Kategorien står med, fordi listen er flad: uden den
+                        kan to varianter med samme navn ikke skelnes. */}
+                    <span className="emoji">{emojiFor(variant.categoryId)}</span>
+                    {variant.name}
                   </button>
                 ))}
               </div>
             </div>
-          )}
-
-          {katalog === undefined ? (
-            // `.midtstillet`, ikke `.tom`: det ene er appens hentetilstand — se
-            // Achievements.tsx for samme mønster i et andet ark — det andet er
-            // reserveret til et ÆGTE tomt resultat, som kataloget nedenfor.
-            <p className="midtstillet">Henter kataloget …</p>
-          ) : (
-            DRINK_CATEGORIES.map((kategori) => {
-              const varianter = efterKategori.get(kategori.id) ?? [];
-              if (varianter.length === 0) return null;
-
-              return (
-                <div className="arkgruppe" key={kategori.id}>
-                  <h3>
-                    {kategori.emoji} {kategori.label}
-                  </h3>
-                  <div className="chips">
-                    {varianter.map((navn) => (
-                      <button
-                        key={navn}
-                        className="chip"
-                        onClick={() => log(kategori.id, navn)}
-                      >
-                        {navn}
-                      </button>
-                    ))}
-                  </div>
+          )
+        ) : (
+          <>
+            {saedvanlige.length > 0 && (
+              <div className="arkgruppe">
+                <h3>Dine sædvanlige</h3>
+                <div className="chips">
+                  {saedvanlige.map((vane) => (
+                    <button
+                      key={`${vane.categoryId}::${vane.variationName}`}
+                      className="chip stor fyldt"
+                      onClick={() => log(vane.categoryId, vane.variationName)}
+                    >
+                      <span className="emoji">{emojiFor(vane.categoryId)}</span>
+                      {vane.variationName}
+                    </button>
+                  ))}
                 </div>
-              );
-            })
-          )}
+              </div>
+            )}
 
-          {katalog !== undefined && katalog.length === 0 && (
-            <div className="tom">
-              <p>Kataloget er tomt.</p>
-              <p className="hjaelp">
-                En admin skal tilføje drikkevarer, før der er noget at vælge.
-              </p>
-            </div>
-          )}
-        </>
-      )}
-    </Ark>
+            {katalog === undefined ? (
+              // `.midtstillet`, ikke `.tom`: det ene er appens hentetilstand — se
+              // Achievements.tsx for samme mønster i et andet ark — det andet er
+              // reserveret til et ÆGTE tomt resultat, som kataloget nedenfor.
+              <p className="midtstillet">Henter kataloget …</p>
+            ) : (
+              DRINK_CATEGORIES.map((kategori) => {
+                const varianter = efterKategori.get(kategori.id) ?? [];
+                if (varianter.length === 0) return null;
+
+                return (
+                  <div className="arkgruppe" key={kategori.id}>
+                    <h3>
+                      {kategori.emoji} {kategori.label}
+                    </h3>
+                    <div className="chips">
+                      {varianter.map((navn) => (
+                        <button
+                          key={navn}
+                          className="chip"
+                          onClick={() => log(kategori.id, navn)}
+                        >
+                          {navn}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+
+            {katalog !== undefined && katalog.length === 0 && (
+              <div className="tom">
+                <p>Kataloget er tomt.</p>
+                <p className="hjaelp">
+                  En admin skal tilføje drikkevarer, før der er noget at vælge.
+                </p>
+              </div>
+            )}
+          </>
+        )}
+      </Ark>
+    </>
   );
 }
 

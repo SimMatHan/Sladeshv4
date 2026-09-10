@@ -231,6 +231,10 @@
   --lag-kvittering: 35;
   --lag-dug: 40;
   --lag-ark: 41;
+  /* Skæbnens hjul ligger OVEN PÅ log-arket og har derfor sin egen dug og
+     sit eget lag over det. Se `.hjul`. */
+  --lag-hjuldug: 45;
+  --lag-hjul: 46;
 
   /* ----------------------------------------------------------- mål */
 
@@ -4548,4 +4552,121 @@ p.dagliste {
 .ark .segment {
   flex-shrink: 0;
   white-space: nowrap;
+}
+
+/* -------------------------------------------------------- skæbnens hjul */
+
+/*
+ * "Lad skæbnen vælge" — 🎲 i log-arkets øverste højre hjørne, og hjulet den
+ * åbner.
+ *
+ * Knappen ligger UDEN FOR `.arkgreb`, fordi grebet tager `setPointerCapture`
+ * under et træk og ville sluge klikket. Derfor absolut placeret i stedet for
+ * at stå i rækken med titlen — se `handling` i Ark.tsx.
+ */
+.arkhandling {
+  position: absolute;
+  top: var(--luft-3);
+  right: var(--luft-4);
+}
+
+.hjulknap {
+  display: grid;
+  place-items: center;
+  width: var(--tryk);
+  height: var(--tryk);
+  /* Terningen er en glyf, ikke tekst. */
+  font-size: var(--ikon);
+  line-height: 1;
+  border-radius: var(--radius-rund);
+  background: var(--flade-brik);
+  border: 1px solid var(--kant);
+  transition: transform var(--fart-hurtig) ease;
+}
+
+.hjulknap:active {
+  transform: scale(0.94);
+}
+
+.hjulknap:disabled {
+  opacity: 0.4;
+}
+
+/*
+ * Selve hjulet. Samme form som achievement-fejringen: midt på skærmen,
+ * accentkant, hævet. De to er samme slags øjeblik — noget, der er sket, og
+ * som man skal se, før man går videre.
+ *
+ * Ligger inde i arkets stakkontekst og skal derfor kun over arkets egen dug
+ * (`--lag-dug`), ikke over hele siden.
+ */
+.hjul {
+  position: fixed;
+  left: var(--luft-4);
+  right: var(--luft-4);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: var(--lag-hjul);
+  max-width: calc(var(--bredde) - var(--luft-4) * 2);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-3);
+  padding: var(--luft-6) var(--luft-5);
+  text-align: center;
+  background: var(--flade);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--kant));
+  border-radius: var(--radius-stor);
+  box-shadow: var(--skygge-hoej);
+  animation: op var(--fart-lang) var(--kurve);
+}
+
+/* Hjulets egen dug skal over log-arket, ikke kun over siden. Egen klasse
+   frem for en søskende-selektor: dugen står FØR hjulet i DOM'en, og en
+   regel, der afhang af rækkefølgen, ville gå i stykker næste gang nogen
+   flyttede et element. */
+.dug.hjuldug {
+  z-index: var(--lag-hjuldug);
+}
+
+/*
+ * Navnet, hjulet ruller igennem.
+ *
+ * Fast højde og centreret: navnene er forskelligt lange, og uden den ville
+ * kortet danse i takt med rullen. `min-height` frem for `height`, saa et
+ * meget langt navn stadig kan ombrydes frem for at blive klippet.
+ */
+.hjulnavn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--luft-2);
+  min-height: 2lh;
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  color: var(--tekst-daempet);
+}
+
+/* Landet: fuld farve og fuld størrelse. Forskellen mellem "ruller" og
+   "landet" skal kunne ses uden at læse teksten. */
+.hjulnavn.landet {
+  font-size: var(--tekst-xxl);
+  color: var(--tekst);
+}
+
+.hjulemoji {
+  font-size: var(--tekst-xl);
+}
+
+/*
+ * Ordren. Det vigtigste på skærmen efter selve navnet: genstanden ER logget,
+ * og nu mangler den at blive skaffet. Accentfarvet, saa ingen kan nå at
+ * lukke kortet uden at have set den.
+ */
+.hjulordre {
+  margin: 0;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  color: var(--accent);
 }

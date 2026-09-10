@@ -39,10 +39,19 @@ const LUKKEFART = 0.5;
 export function Ark({
   titel,
   onLuk,
+  handling,
   children,
 }: {
   titel: string;
   onLuk: () => void;
+  /**
+   * Én knap i arkets øverste højre hjørne.
+   *
+   * Ligger UDEN FOR `.arkgreb` med vilje. Grebet tager `setPointerCapture`,
+   * så længe man trækker, og en knap inden i ville aldrig få sit klik — den
+   * ville se ud som en knap og opføre sig som et håndtag.
+   */
+  handling?: ReactNode;
   children: ReactNode;
 }) {
   const arket = useRef<HTMLDivElement>(null);
@@ -183,6 +192,8 @@ export function Ark({
           <div className="greb" />
           <h2>{titel}</h2>
         </div>
+
+        {handling !== undefined && <div className="arkhandling">{handling}</div>}
         <div className="arkindhold">{children}</div>
       </div>
     </>

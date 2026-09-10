@@ -11,6 +11,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
 import {
+  kandidater,
+  rullepause,
+  rulleraekke,
+  vaelgTilfaeldig,
+  type Kandidat,
+} from "../src/ui/tilfaeldigValg";
+import {
   AVATAR_COLORS,
   AVATAR_COLOR_NAMES,
   DRINK_CATEGORIES,
@@ -346,6 +353,57 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] skæbnens hjul");
+{
+  const katalog: Kandidat[] = [
+    { categoryId: "beer", name: "Tuborg" },
+    { categoryId: "wine", name: "Rødvin" },
+    { categoryId: "shot", name: "Fernet" },
+    { categoryId: "other", name: "Cigaret" },
+  ];
+  const erDrikkevare = (id: string) => id !== "other";
+
+  // Kun rigtige drikkevarer. En "næste drink", der er en cigaret, er ikke
+  // det, nogen bad om — og `other` tæller heller ikke på stillingen.
+  check("cigaretten er ikke med", kandidater(katalog, erDrikkevare).length, 3);
+  check(
+    "og det er de tre rigtige",
+    kandidater(katalog, erDrikkevare).map((k) => k.name),
+    ["Tuborg", "Rødvin", "Fernet"],
+  );
+  check("tomt katalog", kandidater([], erDrikkevare), []);
+
+  const liste = kandidater(katalog, erDrikkevare);
+
+  // Fast tilfældighed, så udvælgelsen kan siges præcist.
+  check("0 vælger den første", vaelgTilfaeldig(liste, () => 0)?.name, "Tuborg");
+  check("0,5 vælger den midterste", vaelgTilfaeldig(liste, () => 0.5)?.name, "Rødvin");
+  check("0,99 vælger den sidste", vaelgTilfaeldig(liste, () => 0.99)?.name, "Fernet");
+  // `Math.random()` giver [0,1), men en indsprøjtet funktion kan levere 1 —
+  // og et hul dér ville være et nedbrud ved en værdi, man ser sjældent.
+  check("1 rammer ikke ved siden af", vaelgTilfaeldig(liste, () => 1)?.name, "Fernet");
+  check("ingen kandidater", vaelgTilfaeldig([], () => 0), undefined);
+
+  // DET VIGTIGSTE: rækken skal ALTID ende på den vinder, der blev trukket
+  // først. Landede hjulet, hvor det nu landede, ville et hak i
+  // billedhastigheden ændre, hvad man skulle drikke.
+  const vinder = liste[2]!;
+  for (const antal of [1, 2, 5, 22]) {
+    const raekke = rulleraekke(liste, vinder, antal);
+    check(`rulle på ${antal} ender på vinderen`, raekke[raekke.length - 1], vinder);
+    check(`rulle på ${antal} har rigtig længde`, raekke.length, Math.max(1, antal));
+  }
+
+  // Én kandidat: gentagelser er uundgåelige, og så skal den ikke gå i stå.
+  const enkelt = [liste[0]!];
+  check("ét valg giver stadig en rulle", rulleraekke(enkelt, liste[0]!, 4).length, 4);
+
+  // Opbremsningen. Et fast interval ser ud som en liste, der blinker.
+  check("første trin er hurtigst", rullepause(0, 22) < rullepause(21, 22), true);
+  check("den bremser hele vejen", rullepause(5, 22) < rullepause(15, 22), true);
+  check("ét trin har ingen pause", rullepause(0, 1), 0);
 }
 
 console.log("\n[Logic] hvornår er en Sladesh live");
