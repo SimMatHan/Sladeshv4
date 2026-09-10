@@ -97,6 +97,41 @@ export function useTastaturhoejde(): number {
       vv.removeEventListener("scroll", maal);
       document.removeEventListener("focusin", senereMaal);
       document.removeEventListener("focusout", senereMaal);
+
+      /*
+       * OPRYDNINGEN SKAL GØRE ARBEJDET, IKKE BARE AFLYSE DET.
+       *
+       * Det her var en rigtig fejl, og rækkefølgen er hele forklaringen.
+       * Trykker man på en fane, mens skrivefeltet har fokus:
+       *
+       *   1. `focusout` planlægger en måling, som ville sætte tastaturet
+       *      til 0, slippe feltet og rulle dokumentet tilbage.
+       *   2. React afmonterer chatten.
+       *   3. Linjen ovenfor aflyser PRÆCIS den måling.
+       *   4. iOS trækker tastaturet ned bagefter — og nu lytter ingen.
+       *
+       * Resultatet er en layout-viewport, der bliver ved med at være
+       * kortere end skærmen. `position: fixed` regner fra den, så hele den
+       * faste bundklynge — navigationen med — står for højt, med appens
+       * egen baggrund nedenunder. Det ser ud, som om navigationen er
+       * blevet "spacet længere op", og det bliver stående, indtil noget
+       * andet tilfældigvis udløser en ny måling.
+       *
+       * Aflysningen i sig selv er stadig rigtig: den findes for at et hop
+       * fra ét felt til et andet ikke skal læses som "tastaturet er nede".
+       * Den skal bare ikke være det SIDSTE, der sker.
+       */
+      const aktiv = document.activeElement;
+      if (aktiv instanceof HTMLElement && skrivefeltIFokus()) aktiv.blur();
+
+      // Næste montering skal ikke arve en tilstand fra en skærm, der er
+      // væk. `fuldHoejde` bliver derimod stående: den er skærmens rigtige
+      // højde og har intet med denne komponent at gøre.
+      varOppe = false;
+
+      // Bruger sin egen `requestAnimationFrame` og hænger ikke på
+      // komponenten — derfor kan den køre her, efter afmonteringen.
+      ryddOpEfterTastatur();
     };
   }, []);
 
