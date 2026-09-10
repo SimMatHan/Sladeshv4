@@ -285,6 +285,13 @@ function Trin({
       return (
         <>
           <p className="under">Tag et billede af den fyldte genstand.</p>
+          {/* Kanalen kigger med, mens det sker — se `getLiveSladesh` i
+              convex/sladesh.ts. Det skal stå HER og ikke bagefter: man
+              fotograferer til et andet publikum end afsenderen alene, og
+              det skal man vide, INDEN man trykker på kameraet. */}
+          <p className="hjaelp">
+            Billedet vises i Kanalen, mens din Sladesh kører.
+          </p>
           <button className="knap primaer" disabled={arbejder} onClick={onFyldt}>
             📷 Fyldt
           </button>

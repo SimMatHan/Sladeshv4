@@ -41,6 +41,7 @@ import {
   sladeshUdfaldVarsling,
   sladeshVarsling,
   sladeshForStilling,
+  erLiveNu,
   type UdfordringLite,
 } from "../convex/sladeshRules.ts";
 import {
@@ -345,6 +346,29 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] hvornår er en Sladesh live");
+{
+  // Denne grænse afgør, hvem der ser bevisbillederne: hele Kanalen mens den
+  // er sand, kun de to parter når den ikke er. Den må ikke drive.
+  const nu = cest("2026-08-14T22:00:00");
+  const om5 = nu + 5 * 60 * 1000;
+  const foer5 = nu - 5 * 60 * 1000;
+
+  check("pending med frist tilbage", erLiveNu("pending", om5, nu), true);
+  check("in_progress med frist tilbage", erLiveNu("in_progress", om5, nu), true);
+
+  // Afgjorte er aldrig live — uanset hvad fristen siger.
+  check("gennemført", erLiveNu("completed", om5, nu), false);
+  check("opgivet", erLiveNu("failed", om5, nu), false);
+  check("udløbet", erLiveNu("expired", om5, nu), false);
+
+  // Den vigtige: fristen er passeret, men cron'en har ikke lukket den endnu.
+  // Statusfeltet siger stadig `pending`, og den er ALLIGEVEL ikke live.
+  check("pending, men fristen er passeret", erLiveNu("pending", foer5, nu), false);
+  check("præcis på fristen", erLiveNu("pending", nu, nu), false);
+  check("ét millisekund før", erLiveNu("pending", nu + 1, nu), true);
 }
 
 console.log("\n[Logic] Sladesh på stillingen");

@@ -6,6 +6,7 @@ import { genstande, promille } from "../lib/visning";
 import type { StillingSladesh } from "../../convex/sladeshRules";
 import { Avatar } from "./Avatar";
 import { useFlip } from "./flip";
+import { Livesladesh } from "./Livesladesh";
 import { Ur } from "./Ur";
 
 /**
@@ -67,51 +68,57 @@ export function Stilling({
 
   if (raekker.length === 0) {
     return (
-      <div className="tom">
-        <div className="stort">🍺</div>
-        <p>Ingen er ude endnu.</p>
-        <p className="hjaelp">
-          Log en genstand med <strong>+</strong>, så kommer du på listen.
-        </p>
-      </div>
+      <>
+        <Livesladesh channelId={channelId} />
+        <div className="tom">
+          <div className="stort">🍺</div>
+          <p>Ingen er ude endnu.</p>
+          <p className="hjaelp">
+            Log en genstand med <strong>+</strong>, så kommer du på listen.
+          </p>
+        </div>
+      </>
     );
   }
 
   return (
-    <div className="raekker skaerm-ind" ref={listen}>
-      {raekker.map((raekke, plads) => (
-        <button
-          key={raekke.userId}
-          className={raekke.userId === minUserId ? "raekke mig" : "raekke"}
-          onClick={() => onVaelgPerson(raekke.userId)}
-        >
-          <span className={`plads p${plads + 1}`}>{plads + 1}</span>
+    <>
+      <Livesladesh channelId={channelId} />
+      <div className="raekker skaerm-ind" ref={listen}>
+        {raekker.map((raekke, plads) => (
+          <button
+            key={raekke.userId}
+            className={raekke.userId === minUserId ? "raekke mig" : "raekke"}
+            onClick={() => onVaelgPerson(raekke.userId)}
+          >
+            <span className={`plads p${plads + 1}`}>{plads + 1}</span>
 
-          <Avatar emoji={raekke.avatar} navn={raekke.name} farve={raekke.color} />
+            <Avatar emoji={raekke.avatar} navn={raekke.name} farve={raekke.color} />
 
-          <span className="midt">
-            <span className="navn">{raekke.name}</span>
-            <span className="under hjaelp">
-              {raekke.streak > 0 && <span>🔥 {raekke.streak}</span>}
-              {/* Promillen er kun med for dem der selv har slået den til og
-                  udfyldt vægt og køn. Resten får ingen kolonne — et opdigtet
-                  tal ved siden af et rigtigt er værre end et tomt felt. */}
-              {raekke.promille !== undefined && (
-                <span>{promille(raekke.promille)}</span>
-              )}
+            <span className="midt">
+              <span className="navn">{raekke.name}</span>
+              <span className="under hjaelp">
+                {raekke.streak > 0 && <span>🔥 {raekke.streak}</span>}
+                {/* Promillen er kun med for dem der selv har slået den til og
+                    udfyldt vægt og køn. Resten får ingen kolonne — et opdigtet
+                    tal ved siden af et rigtigt er værre end et tomt felt. */}
+                {raekke.promille !== undefined && (
+                  <span>{promille(raekke.promille)}</span>
+                )}
+              </span>
+
+              <Sladeshmaerke sladesh={raekke.sladesh} />
             </span>
 
-            <Sladeshmaerke sladesh={raekke.sladesh} />
-          </span>
-
-          <span className="talblok">
-            <span className="tal">{genstande(raekke.drinksToday)}</span>
-            <br />
-            <span className="etiket">genstande</span>
-          </span>
-        </button>
-      ))}
-    </div>
+            <span className="talblok">
+              <span className="tal">{genstande(raekke.drinksToday)}</span>
+              <br />
+              <span className="etiket">genstande</span>
+            </span>
+          </button>
+        ))}
+      </div>
+    </>
   );
 }
 
