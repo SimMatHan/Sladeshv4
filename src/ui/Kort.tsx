@@ -5,6 +5,7 @@ import "leaflet/dist/leaflet.css";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { gradientFor, klokken } from "../lib/visning";
+import { gemPosition } from "./positionsregler";
 
 /**
  * Kortet.
@@ -179,6 +180,13 @@ export default function Kort({
     const vagt = navigator.geolocation.watchPosition(
       (position) => {
         setGpsFejl(undefined);
+
+        // Deles med resten af appen, saa en logning lige efter et besoeg
+        // her ikke skal hente det samme fix forfra. Se position.ts.
+        gemPosition({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
 
         // Gemmes FØR hjerteslagets spærre nedenfor. Indramningen må ikke
         // vente på, at der er gået et helt interval, og den må slet ikke

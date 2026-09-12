@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { LogDrinkResultat } from "../../convex/drinkLogs";
@@ -10,6 +10,7 @@ import { useLogDrink } from "../lib/optimistiskeKald";
 import { Ark } from "./Ark";
 import { tik } from "./haptik";
 import { Tilfaeldig } from "./Tilfaeldig";
+import { hentPosition, kendtPosition } from "./position";
 
 /**
  * Log en genstand.
@@ -75,6 +76,7 @@ export function LogArk({
     limit: HISTORIK_DYBDE,
   });
   const logDrink = useLogDrink();
+  const opdaterPosition = useMutation(api.users.opdaterPosition);
 
   const [soegning, setSoegning] = useState("");
   const [hjulAabent, setHjulAabent] = useState(false);
@@ -115,13 +117,48 @@ export function LogArk({
    * Uden dækning fejler kaldet ikke — Convex lægger mutationen i kø og sender
    * den, når der er hul igennem. Den optimistiske +1 bliver stående så længe.
    */
+  /**
+   * Sender positionen med — eller bagefter, hvis vi ikke har den endnu.
+   *
+   * ALDRIG afventet. GPS tager sekunder, og arket lukker på trykket; ventede
+   * vi, ville appens hurtigste handling blive dens langsomste. Se
+   * position.ts for hvorfor tilstanden ligger på modulet.
+   *
+   * Rækkefølgen er ikke tilfældig. `logDrink` checker dig ind ved aftenens
+   * første genstand, og `opdaterPosition` skriver kun, når du ER ude. Kom
+   * positionen først, ville serveren svare `{ delt: false }` og kaste den
+   * væk — derfor efter logningen, ikke før.
+   */
+  const delPosition = (logningen: Promise<unknown>) => {
+    void hentPosition().then((position) => {
+      if (position === undefined) return;
+      // Afventer logningen, saa check-in'et er landet. Fejler den, er der
+      // heller ingen position at dele — man er ikke ude.
+      void logningen.then(
+        () => void opdaterPosition(position).catch(() => {}),
+        () => {},
+      );
+    });
+  };
+
   const log = (categoryId: string, variationName: string) => {
     // Telefonen kvitterer, INDEN serveren gør. Arket lukker på trykket, og
     // et lille stød er den eneste bekræftelse, man får med telefonen løftet
     // halvvejs ned i lommen igen. Kun Android — se haptik.ts.
     tik();
 
-    const svar = logDrink({ channelId, categoryId, variationName });
+    // Har vi ALLEREDE et friskt fix, kommer det med i samme kald og skrives
+    // i samme transaktion som check-in'et. Det er ét kald i stedet for to,
+    // og det er det almindelige tilfælde efter aftenens første logning.
+    const position = kendtPosition();
+    const svar = logDrink({
+      channelId,
+      categoryId,
+      variationName,
+      ...(position !== undefined ? { location: position } : {}),
+    });
+
+    if (position === undefined) delPosition(svar);
 
     onLogget(variationName, vaegtForGenstand(categoryId), svar);
     onLuk();
@@ -136,11 +173,14 @@ export function LogArk({
    * man selv trykker sig videre.
    */
   const logFraHjul = (kandidat: { categoryId: string; name: string }) => {
+    const position = kendtPosition();
     const svar = logDrink({
       channelId,
       categoryId: kandidat.categoryId,
       variationName: kandidat.name,
+      ...(position !== undefined ? { location: position } : {}),
     });
+    if (position === undefined) delPosition(svar);
     onLogget(kandidat.name, vaegtForGenstand(kandidat.categoryId), svar);
   };
 
