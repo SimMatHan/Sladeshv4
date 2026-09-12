@@ -285,12 +285,17 @@ function Trin({
       return (
         <>
           <p className="under">Tag et billede af den fyldte genstand.</p>
-          {/* Kanalen kigger med, mens det sker — se `getLiveSladesh` i
-              convex/sladesh.ts. Det skal stå HER og ikke bagefter: man
+          {/* Kanalen kan se billederne — se `maaSeBeviser` i
+              convex/sladeshRules.ts. Det skal stå HER og ikke bagefter: man
               fotograferer til et andet publikum end afsenderen alene, og
-              det skal man vide, INDEN man trykker på kameraet. */}
+              det skal man vide, INDEN man trykker på kameraet.
+
+              Teksten siger nu RESTEN AF AFTENEN og ikke "mens den kører".
+              Grænsen blev flyttet, da livekortet viste sig at forsvinde i
+              samme sekund, man gennemførte — og en besked, der lover
+              mindre, end der sker, er værre end ingen besked. */}
           <p className="hjaelp">
-            Billedet vises i Kanalen, mens din Sladesh kører.
+            Billederne kan ses af Kanalen resten af aftenen.
           </p>
           <button className="knap primaer" disabled={arbejder} onClick={onFyldt}>
             📷 Fyldt

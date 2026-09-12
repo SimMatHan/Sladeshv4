@@ -343,3 +343,45 @@ export function erLiveNu(
 ): boolean {
   return !erAfsluttetStatus(status) && deadlineAt > now;
 }
+
+/**
+ * Maa denne betragter se bevisbillederne?
+ *
+ * ## Beslutningen bag
+ *
+ * Graensen har flyttet sig to gange, og begge gange med vilje:
+ *
+ *   1. Kun de to parter. Nogensinde.
+ *   2. + hele Kanalen, MENS udfordringen koerer (`getLiveSladesh`).
+ *   3. + hele Kanalen, resten af DRIKKEDAGEN.
+ *
+ * Trin 3 loeser et konkret problem: livekortet forsvandt i samme sekund,
+ * udfordringen blev gennemfoert, saa det faerdige billede — selve pointen —
+ * naaede ingen at se. Man kan misse et oejeblik, der varer to minutter.
+ *
+ * ## Hvorfor drikkedagen og ikke for altid
+ *
+ * PUBLIKUM er uaendret fra trin 2: det er de samme kanalfaeller, der
+ * allerede saa billederne live. Det, der aendrer sig, er TIDEN — fra ti
+ * minutter til én aften.
+ *
+ * Et permanent, kanalbredt fotoarkiv over alle, der nogensinde har drukket,
+ * er en anden slags produkt. Billederne er taget med telefonens kamera i en
+ * bar, og der er ansigter og lokaler i baggrunden. Drikkedagen (10:00 →
+ * 10:00) er appens egen graense og passer paa, hvordan folk taenker om en
+ * bytur: den slutter, naar man vaagner.
+ *
+ * Aeldre end i aften: tilbage til de to parter. Den graense kan aabnes
+ * senere, hvis nogen beder om det — den modsatte vej kan ikke.
+ */
+export function maaSeBeviser(input: {
+  /** Afsender eller modtager. De to har altid adgang, uanset alder. */
+  erPart: boolean;
+  /** `completedAt ?? createdAt` — hvornaar udfordringen hoerer til. */
+  afgjortAt: number;
+  /** Drikkedagens start, `getDrinkDayStart(now)`. */
+  dayStart: number;
+}): boolean {
+  if (input.erPart) return true;
+  return input.afgjortAt >= input.dayStart;
+}

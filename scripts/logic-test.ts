@@ -56,6 +56,7 @@ import {
   sladeshVarsling,
   sladeshForStilling,
   erLiveNu,
+  maaSeBeviser,
   type UdfordringLite,
 } from "../convex/sladeshRules.ts";
 import {
@@ -516,6 +517,78 @@ console.log("\n[Logic] skæbnens hjul");
   check("første trin er hurtigst", rullepause(0, 22) < rullepause(21, 22), true);
   check("den bremser hele vejen", rullepause(5, 22) < rullepause(15, 22), true);
   check("ét trin har ingen pause", rullepause(0, 1), 0);
+}
+
+console.log("\n[Logic] hvem må se bevisbillederne");
+{
+  // Graensen har flyttet sig to gange, og den kan ikke flyttes tilbage.
+  // Derfor proever paa hver eneste kant.
+  const dayStart = getDrinkDayStart(cest("2026-08-14T22:00:00"));
+  const iAften = dayStart + 12 * 60 * 60 * 1000;
+  const iGaar = dayStart - 60 * 60 * 1000;
+
+  // De to parter: altid, uanset alder. Det er deres egen udfordring.
+  check(
+    "part ser i aften",
+    maaSeBeviser({ erPart: true, afgjortAt: iAften, dayStart }),
+    true,
+  );
+  check(
+    "part ser ogsaa gamle",
+    maaSeBeviser({ erPart: true, afgjortAt: iGaar, dayStart }),
+    true,
+  );
+  check(
+    "part ser ogsaa meget gamle",
+    maaSeBeviser({ erPart: true, afgjortAt: 0, dayStart }),
+    true,
+  );
+
+  // Kanalfaeller: kun i aften.
+  check(
+    "kanalfaelle ser i aften",
+    maaSeBeviser({ erPart: false, afgjortAt: iAften, dayStart }),
+    true,
+  );
+  check(
+    "kanalfaelle ser IKKE i gaar",
+    maaSeBeviser({ erPart: false, afgjortAt: iGaar, dayStart }),
+    false,
+  );
+
+  // Selve kanten. Drikkedagen begynder kl. 10:00, og en udfordring præcis
+  // dér hoerer til den nye dag.
+  check(
+    "praecis ved doegnskiftet",
+    maaSeBeviser({ erPart: false, afgjortAt: dayStart, dayStart }),
+    true,
+  );
+  check(
+    "ét millisekund foer",
+    maaSeBeviser({ erPart: false, afgjortAt: dayStart - 1, dayStart }),
+    false,
+  );
+
+  // Natten til lørdag hoerer stadig til fredagens drikkedag — billederne
+  // forsvinder ikke ved midnat, men naar man vaagner.
+  check(
+    "kl. 03 om natten er stadig i aften",
+    maaSeBeviser({
+      erPart: false,
+      afgjortAt: cest("2026-08-15T03:00:00"),
+      dayStart,
+    }),
+    true,
+  );
+  check(
+    "kl. 11 naeste formiddag er det ikke",
+    maaSeBeviser({
+      erPart: false,
+      afgjortAt: cest("2026-08-15T11:00:00"),
+      dayStart: getDrinkDayStart(cest("2026-08-15T11:00:00")),
+    }),
+    true,
+  );
 }
 
 console.log("\n[Logic] hvornår er en Sladesh live");
