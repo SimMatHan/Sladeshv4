@@ -10,6 +10,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
+import { samlDonorer, type Donation } from "../src/ui/donorliste";
 import {
   kandidater,
   rullepause,
@@ -353,6 +354,79 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] donorlisten");
+{
+  const d = (over: Partial<Donation> & Pick<Donation, "userId" | "amount" | "date">): Donation => ({
+    name: "Anders",
+    ...over,
+  });
+
+  check("tom liste", samlDonorer([]), []);
+
+  // Samme person tre gange skal stå ÉT sted med summen. Listen er en tak,
+  // ikke et regnskab.
+  const lagt = samlDonorer([
+    d({ userId: "a", amount: 50, date: 1 }),
+    d({ userId: "a", amount: 30, date: 2 }),
+    d({ userId: "a", amount: 20, date: 3 }),
+  ]);
+  check("tre donationer bliver til én række", lagt.length, 1);
+  check("summen er lagt sammen", lagt[0]?.total, 100);
+  check("antallet tælles", lagt[0]?.antal, 3);
+
+  // Størst først.
+  const sorteret = samlDonorer([
+    d({ userId: "a", amount: 50, date: 1, name: "Anders" }),
+    d({ userId: "b", amount: 200, date: 2, name: "Mathias" }),
+    d({ userId: "c", amount: 100, date: 3, name: "Sofie" }),
+  ]);
+  check("størst beløb først", sorteret.map((donor) => donor.name), [
+    "Mathias",
+    "Sofie",
+    "Anders",
+  ]);
+
+  // Lige summer: den der donerede FØRST vinder. Uden en fast tie-breaker
+  // ville to med samme beløb bytte plads ved hver hentning.
+  const lige = samlDonorer([
+    d({ userId: "sen", amount: 100, date: 900, name: "Sen" }),
+    d({ userId: "tidlig", amount: 100, date: 100, name: "Tidlig" }),
+  ]);
+  check("lige summer: tidligst vinder", lige.map((donor) => donor.name), [
+    "Tidlig",
+    "Sen",
+  ]);
+
+  // Kun den SENESTE hilsen. Alle tre ville gøre rækken til en tråd.
+  const hilsener = samlDonorer([
+    d({ userId: "a", amount: 10, date: 1, message: "gammel" }),
+    d({ userId: "a", amount: 10, date: 5, message: "nyeste" }),
+    d({ userId: "a", amount: 10, date: 3, message: "midt" }),
+  ]);
+  check("seneste hilsen vinder", hilsener[0]?.hilsen, "nyeste");
+
+  // Navn og avatar følger med den seneste — skifter nogen navn, er det
+  // nyeste det rigtige.
+  const navneskift = samlDonorer([
+    d({ userId: "a", amount: 10, date: 1, name: "Gammelt navn" }),
+    d({ userId: "a", amount: 10, date: 9, name: "Nyt navn" }),
+  ]);
+  check("nyeste navn vinder", navneskift[0]?.name, "Nyt navn");
+
+  // En hilsen på kun mellemrum er ingen hilsen — en tom boble under et navn
+  // ser ud som en fejl.
+  check(
+    "kun mellemrum er ingen hilsen",
+    samlDonorer([d({ userId: "a", amount: 10, date: 1, message: "   " })])[0]?.hilsen,
+    undefined,
+  );
+  check(
+    "hilsenen trimmes",
+    samlDonorer([d({ userId: "a", amount: 10, date: 1, message: "  tak  " })])[0]?.hilsen,
+    "tak",
+  );
 }
 
 console.log("\n[Logic] skæbnens hjul");

@@ -10,6 +10,7 @@ import { fejltekst } from "./lib/visning";
 import { AchievementOplaasning } from "./ui/AchievementOplaasning";
 import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
+import { Drejtilbage } from "./ui/Drejtilbage";
 import { Faner } from "./ui/Faner";
 import { KanalIkon, MigIkon, PlusIkon, SkiftIkon } from "./ui/Ikoner";
 import { Sideundertekst } from "./ui/Sideundertekst";
@@ -57,6 +58,28 @@ type Visning = "stilling" | "chat" | "kort" | "historik";
 const KVITTERING_MS = 6000;
 
 export default function App() {
+  return (
+    <>
+      {/*
+        Uden for det hele, og altid tegnet.
+
+        Den skal også dække login og de tidlige "henter"-skærme — drejer man
+        telefonen dér, er appen lige så lidt lavet til det. Den er skjult af
+        CSS i portræt og koster derfor ingenting; se Drejtilbage.tsx.
+      */}
+      <Drejtilbage />
+      <Indgang />
+    </>
+  );
+}
+
+/**
+ * Vejen ind: indlæser, login, og de to ting der kan gaa galt imellem.
+ *
+ * Udskilt fra `App`, saa `Drejtilbage` kan staa uden om ALLE svarene herfra.
+ * Lod vi dem ligge i `App`, skulle den gentages i hver eneste returnering.
+ */
+function Indgang() {
   const { user, loading } = useAuth();
   const { isAuthenticated, isLoading: convexTjekker } = useConvexAuth();
 
