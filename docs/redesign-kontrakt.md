@@ -240,10 +240,15 @@ tilstand, ikke adresser.
    │                             │
    ├ Stilling                    ├ Indstillinger
    ├ Chat                        ├ Trofæhylden      (ark)
-   ├ Kort                        └ Admin            (ark, kun admins)
-   ├ Historik
+   ├ Kort                        ├ Hjælp            (ark)
+   ├ Historik                    └ Admin            (ark, kun admins)
    └ Støt
 ```
+
+**Hjælp** rummer to faner: hvordan appen virker, og hvad den gemmer om dig
+(GDPR og samtykke). Den ligger på Mig, fordi Mig er dér, appen handler om
+én selv frem for om Kanalen — og ikke som et sjette segment, af grunden
+lige nedenfor.
 
 **Støt er ikke kanal-specifik.** Donationer gælder appen, ikke Kanalen, og
 siden ligger alligevel her — segmentstriben er det ene sted, sideordnede
