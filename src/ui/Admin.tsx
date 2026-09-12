@@ -1171,19 +1171,22 @@ function Broadcast() {
  * jævnligt glemt.
  *
  * Brugeren vælges gennem den samme admin-søgning som Brugere-fanen bruger.
- */
-/**
- * "ÅÅÅÅ-MM-DD" fra en datovælger til et tidsstempel.
  *
- * MIDT PÅ DAGEN, ikke ved midnat. `new Date("2025-12-25")` fortolkes som
- * midnat UTC, og i en tidszone vest for Greenwich ville den dato blive vist
- * som den 24. Klokkeslættet er ligegyldigt for en donation — kun dagen vises
- * — så kl. 12 lokal tid holder datoen den samme hele vejen rundt.
+ * ## Ingen datovælger
+ *
+ * Der sad et `<input type="date">` her, og det er fjernet efter ønske.
+ * Donationen får dagens dato.
+ *
+ * Den blev bygget til efterregistrering: donationer fra det gamle site
+ * skulle kunne lægges ind med deres rigtige dato, fordi donorlisten sorterer
+ * på `by_date`, og syv indtastninger med samme dato ville stå i den
+ * rækkefølge, de blev tastet. Den migrering er overstået, og så er feltet et
+ * ekstra trin i en formular, man bruger et par gange om året.
+ *
+ * `opretDonation` tager stadig imod `date` — argumentet er uændret på
+ * serveren. Skal en gammel donation ind igen, er feltet fire linjer at sætte
+ * tilbage, og grunden står her.
  */
-function tidspunktFor(dato: string): number {
-  return new Date(`${dato}T12:00:00`).getTime();
-}
-
 function Donorer() {
   const [soegning, setSoegning] = useState("");
   const brugere = useQuery(api.users.searchUsers, { soegning });
@@ -1195,8 +1198,6 @@ function Donorer() {
   const [valgt, setValgt] = useState<Id<"users"> | undefined>();
   const [beloeb, setBeloeb] = useState("");
   const [hilsen, setHilsen] = useState("");
-  /** "ÅÅÅÅ-MM-DD" fra `<input type="date">`. Tom betyder i dag. */
-  const [dato, setDato] = useState("");
   const [bekraeftSlet, setBekraeftSlet] = useState<Id<"donations"> | undefined>();
 
   const valgtBruger = brugere?.find((bruger) => bruger._id === valgt);
@@ -1250,23 +1251,6 @@ function Donorer() {
           onChange={(event) => setHilsen(event.target.value)}
         />
 
-        {/*
-          Datoen. `opretDonation` har hele tiden taget imod den — argumentet
-          hedder `date` og er kommenteret "bruges ved efterregistrering" — men
-          formularen sendte den aldrig. Donationer fra det gamle site kunne
-          derfor kun lægges ind med DAGENS dato, og donorlisten sorterer på
-          `by_date`: syv efterregistreringer ville stå i den rækkefølge, de
-          blev tastet, alle med samme dato.
-
-          Tom = i dag, som før.
-        */}
-        <input
-          className="felt"
-          type="date"
-          value={dato}
-          onChange={(event) => setDato(event.target.value)}
-        />
-
         <button
           className="knap primaer"
           disabled={
@@ -1279,12 +1263,13 @@ function Donorer() {
                 userId: valgtBruger._id,
                 amount: Number(beloeb.trim()),
                 ...(hilsen.trim().length > 0 ? { message: hilsen.trim() } : {}),
-                ...(dato !== "" ? { date: tidspunktFor(dato) } : {}),
+                // Ingen dato. `opretDonation` saetter dagens, og
+                // efterregistreringen fra det gamle site er overstaaet — se
+                // kommentaren over formularen.
               });
               const navn = valgtBruger.displayName;
               setBeloeb("");
               setHilsen("");
-              setDato("");
               setValgt(undefined);
               return `Donation fra ${navn} registreret — Top Donor er tildelt.`;
             })
