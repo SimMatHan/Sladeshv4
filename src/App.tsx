@@ -12,6 +12,7 @@ import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
 import { Donorer } from "./ui/Donorer";
 import { Drejtilbage } from "./ui/Drejtilbage";
+import { useBundskaev } from "./ui/bundskaev";
 import { Faner } from "./ui/Faner";
 import { KanalIkon, MigIkon, PlusIkon, SkiftIkon } from "./ui/Ikoner";
 import { Sideundertekst } from "./ui/Sideundertekst";
@@ -113,6 +114,10 @@ function Indgang() {
 }
 
 function Appen() {
+  // Retter den faste bundklynge, når iOS har efterladt layout-viewporten
+  // kortere end skærmen. Næsten altid en nul-operation — se bundskaev.ts.
+  useBundskaev();
+
   // Profilen er det, hele skallen hænger på — uden den står appen på
   // "Henter din profil …". Derfor er den den vigtigste at kunne male fra
   // sidste besøg, mens forbindelsen kommer op.
