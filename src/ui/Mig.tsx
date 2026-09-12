@@ -12,6 +12,7 @@ import { Ark } from "./Ark";
 import { Avatar } from "./Avatar";
 import { Faner, type Fanevalg } from "./Faner";
 import { TandhjulIkon, VinkelIkon } from "./Ikoner";
+import { Hjaelp } from "./Hjaelp";
 import { Indstillinger } from "./Indstillinger";
 import { Orb } from "./Orb";
 import { tik } from "./haptik";
@@ -69,6 +70,7 @@ export function Mig({
   const [indstillingerAabne, setIndstillingerAabne] = useState(false);
   const [hyldeAaben, setHyldeAaben] = useState(false);
   const [adminAabent, setAdminAabent] = useState(false);
+  const [hjaelpAaben, setHjaelpAaben] = useState(false);
   const [arbejder, setArbejder] = useState(false);
   const [fejl, setFejl] = useState<string | undefined>();
 
@@ -167,6 +169,16 @@ export function Mig({
       />
 
       <div className="knapraekke">
+        {/* FØRST i rækken, og før Admin.
+            
+            Den er den eneste knap her, ALLE har brug for mindst én gang —
+            en ny bruger, der vil vide hvad Sladesh er, og enhver der vil
+            vide hvad appen gemmer. De øvrige er handlinger, man tager
+            sjældent eller aldrig. */}
+        <button className="knap" onClick={() => setHjaelpAaben(true)}>
+          Hjælp
+        </button>
+
         {mig.isAdmin === true && (
           <button className="knap" onClick={() => setAdminAabent(true)}>
             Admin
@@ -183,6 +195,8 @@ export function Mig({
       </div>
 
       {fejl !== undefined && <p className="fejl">{fejl}</p>}
+
+      {hjaelpAaben && <Hjaelp onLuk={() => setHjaelpAaben(false)} />}
 
       {indstillingerAabne && (
         <Indstillinger mig={mig} onLuk={() => setIndstillingerAabne(false)} />
