@@ -12,6 +12,12 @@ import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
 import { samlDonorer, type Donation } from "../src/ui/donorliste";
 import {
+  erFriskNok,
+  gemPosition,
+  kendtPosition,
+  nulstilPosition,
+} from "../src/ui/positionsregler";
+import {
   kandidater,
   rullepause,
   rulleraekke,
@@ -354,6 +360,38 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] positionens holdbarhed");
+{
+  const MINUT = 60 * 1000;
+  const nu = cest("2026-08-14T22:00:00");
+
+  // Den her regel afgoer, om nogen staar paa den bar, de forlod for en time
+  // siden. Kortet ser rigtigt ud uanset hvad — prikken staar bare forkert.
+  check("lige hentet", erFriskNok(nu, nu), true);
+  check("fem minutter gammelt", erFriskNok(nu - 5 * MINUT, nu), true);
+  check("ni minutter gammelt", erFriskNok(nu - 9 * MINUT, nu), true);
+  check("ti minutter er for gammelt", erFriskNok(nu - 10 * MINUT, nu), false);
+  check("en time gammelt", erFriskNok(nu - 60 * MINUT, nu), false);
+
+  // Et fix, kortet har hentet, skal kunne bruges af en logning med det samme
+  // — samme tilladelse, samme telefon, samme sted.
+  nulstilPosition();
+  check("intet kendt fra start", kendtPosition(), undefined);
+
+  gemPosition({ lat: 55.6761, lng: 12.5683 });
+  check("kortets fix kan bruges af logningen", kendtPosition(), {
+    lat: 55.6761,
+    lng: 12.5683,
+  });
+
+  // Et nyere fix vinder over et aeldre.
+  gemPosition({ lat: 56, lng: 10 });
+  check("nyeste fix vinder", kendtPosition(), { lat: 56, lng: 10 });
+
+  nulstilPosition();
+  check("nulstilling glemmer det", kendtPosition(), undefined);
 }
 
 console.log("\n[Logic] donorlisten");
