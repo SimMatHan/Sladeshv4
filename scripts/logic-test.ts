@@ -10,6 +10,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
+import { bundskaev } from "../src/ui/bundskaevregler";
 import { samlDonorer, type Donation } from "../src/ui/donorliste";
 import {
   erFriskNok,
@@ -361,6 +362,47 @@ console.log("\n[Logic] point");
 
   // Modposten fra en fortrydelse. `removeDrink` skriver den negative vægt.
   check("fortrydelse trækker fra", pointsForDrink("beer", -1), -1);
+}
+
+console.log("\n[Logic] skævheden i bunden");
+{
+  const s = (innerHeight: number, visualHeight: number, offsetTop = 0) =>
+    bundskaev({ innerHeight, visualHeight, offsetTop });
+
+  // Det normale: de to er ens, og intet flytter sig.
+  check("ens højder", s(800, 800), 0);
+
+  // FEJLEN. iOS har efterladt layout-viewporten 60px kortere end den flade,
+  // der faktisk er synlig — og saa staar alt fast 60px for hoejt.
+  check("layoutet er 60px for kort", s(740, 800), 60);
+  check("layoutet er 34px for kort", s(766, 800), 34);
+
+  // TASTATURET oppe: den synlige flade er MINDRE end layoutet. Der maa ikke
+  // korrigeres — `--tastatur` ejer det loeft, og to mekanismer paa samme
+  // element ville laegge sig oven i hinanden.
+  check("tastaturet oppe", s(800, 450), 0);
+  check("tastaturet paa vej ned", s(800, 790), 0);
+
+  // Stoej. `visualViewport.height` giver broekdele af en pixel.
+  check("to pixels er stoej", s(800, 802), 0);
+  check("tre pixels er stoej", s(800, 803), 0);
+  check("fire pixels taeller", s(800, 804), 4);
+
+  // Loftet. En korrektion stoerre end dette ville skubbe navigationen helt
+  // ud af skaermen — vaerre end den fejl, den skulle rette.
+  check("urimelig maaling loftes", s(400, 900), 160);
+
+  // Er den visuelle viewport forskudt — knebet ind, eller flyttet af iOS —
+  // beskriver de to hoejder ikke det samme, og maalingen er ubrugelig.
+  check("forskudt viewport giver 0", s(740, 800, 120), 0);
+  check("selv en lille forskydning", s(740, 800, 1), 0);
+
+  // Tal, der ikke er tal, maa ikke blive til en `NaN`-korrektion i CSS.
+  check("NaN giver 0", s(Number.NaN, 800), 0);
+  check("uendelig giver 0", s(800, Number.POSITIVE_INFINITY), 0);
+
+  // Afrundet: CSS faar hele pixels.
+  check("broekdele rundes", s(800, 860.4), 60);
 }
 
 console.log("\n[Logic] positionens holdbarhed");

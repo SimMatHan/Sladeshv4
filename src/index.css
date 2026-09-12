@@ -317,6 +317,21 @@
 
   /* Sikker afstand til telefonens hjemmebjælke og hak. */
   --bund-sikker: env(safe-area-inset-bottom, 0px);
+
+  /*
+   * Hvor meget den faste bundklynge skal skubbes NED.
+   *
+   * Næsten altid 0. Sættes af `useBundskaev`, når layout-viewporten er
+   * kortere end den flade, der faktisk er synlig — hvilket iOS kan
+   * efterlade den som, når tastaturet har været oppe. `position: fixed`
+   * regner fra layout-viewporten, så alt fast rykker med.
+   *
+   * Standardværdien står HER og ikke kun i JavaScript: sker målingen
+   * aldrig — ingen `visualViewport`, en browser der ikke melder — skal
+   * `calc()` stadig kunne regne. En manglende variabel ville gøre hele
+   * udtrykket ugyldigt og efterlade navigationen uden `bottom`.
+   */
+  --bundskaev: 0px;
   --top-sikker: env(safe-area-inset-top, 0px);
 }
 
@@ -819,7 +834,8 @@ input {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* Sløret hører til navigationen og skubbes med den. Normalt 0. */
+  bottom: calc(0px - var(--bundskaev));
   /* Pillens underkant + halvdelen af dens højde = dens midte. */
   height: calc(var(--bund-sikker) + var(--luft-4) + var(--navhoejde) / 2);
   z-index: var(--lag-bundsloer);
@@ -846,7 +862,7 @@ input {
 
 .nav {
   position: fixed;
-  bottom: calc(var(--bund-sikker) + var(--luft-4));
+  bottom: calc(var(--bund-sikker) + var(--luft-4) - var(--bundskaev));
   left: var(--luft-4);
   right: var(--luft-4);
   z-index: var(--lag-nav);
@@ -1637,7 +1653,7 @@ input {
   position: fixed;
   left: var(--luft-4);
   right: var(--luft-4);
-  bottom: calc(var(--navplads) + var(--bund-sikker) + var(--luft-4));
+  bottom: calc(var(--navplads) + var(--bund-sikker) + var(--luft-4) - var(--bundskaev));
   z-index: var(--lag-kvittering);
   max-width: calc(var(--bredde) - var(--luft-4) * 2);
   margin: 0 auto;
@@ -3230,7 +3246,8 @@ input {
    * tastatur.ts.
    */
   bottom: calc(
-    var(--navplads) + var(--bund-sikker) + var(--luft-2) + var(--tastatur, 0px)
+    var(--navplads) + var(--bund-sikker) + var(--luft-2) + var(--tastatur, 0px) -
+    var(--bundskaev)
   );
   z-index: var(--lag-skriver);
   display: flex;
