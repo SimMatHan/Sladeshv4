@@ -4,7 +4,6 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { fejltekst } from "../lib/visning";
 import { Ark } from "./Ark";
-import { Donorer } from "./Donorer";
 
 /**
  * Kanalvælgeren.
@@ -148,10 +147,6 @@ export function KanalVaelger({
       </div>
 
       {fejl !== undefined && <p className="fejl">{fejl}</p>}
-
-      {/* Nederst: den er en tak, ikke en handling. Den maa ikke staa mellem
-          Kanalerne og det felt, man kom for at bruge. */}
-      <Donorer />
     </Ark>
   );
 }

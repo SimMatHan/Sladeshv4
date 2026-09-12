@@ -15,8 +15,14 @@ import { samlDonorer } from "./donorliste";
  * admin nogensinde saa den. Folk donerede, fik deres maerke, og listen, de
  * stod paa, kunne de ikke se.
  *
- * Nu staar den nederst i Kanal-arket, hvor man alligevel er, naar man kigger
- * paa hvad appen er og hvem der er med.
+ * Nu staar den paa Mig, hvor docs/brugerrejser.md hele tiden har haft
+ * `/support` kortlagt hen ("Mig → Stoet appen"). Donationer er ikke
+ * kanal-specifikke — de gaelder appen — saa Kanal-arket var det forkerte
+ * sted, selvom det var dér, den landede foerst.
+ *
+ * Admins liste bliver staaende. Den er et VAERKTOEJ — hver raekke har en
+ * slet-knap og summen er til afstemning — og det er en anden opgave end at
+ * sige tak.
  *
  * ## Én række per person
  *
@@ -31,6 +37,17 @@ import { samlDonorer } from "./donorliste";
  * at vise en raekkefoelge uden tal ville vaere en hemmelighed, der ikke er
  * nogen.
  */
+
+/**
+ * Saa mange staar paa Mig. Resten taelles kun.
+ *
+ * Mig er i forvejen en lang skaerm — hero, stime, maerker, livstidstal og
+ * handlinger — og en liste uden loft ville kunne skubbe "Log ud" vilkaarligt
+ * langt ned. Ti er rigeligt til at hylde nogen; den ellevte er ikke glemt,
+ * den staar i linjen nedenunder.
+ */
+const VISTE = 10;
+
 export function Donorer() {
   const svar = useQuery(api.donations.getDonorer, {});
 
@@ -44,12 +61,17 @@ export function Donorer() {
   // opfordring, ingen har bedt om. Se docs/redesign-kontrakt.md afsnit 7.
   if (svar === undefined || donorer.length === 0) return null;
 
+  const viste = donorer.slice(0, VISTE);
+  const resten = donorer.length - viste.length;
+
   return (
-    <div className="arkgruppe">
-      <h3>Tak til dem der har støttet</h3>
+    // Ikke `.arkgruppe`: den klasse er arkenes idiom, og Mig er ikke et ark.
+    // Her adskiller en streg afsnittene, som ved `.livstid` lige over.
+    <div className="donorafsnit">
+      <span className="etiket">Tak til dem der har støttet</span>
 
       <div className="donorliste">
-        {donorer.map((donor) => (
+        {viste.map((donor) => (
           <div key={donor.userId} className="donor">
             <Avatar emoji={donor.avatar} navn={donor.name} farve={donor.color} />
 
@@ -75,6 +97,7 @@ export function Donorer() {
       <p className="hjaelp">
         {svar.total} kr. i alt fra {donorer.length}{" "}
         {donorer.length === 1 ? "person" : "personer"}.
+        {resten > 0 && ` ${resten} mere vises ikke her.`}
       </p>
     </div>
   );

@@ -4788,3 +4788,19 @@ p.dagliste {
 .donorantal {
   color: var(--tekst-svag);
 }
+
+/*
+ * Donorafsnittet paa Mig.
+ *
+ * Samme form som `.livstid` lige over: en streg skiller, ingen kasse. Mig
+ * var én gang en stak kort, og det gjorde skaermen til en stak kasser — se
+ * kommentaren ved `.livstid`. Et donorkort her ville laegge endnu et paa.
+ */
+.donorafsnit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-3);
+  margin-top: var(--luft-4);
+  padding-top: var(--luft-4);
+  border-top: 1px solid var(--kant);
+}
