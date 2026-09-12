@@ -10,7 +10,6 @@ import { Achievements } from "./Achievements";
 import { Admin } from "./Admin";
 import { Ark } from "./Ark";
 import { Avatar } from "./Avatar";
-import { Donorer } from "./Donorer";
 import { Faner, type Fanevalg } from "./Faner";
 import { TandhjulIkon, VinkelIkon } from "./Ikoner";
 import { Indstillinger } from "./Indstillinger";
@@ -166,20 +165,6 @@ export function Mig({
         achievements={achievements}
         onAaben={() => setHyldeAaben(true)}
       />
-
-      {/*
-        Dem der har stoettet appen.
-
-        HER og ikke i Kanal-arket: donationer er ikke kanal-specifikke — de
-        gaelder appen — og docs/brugerrejser.md har hele tiden haft
-        `/support` kortlagt til "Mig → Stoet appen".
-
-        Og ikke bag en knap, selvom Achievements og Admin er det. Pointen er,
-        at andre SER dem: en liste, man skal finde frem, hyldes der ingen paa.
-        Den staar derfor aabent, men nederst — efter ens egne tal og foer
-        handlingerne.
-      */}
-      <Donorer />
 
       <div className="knapraekke">
         {mig.isAdmin === true && (

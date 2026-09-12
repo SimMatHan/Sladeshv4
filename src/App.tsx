@@ -10,6 +10,7 @@ import { fejltekst } from "./lib/visning";
 import { AchievementOplaasning } from "./ui/AchievementOplaasning";
 import { Broadcastbjaelke } from "./ui/Broadcastbjaelke";
 import { Chat } from "./ui/Chat";
+import { Donorer } from "./ui/Donorer";
 import { Drejtilbage } from "./ui/Drejtilbage";
 import { Faner } from "./ui/Faner";
 import { KanalIkon, MigIkon, PlusIkon, SkiftIkon } from "./ui/Ikoner";
@@ -52,7 +53,14 @@ const Kort = lazy(() => import("./ui/Kort"));
  */
 
 type Fane = "kanal" | "mig";
-type Visning = "stilling" | "chat" | "kort" | "historik";
+/**
+ * Segmenterne inde i Kanal-fanen.
+ *
+ * "stoet" er ikke kanal-specifik — donationer gaelder appen — men den ligger
+ * her, fordi det er den ene stribe i appen, hvor sideordnede visninger bor.
+ * Se docs/redesign-kontrakt.md afsnit 4.
+ */
+type Visning = "stilling" | "chat" | "kort" | "historik" | "stoet";
 
 /** Hvor længe fortryd-muligheden står efter en logning. */
 const KVITTERING_MS = 6000;
@@ -333,6 +341,10 @@ function Appen() {
                   },
                   { id: "kort", etiket: "Kort" },
                   { id: "historik", etiket: "Historik" },
+                  // Kort etiket med vilje: fem segmenter skal dele én
+                  // telefonbredde, og "Stoet appen" ville klemme de fire
+                  // andre. Navnet er det samme som i brugerrejserne.
+                  { id: "stoet", etiket: "Støt" },
                 ]}
                 aktiv={visning}
                 onVaelg={setVisning}
@@ -352,6 +364,8 @@ function Appen() {
                 />
               ) : visning === "historik" ? (
                 <Historik channelId={channelId} onVaelgPerson={setValgtPerson} />
+              ) : visning === "stoet" ? (
+                <Donorer />
               ) : (
                 <Suspense fallback={<p className="midtstillet">Henter kortet …</p>}>
                   <Kort channelId={channelId} onVaelgPerson={setValgtPerson} />
