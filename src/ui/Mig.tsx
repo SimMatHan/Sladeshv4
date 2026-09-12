@@ -338,18 +338,32 @@ function intensitetAf(vaerdi: number, halvering: number): number {
 }
 
 /**
- * Halvvejs ved otte genstande.
+ * Halvvejs ved TRE genstande.
  *
  * Den ene af de tre, der IKKE er lånt, og det er med vilje. Appens etablerede
  * genstandstal — 20 for Full Bender, 10 for Obeerma — er alle sammen
  * achievement-mål, og at bruge et mål som kuglens halvvejspunkt ville hente
  * præcis dén "gå efter tallet"-følelse ind igen ad bagvejen.
  *
- * Otte er valgt efter en almindelig aften: de første par genstande rykker
- * tydeligt, en våd aften er godt oppe, og en meget våd aften har stadig et
- * stykke igen.
+ * NED FRA OTTE. Otte lød rigtigt på papiret og var forkert på skærmen: den
+ * første genstand flyttede kuglen 8%, den anden til 16%. Det kan man ikke
+ * se. Kuglen stod reelt stille hele den første halvdel af en aften — altså
+ * præcis dér, hvor man åbner appen oftest.
+ *
+ * Med tre:
+ *
+ *   1 genstand    21%
+ *   2 genstande   37%
+ *   4 genstande   60%
+ *   8 genstande   84%
+ *
+ * De første to rykker nu tydeligt, hvilket er hele pointen. Prisen er, at
+ * toppen mættes hurtigere — forskellen på 12 og 20 er lille. Det er den
+ * rigtige vej at miste opløsning: en kugle, der allerede er urolig, skal
+ * ikke kunne blive meget mere urolig, og forskellen på 2 og 3 betyder mere
+ * end forskellen på 12 og 20.
  */
-const GENSTANDE_HALVERING = 8;
+const GENSTANDE_HALVERING = 3;
 
 /**
  * Halvvejs ved 0,8 ‰ — hvor `beruselsesniveau()` i convex/promilleRules.ts

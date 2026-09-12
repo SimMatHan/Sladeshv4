@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { DRINK_CATEGORIES } from "../../convex/constants";
-import { dunk, slag } from "./haptik";
+import { dunk, slag, tik } from "./haptik";
 import {
   kandidater,
   rullepause,
@@ -45,6 +45,18 @@ import {
 const RULLETRIN = 22;
 
 type Tilstand =
+  /**
+   * FØR hjulet begynder. Et skridt, der ikke var der før.
+   *
+   * Hjulet logger ved landingen — man er bundet, i det sekund det stopper.
+   * Uden et spørgsmål først var ét fejltryk på 🎲 nok til at have en
+   * genstand på stillingen, man aldrig bad om. Fortryd i kvitteringen
+   * fangede det, men seks sekunder er ikke meget at opdage det på.
+   *
+   * Det er også her, man får at vide HVAD der sker. "Den logger den med
+   * det samme" er en oplysning, man skal have inden — ikke bagefter.
+   */
+  | { slags: "spoerger" }
   | { slags: "ruller"; vist: Kandidat }
   | { slags: "landet"; vinder: Kandidat };
 
@@ -58,13 +70,27 @@ export function Tilfaeldig({
   onValgt: (kandidat: Kandidat) => void;
   onLuk: () => void;
 }) {
-  const [tilstand, setTilstand] = useState<Tilstand | undefined>();
+  const [tilstand, setTilstand] = useState<Tilstand>({ slags: "spoerger" });
 
   // `onValgt` må kun kaldes én gang. Uden den her kunne en gentegning midt
   // i kæden logge den samme genstand to gange.
   const harLogget = useRef(false);
 
+  const [ruller, setRuller] = useState(false);
+
+  /*
+   * Er der overhovedet noget at traekke imellem?
+   *
+   * 🎲-knappen er spaerret, naar kataloget er TOMT — men et katalog kan
+   * vaere fuldt af `other` (cigaretter og lignende), som hjulet ikke
+   * traekker fra. Uden det her tjek ville "Rul" saa ikke goere noget, og
+   * en knap, der ikke goer noget, er vaerre end en, der ikke er der.
+   */
+  const harKandidater = kandidater(katalog, erDrikkevare).length > 0;
+
   useEffect(() => {
+    if (!ruller) return;
+
     const liste = kandidater(katalog, erDrikkevare);
     const vinder = vaelgTilfaeldig(liste);
     if (vinder === undefined) return;
@@ -111,22 +137,53 @@ export function Tilfaeldig({
     // Kataloget skifter ikke, mens hjulet kører — arket er åbent oven på
     // det. Kørte effekten igen, ville hjulet starte forfra midt i rullen.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [ruller]);
 
   return (
     <>
       {/* Dugen lukker IKKE, mens hjulet ruller: et tryk ved siden af midt i
           en rulle, der er ved at logge noget, ville efterlade en genstand,
-          man ikke så komme. */}
+          man ikke så komme. Mens den SPØRGER, må den gerne — dér er der
+          ingenting i gang, og "ved siden af" er et lige så gyldigt nej som
+          knappen. */}
       <button
         className="dug hjuldug"
         aria-label="Luk"
-        onClick={tilstand?.slags === "landet" ? onLuk : undefined}
+        onClick={
+          tilstand.slags === "landet" || tilstand.slags === "spoerger"
+            ? onLuk
+            : undefined
+        }
       />
 
       <div className="hjul" role="dialog" aria-modal="true" aria-label="Skæbnen vælger">
-        {tilstand === undefined ? (
-          <p className="under">Kataloget er tomt.</p>
+        {tilstand.slags === "spoerger" ? (
+          <>
+            <div className="hjulterning" aria-hidden="true">
+              🎲
+            </div>
+            <span className="etiket">Lad skæbnen vælge</span>
+            <p className="hjulsporgsmaal">
+              {harKandidater
+                ? "Der trækkes én genstand fra kataloget — og den bliver logget med det samme."
+                : "Der er ingen drikkevarer i kataloget at trække imellem. En admin kan tilføje dem."}
+            </p>
+
+            {harKandidater && (
+              <button
+                className="knap primaer"
+                onClick={() => {
+                  tik();
+                  setRuller(true);
+                }}
+              >
+                Rul
+              </button>
+            )}
+            <button className="knap" onClick={onLuk}>
+              {harKandidater ? "Ikke nu" : "Luk"}
+            </button>
+          </>
         ) : tilstand.slags === "ruller" ? (
           <>
             <span className="etiket">Skæbnen vælger …</span>
