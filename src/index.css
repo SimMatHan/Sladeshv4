@@ -235,6 +235,9 @@
      sit eget lag over det. Se `.hjul`. */
   --lag-hjuldug: 45;
   --lag-hjul: 46;
+  /* Over alt: "drej telefonen tilbage" dækker skærmen, og der er intet
+     under, man skal kunne nå først. */
+  --lag-drej: 90;
 
   /* ----------------------------------------------------------- mål */
 
@@ -4669,4 +4672,119 @@ p.dagliste {
   font-size: var(--tekst-m);
   font-weight: var(--vaegt-medium);
   color: var(--accent);
+}
+
+/* ------------------------------------------------------------ drej tilbage */
+
+/*
+ * Appen findes kun i portræt.
+ *
+ * Manifestet siger `"orientation": "portrait"`, og det virker på Android.
+ * iOS læser det ikke — og har ingen anden vej til en lås. Så i stedet for at
+ * tegne en liggende udgave, der ser i stykker ud, siger vi det ligeud.
+ *
+ * `display: none` som udgangspunkt, så den koster ingenting de 99% af tiden.
+ */
+.drejtilbage {
+  display: none;
+}
+
+/*
+ * Liggende OG lav. Begge betingelser er nødvendige:
+ *
+ *   uden `orientation`   et tastatur i portræt ville udløse den
+ *   uden `max-height`    en iPad eller et skrivebord i landskab ville
+ *
+ * 520px ligger over en telefon i landskab (350-430) og under en iPad (~800).
+ */
+@media (orientation: landscape) and (max-height: 520px) {
+  .drejtilbage {
+    position: fixed;
+    inset: 0;
+    /* Over ALT, inklusive ark og dug — der er ikke noget under, man skal
+       kunne nå, før telefonen er drejet tilbage. */
+    z-index: var(--lag-drej);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--luft-2);
+    padding: var(--luft-5);
+    text-align: center;
+    background: var(--bund);
+  }
+
+  .drejikon {
+    font-size: var(--tekst-xxl);
+    /* Lagt ned, så ikonet SELV viser, hvad der er galt. Drejningen er
+       statisk og ikke en animation — den siger noget, den underholder
+       ikke, og derfor rammes den heller ikke af reduceret bevægelse. */
+    transform: rotate(90deg);
+  }
+
+  .drejtekst {
+    margin: 0;
+    font-size: var(--tekst-xl);
+    font-weight: var(--vaegt-fed);
+  }
+}
+
+/* ---------------------------------------------------------------- donorer */
+
+/*
+ * Dem der har støttet appen. Nederst i Kanal-arket.
+ *
+ * Bevidst ROLIG: ingen accentkant, ingen tone, ingen rangtal. Listen er en
+ * tak, ikke en konkurrence — den står allerede sorteret efter beløb, og et
+ * "1." foran den øverste ville gøre den til en stilling, der konkurrerer
+ * med appens rigtige.
+ */
+.donorliste {
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+}
+
+.donor {
+  display: flex;
+  align-items: center;
+  gap: var(--luft-3);
+  padding: var(--luft-2) var(--luft-3);
+  border-radius: var(--radius);
+  background: var(--flade-brik);
+}
+
+.donormidt {
+  flex: 1;
+  min-width: 0;
+}
+
+.donornavn {
+  display: block;
+  font-weight: var(--vaegt-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Hilsenen må gerne fylde to linjer — den er det personlige i rækken — men
+   ikke mere, ellers skubber én lang besked hele listen fra hinanden. */
+.donorhilsen {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.donorbeloeb {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-weight: var(--vaegt-fed);
+  font-variant-numeric: tabular-nums;
+}
+
+.donorantal {
+  color: var(--tekst-svag);
 }
