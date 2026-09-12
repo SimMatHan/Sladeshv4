@@ -102,22 +102,6 @@ export function LogArk({
   }, [katalog, soegning]);
 
   /**
-   * Logger uden at vente.
-   *
-   * FØR ventede arket på serverens svar, før det lukkede. På fuld dækning var
-   * det umærkeligt; på to bjælker i en kælder betød det, at man trykkede på en
-   * knap, der ikke gjorde noget, i flere sekunder — og så trykkede igen.
-   *
-   * Nu lukker arket på trykket, og stillingen flytter sig med det samme via
-   * den optimistiske opdatering i useLogDrink. Serverens svar bruges kun til
-   * to ting: at give kvitteringen sit logId, så Fortryd kan komme frem, og at
-   * sige til, hvis det gik galt. Begge dele håndteres af skallen, som stadig
-   * står, når arket er væk.
-   *
-   * Uden dækning fejler kaldet ikke — Convex lægger mutationen i kø og sender
-   * den, når der er hul igennem. Den optimistiske +1 bliver stående så længe.
-   */
-  /**
    * Sender positionen med — eller bagefter, hvis vi ikke har den endnu.
    *
    * ALDRIG afventet. GPS tager sekunder, og arket lukker på trykket; ventede
@@ -141,6 +125,22 @@ export function LogArk({
     });
   };
 
+  /**
+   * Logger uden at vente.
+   *
+   * FØR ventede arket på serverens svar, før det lukkede. På fuld dækning var
+   * det umærkeligt; på to bjælker i en kælder betød det, at man trykkede på en
+   * knap, der ikke gjorde noget, i flere sekunder — og så trykkede igen.
+   *
+   * Nu lukker arket på trykket, og stillingen flytter sig med det samme via
+   * den optimistiske opdatering i useLogDrink. Serverens svar bruges kun til
+   * to ting: at give kvitteringen sit logId, så Fortryd kan komme frem, og at
+   * sige til, hvis det gik galt. Begge dele håndteres af skallen, som stadig
+   * står, når arket er væk.
+   *
+   * Uden dækning fejler kaldet ikke — Convex lægger mutationen i kø og sender
+   * den, når der er hul igennem. Den optimistiske +1 bliver stående så længe.
+   */
   const log = (categoryId: string, variationName: string) => {
     // Telefonen kvitterer, INDEN serveren gør. Arket lukker på trykket, og
     // et lille stød er den eneste bekræftelse, man får med telefonen løftet
@@ -210,16 +210,20 @@ export function LogArk({
         titel="Log en genstand"
         onLuk={onLuk}
         handling={
+          /* Terningen alene var for stille. Den sad som en glyf i et hjørne
+             og lignede lige så meget pynt som en knap — og en funktion,
+             ingen opdager, er ikke en funktion. Nu er den en pille med ord
+             på, og `aria-label` er væk, fordi teksten siger det selv. */
           <button
             className="hjulknap"
-            aria-label="Lad skæbnen vælge"
             disabled={(katalog ?? []).length === 0}
             onClick={() => {
               tik();
               setHjulAabent(true);
             }}
           >
-            🎲
+            <span aria-hidden="true">🎲</span>
+            Tilfældig
           </button>
         }
       >
