@@ -91,7 +91,8 @@ export function Personkort({
       <div className="talgitter">
         <div className="talkort">
           <div className="vaerdi">{genstande(bruger.totalPoints ?? 0)}</div>
-          <div className="etiket">point i alt</div>
+          {/* Ikke "point" — se kommentaren ved det samme tal i Mig.tsx. */}
+          <div className="etiket">genstande i alt</div>
         </div>
         <div className="talkort">
           <div className="vaerdi">{bruger.currentDayStreak ?? 0}</div>

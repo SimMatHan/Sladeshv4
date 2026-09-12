@@ -32,7 +32,7 @@ import { Stimestribe } from "./Stimestribe";
  * ved at trykke på tallet under. Se `Hero` nedenfor og `Orb.tsx`.
  *
  * Under heroet står stimen som en stribe over ugen (Stimestribe.tsx).
- * Heroet er I AFTEN; striben er de syv dage, der førte hertil. Livstidspoint
+ * Heroet er I AFTEN; striben er de syv dage, der førte hertil. Livstidstallene
  * og længste stræk er ægte information, men ikke skærmens hovedsag, og står
  * bart forneden.
  *
@@ -149,7 +149,15 @@ export function Mig({
 
         <div className="livstid">
           <div>
-            <span className="etiket">Point</span>
+            {/*
+              "Point" hed den, og det var et lån fra et pointsystem, der
+              aldrig har eksisteret. `pointsForDrink` giver 1 per genstand
+              og 0 for ikke-drikkevarer — tallet ER genstande, og det blev
+              endda allerede formateret med `genstande()`. Et navn, der
+              lover en mekanik, appen ikke har, får folk til at lede efter
+              den.
+            */}
+            <span className="etiket">Genstande</span>
             <div className="vaerdi">{genstande(mig.totalPoints ?? 0)}</div>
           </div>
           <div>
