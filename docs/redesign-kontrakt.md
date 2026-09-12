@@ -138,6 +138,34 @@ kameraet — man skal ikke opdage bagefter, hvem der kiggede med.
 Skal arkivet nogensinde åbnes, er det en ny beslutning. Den følger ikke af
 denne.
 
+**Bevidst undtagelse 9:** bevisbillederne kan nu ses af Kanalen **resten af
+drikkedagen**, ikke kun mens udfordringen kører. Det er den nye beslutning,
+undtagelse 8 sagde skulle tages for sig, og her er den.
+
+Problemet var konkret: livekortet forsvandt i samme sekund, udfordringen
+blev gennemført, så det færdige billede — selve pointen — nåede ingen at se.
+Man kan misse et øjeblik, der varer to minutter.
+
+**Publikum er uændret.** Det er de samme kanalfæller, der allerede så
+billederne live; `requireCanViewUser` kræver fortsat en delt Kanal. Det, der
+ændrer sig, er tiden: fra ti minutter til én aften.
+
+**Arkivet er stadig ikke åbent.** Ældre end i aften er tilbage til de to
+parter. Et permanent, kanalbredt fotoarkiv over alle, der nogensinde har
+drukket, er en anden slags produkt — billederne er taget med telefonens
+kamera i en bar, og der er ansigter og lokaler i baggrunden. Drikkedagen
+(10:00 → 10:00) er appens egen grænse og passer på, hvordan folk tænker om
+en bytur: den slutter, når man vågner.
+
+Reglen står som `maaSeBeviser` i `convex/sladeshRules.ts` med prøver på hver
+kant, af samme grund som `erLiveNu`: det er en privatlivsgrænse, ikke en
+visningsdetalje. Teksten på optagelsesskærmen er rettet fra "mens din
+Sladesh kører" til "resten af aftenen" — en besked, der lover mindre, end
+der sker, er værre end ingen besked.
+
+Ingen mutation, intet felt og intet index er ændret. Kun betingelsen på to
+felter i `getSladeshHistorik`.
+
 ---
 
 ## 2. Afhængigheder

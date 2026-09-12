@@ -278,8 +278,13 @@ function IAften({ userId, navn }: { userId: Id<"users">; navn: string }) {
  *
  * Serveren afgør, om billederne følger med: de sendes kun til de to parter.
  * Ser man en andens kort uden selv at have været med, får man rækken og
- * udfaldet, men ingen fotos — feltet er `null`, og der er ingen knap at
- * trykke på. Se `getSladeshHistorik` i convex/sladesh.ts for hvorfor.
+ * udfaldet, men fotos kun fra I AFTEN — ældre rækker har `null`, og så er
+ * der ingen knap at trykke på. Se `maaSeBeviser` i convex/sladeshRules.ts
+ * for hvorfor grænsen går ved drikkedagen.
+ *
+ * Det er HER, man ser en gennemført Sladesh bagefter. Livekortet på
+ * stillingen forsvinder i samme sekund, den er gennemført, så det færdige
+ * billede — selve pointen — nåede ingen at se. Nu trykker man på personen.
  */
 function Sladeshhistorik({ userId, navn }: { userId: Id<"users">; navn: string }) {
   const historik = useQuery(api.sladesh.getSladeshHistorik, {

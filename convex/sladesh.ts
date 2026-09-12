@@ -4,6 +4,7 @@ import type { MutationCtx } from "./_generated/server";
 import { internal } from "./_generated/api";
 import type { Doc, Id } from "./_generated/dataModel";
 import { evaluerAchievements } from "./achievements";
+import { getDrinkDayStart } from "./constants";
 import { requireCanViewUser, requireCurrentUser, requireKanalMedlem } from "./identity";
 import type { Ctx } from "./identity";
 import {
@@ -15,6 +16,7 @@ import {
   erFremadrettet,
   erLiveNu,
   erUdloebet,
+  maaSeBeviser,
   sladeshUdfaldVarsling,
   sladeshVarsling,
   type CooldownTilstand,
@@ -488,9 +490,20 @@ export const getSladeshHistorik = query({
 
     const afgjorte = raekker.filter((r) => erAfsluttetStatus(r.status));
 
+    // Drikkedagen afgoer, om en udenforstaaende ser billederne. Regnet ÉN
+    // gang uden for loekken: den er den samme for hver raekke.
+    const dayStart = getDrinkDayStart(Date.now());
+
     return await Promise.all(
       afgjorte.map(async (r) => {
         const erPart = viewer._id === r.senderId || viewer._id === r.recipientId;
+        // `requireCanViewUser` ovenfor har allerede slaaet fast, at
+        // betragteren deler Kanal med personen. Her afgoeres kun TIDEN.
+        const maaSe = maaSeBeviser({
+          erPart,
+          afgjortAt: r.completedAt ?? r.createdAt,
+          dayStart,
+        });
 
         return {
           challengeId: r._id,
@@ -500,13 +513,13 @@ export const getSladeshHistorik = query({
           createdAt: r.createdAt,
           completedAt: r.completedAt,
           venue: r.venue,
-          /** Kun for de to parter. Se afsnittet om hvem der må se hvad. */
+          /** Se `maaSeBeviser` for hvem der maa, og hvor laenge. */
           foerBillede:
-            erPart && r.proofBeforeImage !== undefined
+            maaSe && r.proofBeforeImage !== undefined
               ? await ctx.storage.getUrl(r.proofBeforeImage)
               : null,
           efterBillede:
-            erPart && r.proofAfterImage !== undefined
+            maaSe && r.proofAfterImage !== undefined
               ? await ctx.storage.getUrl(r.proofAfterImage)
               : null,
         };
