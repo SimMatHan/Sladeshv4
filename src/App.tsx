@@ -20,7 +20,7 @@ import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
 import { Kanaltema } from "./ui/Kanaltema";
 import { KanalVaelger } from "./ui/KanalVaelger";
-import { Pushopfordring } from "./ui/Pushopfordring";
+import { Opfordringer } from "./ui/Opfordringer";
 import { Ur } from "./ui/Ur";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
@@ -290,11 +290,19 @@ function Appen() {
       <main className="indhold">
         <Forbindelse />
         <Broadcastbjaelke />
-        {/* Under broadcasten: admins besked gælder nu, opfordringen kan
-            vente de to sekunder. Den vises kun til dem, der faktisk mangler
-            notifikationer, og kun indtil de lukker den — se
+        {/* Under broadcasten: admins besked gælder nu, opfordringerne kan
+            vente de to sekunder.
+
+            HØJST ÉN af de to ad gangen. De har samme form og samme plads,
+            og to stablede bjælker læses ikke som to gode råd, men som en
+            app der plager.
+
+            Hjemmeskærmen kommer først, fordi den på iPhone låser den
+            anden op: Web Push virker slet ikke fra en Safari-fane, så
+            "slå notifikationer til" er et tomt tilbud, indtil appen
+            ligger på hjemmeskærmen. Se Hjemmeskaermopfordring.tsx og
             Pushopfordring.tsx. */}
-        <Pushopfordring />
+        <Opfordringer />
 
         {jegErModtager && (
           <button className="sladeshbjaelke" onClick={() => setMinimeret(false)}>

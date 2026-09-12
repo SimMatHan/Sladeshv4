@@ -11,6 +11,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
 import { bundskaev } from "../src/ui/bundskaevregler";
+import {
+  AABNINGER_FOER_OPFORDRING,
+  bestemPlatform,
+  boerOpfordre,
+  hjemmeskaermgrunde,
+  hjemmeskaermtrin,
+} from "../src/ui/hjemmeskaermregler";
 import { samlDonorer, type Donation } from "../src/ui/donorliste";
 import {
   erFriskNok,
@@ -2486,6 +2493,146 @@ console.log("\n[Logic] tastaturets op og ned");
     daekket: 0,
   });
   check("foerste maal med tastatur oppe slipper intet", foersteMaal.slip, false);
+}
+
+{
+  console.log("\n-- Hjemmeskaermopfordringen --");
+
+  /*
+   * PLATFORMEN. Vi spoerger ikke om browser eller version, kun om hvilken
+   * vejledning der passer — og der findes praecis tre svar.
+   */
+  const iPhone =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15";
+  const iPadOS =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15";
+  const mac = iPadOS;
+  const pixel =
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126";
+
+  check(
+    "iPhone er ios",
+    bestemPlatform({ userAgent: iPhone, maxTouchPoints: 5 }),
+    "ios",
+  );
+  /*
+   * iPadOS LYVER og melder sig som Macintosh. Uden beroeringstjekket
+   * ville hver eneste iPad faa "anden" og aldrig hoere om
+   * hjemmeskaermen — og det er praecis de enheder, hvor Web Push kraever
+   * den.
+   */
+  check(
+    "iPad melder sig som Mac og fanges paa beroeringen",
+    bestemPlatform({ userAgent: iPadOS, maxTouchPoints: 5 }),
+    "ios",
+  );
+  check(
+    "en rigtig Mac har ingen beroeringsskaerm",
+    bestemPlatform({ userAgent: mac, maxTouchPoints: 0 }),
+    "anden",
+  );
+  check(
+    "Android er android",
+    bestemPlatform({ userAgent: pixel, maxTouchPoints: 5 }),
+    "android",
+  );
+  check(
+    "alt andet er anden",
+    bestemPlatform({
+      userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126",
+      maxTouchPoints: 0,
+    }),
+    "anden",
+  );
+
+  const grund = {
+    installeret: false,
+    platform: "ios" as const,
+    lukket: false,
+    aabninger: AABNINGER_FOER_OPFORDRING,
+  };
+  check("anden aabning paa en iPhone opfordrer", boerOpfordre(grund), true);
+
+  /*
+   * IKKE FOERSTE GANG. En, der lige har oprettet sig, ved endnu ikke,
+   * hvad appen er, og en app der beder om plads paa hjemmeskaermen foer
+   * den har vist noget, opfoerer sig som en reklame.
+   */
+  check(
+    "foerste aabning gor ikke",
+    boerOpfordre({ ...grund, aabninger: 1 }),
+    false,
+  );
+  check(
+    "uden lagring (0 aabninger) spoerges der ikke",
+    boerOpfordre({ ...grund, aabninger: 0 }),
+    false,
+  );
+  check(
+    "og senere aabninger gor stadig",
+    boerOpfordre({ ...grund, aabninger: 47 }),
+    true,
+  );
+
+  // Den vigtigste: naar den VIRKER, forsvinder den af sig selv.
+  check(
+    "er appen installeret, opfordres der aldrig",
+    boerOpfordre({ ...grund, installeret: true, aabninger: 99 }),
+    false,
+  );
+  check("et nej er et nej", boerOpfordre({ ...grund, lukket: true }), false);
+  check(
+    "paa en computer er der ingen hjemmeskaerm at tale om",
+    boerOpfordre({ ...grund, platform: "anden" }),
+    false,
+  );
+  check(
+    "Android spoerges paa samme vilkaar",
+    boerOpfordre({ ...grund, platform: "android" }),
+    true,
+  );
+
+  /*
+   * VEJLEDNINGEN skal findes for begge de platforme, der kan faa
+   * bjaelken. En tom vejledning bag en knap, der siger "Vis hvordan", er
+   * vaerre end ingen knap.
+   */
+  check("ios har trin", hjemmeskaermtrin("ios").length > 0, true);
+  check("android har trin", hjemmeskaermtrin("android").length > 0, true);
+  check("anden har ingen — den faar heller ingen bjaelke", hjemmeskaermtrin("anden"), []);
+  check("ios har grunde", hjemmeskaermgrunde("ios").length > 0, true);
+  check("android har grunde", hjemmeskaermgrunde("android").length > 0, true);
+
+  /*
+   * Paa iPhone er notifikationer ikke en fordel ved hjemmeskaermen — det
+   * er den ENESTE vej til dem. Derfor staar de foerst dér og ikke paa
+   * Android, hvor push ogsaa virker i en fane.
+   */
+  check(
+    "notifikationsargumentet staar foerst paa ios",
+    hjemmeskaermgrunde("ios")[0]?.includes("Notifikationer"),
+    true,
+  );
+  check(
+    "men ikke paa android",
+    hjemmeskaermgrunde("android")[0]?.includes("Notifikationer"),
+    false,
+  );
+
+  // `key` paa listerne er selve linjen. To ens linjer ville give React to
+  // ens noegler i samme liste.
+  for (const platform of ["ios", "android"] as const) {
+    check(
+      `${platform}: ingen gentagne trin`,
+      new Set(hjemmeskaermtrin(platform)).size,
+      hjemmeskaermtrin(platform).length,
+    );
+    check(
+      `${platform}: ingen gentagne grunde`,
+      new Set(hjemmeskaermgrunde(platform)).size,
+      hjemmeskaermgrunde(platform).length,
+    );
+  }
 }
 
 console.log(

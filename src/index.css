@@ -4497,7 +4497,16 @@ p.dagliste {
 }
 
 /*
- * Opfordringen til at slå notifikationer til.
+ * Opfordringsbjælken.
+ *
+ * Bruges af de to ting, appen selv beder om: notifikationer
+ * (Pushopfordring.tsx) og en plads på hjemmeskærmen
+ * (Hjemmeskaermopfordring.tsx). Én form til begge, fordi de er samme
+ * slags henvendelse — et tilbud, man kan tage eller lukke — og fordi to
+ * forskellige former ville få dem til at ligne to forskellige slags
+ * alvor.
+ *
+ * De vises aldrig samtidig; se App.tsx for rækkefølgen.
  *
  * Samme form og samme radius som broadcast-bjælken lige over — står de to
  * oven på hinanden, skal de læses som samme slags ting — men DÆMPET:
@@ -4508,7 +4517,7 @@ p.dagliste {
  * opfordringen er et tilbud, man kan lukke. Gav de to samme visuelle vægt,
  * ville den vigtige af dem miste sin.
  */
-.pushopfordring {
+.opfordring {
   display: flex;
   align-items: flex-start;
   gap: var(--luft-3);
@@ -4519,28 +4528,28 @@ p.dagliste {
   border: 1px solid var(--kant);
 }
 
-.pushindhold {
+.opfordringindhold {
   flex: 1;
   min-width: 0;
 }
 
-.pushtitel {
+.opfordringtitel {
   font-size: var(--tekst-s);
   font-weight: var(--vaegt-fed);
 }
 
-.pushtekst {
+.opfordringtekst {
   font-size: var(--tekst-s);
   color: var(--tekst-daempet);
 }
 
 /* Knappen står i indholdskolonnen, ikke ved siden af krydset: teksten
    forklarer, knappen svarer, og de skal læses i den rækkefølge. */
-.pushindhold > .knap {
+.opfordringindhold > .knap {
   margin-top: var(--luft-3);
 }
 
-.pushluk {
+.opfordringluk {
   flex-shrink: 0;
   width: 28px;
   height: 28px;
@@ -4555,8 +4564,33 @@ p.dagliste {
   cursor: pointer;
 }
 
-.pushluk:active {
+.opfordringluk:active {
   background: var(--flade-brik);
+}
+
+/*
+ * Trin og punkter i vejledningen til hjemmeskærmen.
+ *
+ * Browserens egen indrykning af en <ol>/<ul> er sat efter en tekstside,
+ * ikke efter et ark på en telefon — den skubber linjerne så langt ind, at
+ * de brækker to gange. Her er den erstattet af noget, der passer til
+ * bredden: tallet står i kanten, teksten står på linje med resten af
+ * arket.
+ */
+.trinliste {
+  margin: 0;
+  padding-left: var(--luft-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--luft-2);
+  font-size: var(--tekst-s);
+  color: var(--tekst-daempet);
+}
+
+.trinliste li {
+  /* Uden den her sidder linjerne tættere end resten af arket, fordi
+     lister arver en strammere linjehøjde end brødtekst. */
+  line-height: 1.5;
 }
 
 /*

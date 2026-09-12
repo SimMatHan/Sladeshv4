@@ -40,6 +40,16 @@ import { usePush } from "./usePush";
  * Tilbage står to: `fra` (der ER en knap) og `iosudenhjem` (der er en
  * håndgribelig vej, den er bare ikke en knap).
  *
+ * ## `tavs`
+ *
+ * Hjemmeskærmsopfordringen bruger samme plads og samme form, og to
+ * bjælker oven på hinanden er ikke to gode råd — det er en app, der
+ * plager. Den anden af dem har forrang, fordi den på iPhone låser den
+ * her op: uden hjemmeskærm er der slet ingen notifikationer at slå til.
+ *
+ * Kaldes den med `tavs`, holder den mund og venter på sin tur. Se
+ * App.tsx.
+ *
  * ## Om at lukke den
  *
  * `localStorage`, ikke `sessionStorage` som broadcast-bjælken. En broadcast
@@ -52,10 +62,11 @@ import { usePush } from "./usePush";
  * Fortryder man, står kontakten i Indstillinger. Bjælken er en genvej, ikke
  * det eneste sted.
  */
-export function Pushopfordring() {
+export function Pushopfordring({ tavs = false }: { tavs?: boolean }) {
   const { status, arbejder, fejl, skift } = usePush();
   const [lukket, setLukket] = useState(() => erLukket());
 
+  if (tavs) return null;
   if (lukket) return null;
   if (status !== "fra" && status !== "iosudenhjem") return null;
 
@@ -65,10 +76,10 @@ export function Pushopfordring() {
   };
 
   return (
-    <div className="pushopfordring" role="status">
-      <div className="pushindhold">
-        <div className="pushtitel">Slå notifikationer til</div>
-        <div className="pushtekst">
+    <div className="opfordring" role="status">
+      <div className="opfordringindhold">
+        <div className="opfordringtitel">Slå notifikationer til</div>
+        <div className="opfordringtekst">
           {status === "iosudenhjem"
             ? "På iPhone skal appen først føjes til hjemmeskærmen. Tryk på Del-knappen i Safari og vælg “Føj til hjemmeskærm” — så kan du få besked."
             : "Få besked når nogen skriver i chatten, sladesher dig, eller går ud i aften."}
@@ -83,7 +94,7 @@ export function Pushopfordring() {
         {fejl !== undefined && <p className="fejl">{fejl}</p>}
       </div>
 
-      <button className="pushluk" aria-label="Ikke nu" onClick={luk}>
+      <button className="opfordringluk" aria-label="Ikke nu" onClick={luk}>
         ×
       </button>
     </div>
