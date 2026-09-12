@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Ark } from "./Ark";
 import { Faner } from "./Faner";
+import { bestemPlatform, hjemmeskaermtrin } from "./hjemmeskaermregler";
 
 /**
  * Hjælp — hvad appen er, og hvad den ved om dig.
@@ -141,6 +142,8 @@ function SaadanVirkerDet() {
         </p>
       </div>
 
+      <Hjemmeskaermafsnit />
+
       <div className="arkgruppe">
         <h3>Notifikationer</h3>
         <p className="hjaelp">
@@ -160,6 +163,53 @@ function SaadanVirkerDet() {
         </p>
       </div>
     </>
+  );
+}
+
+/**
+ * Vejledningen til hjemmeskærmen — det blivende sted.
+ *
+ * Bjælken øverst i appen (Hjemmeskaermopfordring.tsx) kan lukkes, og den
+ * kommer ikke igen. Det er med vilje — et nej skal betyde nej — men det
+ * efterlader et hul: den, der lukkede den i en bus og bagefter kom i
+ * tanke om det, havde ingen steder at gå hen.
+ *
+ * Trinene hentes fra samme rene funktion som bjælken, så de to aldrig kan
+ * komme til at sige noget forskelligt.
+ *
+ * Vises ikke, når appen allerede kører fra hjemmeskærmen, og ikke på en
+ * computer — begge steder ville den forklare noget, der ikke er der.
+ */
+function Hjemmeskaermafsnit() {
+  if (typeof window === "undefined") return null;
+
+  const installeret =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    (navigator as { standalone?: boolean }).standalone === true;
+  if (installeret) return null;
+
+  const platform = bestemPlatform({
+    userAgent: navigator.userAgent,
+    maxTouchPoints: navigator.maxTouchPoints,
+  });
+  const trin = hjemmeskaermtrin(platform);
+  if (trin.length === 0) return null;
+
+  return (
+    <div className="arkgruppe">
+      <h3>Føj den til hjemmeskærmen</h3>
+      <p className="hjaelp">
+        Så åbner Sladesh i fuld skærm med sit eget ikon
+        {platform === "ios"
+          ? " — og notifikationer virker, hvilket de ikke gør fra en Safari-fane."
+          : ", i stedet for i en fane."}
+      </p>
+      <ol className="trinliste">
+        {trin.map((linje) => (
+          <li key={linje}>{linje}</li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
