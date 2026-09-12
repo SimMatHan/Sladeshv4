@@ -50,7 +50,7 @@ import { genstande } from "../lib/visning";
  * sin egen profilrække med kanalnavn og ugedag, se `Profilundertekst` i
  * Mig.tsx. Denne fil dækker nu kun de fire segmenter inde i Kanal-fanen.
  */
-export type Undertekstskaerm = "stilling" | "chat" | "kort" | "historik";
+export type Undertekstskaerm = "stilling" | "chat" | "kort" | "historik" | "stoet";
 
 export function Sideundertekst({
   skaerm,
@@ -68,6 +68,8 @@ export function Sideundertekst({
       return <KortUndertekst channelId={channelId} />;
     case "historik":
       return <HistorikUndertekst channelId={channelId} />;
+    case "stoet":
+      return <StoetUndertekst />;
   }
 }
 
@@ -75,6 +77,17 @@ export function Sideundertekst({
  * Underteksten. Uden `children` er den en TOM linje, der holder sin plads —
  * se `.undertekst` i index.css. Kald den frem for at returnere `null`.
  */
+/**
+ * Stoet-siden er den ene, der IKKE handler om Kanalen.
+ *
+ * Derfor tager den ingen `channelId` og spoerger ikke om noget — linjen
+ * siger i stedet, hvad siden er, saa man ikke tror, tallene nedenunder
+ * hoerer til den Kanal, man staar i. Donationer gaelder appen.
+ */
+function StoetUndertekst() {
+  return <Linje>Gælder hele appen, ikke kun denne Kanal</Linje>;
+}
+
 function Linje({ children }: { children?: React.ReactNode }) {
   return <span className="hjaelp undertekst">{children}</span>;
 }

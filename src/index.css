@@ -4790,17 +4790,25 @@ p.dagliste {
 }
 
 /*
- * Donorafsnittet paa Mig.
+ * Stoet-siden — femte segment i Kanal-fanen.
  *
- * Samme form som `.livstid` lige over: en streg skiller, ingen kasse. Mig
- * var én gang en stak kort, og det gjorde skaermen til en stak kasser — se
- * kommentaren ved `.livstid`. Et donorkort her ville laegge endnu et paa.
+ * Ingen streg og ingen overskrift: segmentstriben lige over siger allerede,
+ * hvad man kigger paa, og undertitlen i toppen siger, at det gaelder hele
+ * appen. En "TAK TIL DEM DER HAR STOETTET" oveni ville sige det tredje gang.
+ *
+ * Den laa foerst som et afsnit paa Mig med en streg over, som `.livstid`.
+ * Som side er den sit eget indhold og behoever ingen adskillelse fra noget.
  */
-.donorafsnit {
+.donorside {
   display: flex;
   flex-direction: column;
   gap: var(--luft-3);
-  margin-top: var(--luft-4);
-  padding-top: var(--luft-4);
+}
+
+/* Summen staar til sidst, som en kvittering under listen — ikke som en
+   overskrift over den. Det er listen, der er sagen; tallet er facit. */
+.donorsum {
+  margin: 0;
+  padding-top: var(--luft-2);
   border-top: 1px solid var(--kant);
 }

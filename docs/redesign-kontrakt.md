@@ -213,8 +213,23 @@ tilstand, ikke adresser.
    ├ Stilling                    ├ Indstillinger
    ├ Chat                        ├ Trofæhylden      (ark)
    ├ Kort                        └ Admin            (ark, kun admins)
-   └ Historik
+   ├ Historik
+   └ Støt
 ```
+
+**Støt er ikke kanal-specifik.** Donationer gælder appen, ikke Kanalen, og
+siden ligger alligevel her — segmentstriben er det ene sted, sideordnede
+visninger bor. Undertitlen siger det ("Gælder hele appen, ikke kun denne
+Kanal"), så ingen tror, tallene hører til Kanalen.
+
+Den lå først nederst på Mig, hvor brugerrejserne kortlægger `/support` hen.
+Det var rigtigt på papiret og forkert i praksis: Mig er en lang skærm, og et
+afsnit mellem livstidstallene og knapperne er ikke et sted, nogen leder.
+
+Fem er loftet for striben. Etiketterne skal dele én telefonbredde — derfor
+"Støt" og ikke "Støt appen" — og en sjette ville kræve, at striben ruller,
+som Admins gør. Så lyver det sænkede spor bag fanerne: det siger "her er
+alle valgene", og det ender midt i en fane.
 
 `( + )` åbner log-arket fra hvor som helst. Kanalvælgeren, personkortet og
 Sladesh-overtagelsen er også ark. Ét arkmønster, man lærer én gang:

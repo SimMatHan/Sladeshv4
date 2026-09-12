@@ -15,10 +15,19 @@ import { samlDonorer } from "./donorliste";
  * admin nogensinde saa den. Folk donerede, fik deres maerke, og listen, de
  * stod paa, kunne de ikke se.
  *
- * Nu staar den paa Mig, hvor docs/brugerrejser.md hele tiden har haft
- * `/support` kortlagt hen ("Mig → Stoet appen"). Donationer er ikke
- * kanal-specifikke — de gaelder appen — saa Kanal-arket var det forkerte
- * sted, selvom det var dér, den landede foerst.
+ * Nu er den sin EGEN side, som femte segment i Kanal-fanen ved siden af
+ * Historik.
+ *
+ * Den laa foerst nederst paa Mig. Det var den rigtige placering paa papiret
+ * — docs/brugerrejser.md kortlaegger `/support` til "Mig → Stoet appen" —
+ * men i praksis kunne den ikke findes: Mig er en lang skaerm, og et afsnit
+ * under livstidstallene og over knapperne er ikke et sted, nogen leder.
+ * En side, man kan trykke sig hen til, kan den.
+ *
+ * Donationer er ikke kanal-specifikke, og det siger undertitlen ("Gaelder
+ * hele appen, ikke kun denne Kanal"), saa ingen tror, tallene hoerer til
+ * Kanalen. Segmentstriben er til gengaeld det ene sted i appen, hvor
+ * sideordnede visninger bor — se docs/redesign-kontrakt.md afsnit 4.
  *
  * Admins liste bliver staaende. Den er et VAERKTOEJ — hver raekke har en
  * slet-knap og summen er til afstemning — og det er en anden opgave end at
@@ -39,14 +48,13 @@ import { samlDonorer } from "./donorliste";
  */
 
 /**
- * Saa mange staar paa Mig. Resten taelles kun.
+ * Loftet er vaek.
  *
- * Mig er i forvejen en lang skaerm — hero, stime, maerker, livstidstal og
- * handlinger — og en liste uden loft ville kunne skubbe "Log ud" vilkaarligt
- * langt ned. Ti er rigeligt til at hylde nogen; den ellevte er ikke glemt,
- * den staar i linjen nedenunder.
+ * Det fandtes, fordi listen laa paa Mig og kunne skubbe "Log ud" vilkaarligt
+ * langt ned. En side har ingen anden, der skal naas nedenunder — den maa
+ * gerne rulle — og at skjule den ellevte donor paa DERES egen side ville
+ * vaere at gemme netop det, siden findes for.
  */
-const VISTE = 10;
 
 export function Donorer() {
   const svar = useQuery(api.donations.getDonorer, {});
@@ -56,22 +64,37 @@ export function Donorer() {
     [svar],
   );
 
-  // Vis intet, du ikke ved — og heller ikke en tom overskrift. Har ingen
-  // doneret endnu, er en "0 kr."-liste ikke en oplysning, det er en
-  // opfordring, ingen har bedt om. Se docs/redesign-kontrakt.md afsnit 7.
-  if (svar === undefined || donorer.length === 0) return null;
+  // Vis intet, du ikke ved. `undefined` er "henter" — se
+  // docs/redesign-kontrakt.md afsnit 7.
+  if (svar === undefined) {
+    return <p className="midtstillet">Henter …</p>;
+  }
 
-  const viste = donorer.slice(0, VISTE);
-  const resten = donorer.length - viste.length;
+  /*
+   * TOM TILSTAND, og den er ikke valgfri.
+   *
+   * Som afsnit paa Mig returnerede den `null`, naar ingen havde doneret —
+   * rigtigt dér, hvor en tom overskrift bare ville vaere stoej midt i en
+   * skaerm om noget andet. Som SIDE er det forkert: trykker man paa "Stoet"
+   * og faar en blank flade, ser appen i stykker ud, og man leder videre
+   * efter en side, man lige har staaet paa.
+   */
+  if (donorer.length === 0) {
+    return (
+      <div className="tom skaerm-ind">
+        <div className="stort">🫶</div>
+        <p>Ingen har støttet endnu.</p>
+        <p className="hjaelp">
+          Donationer registreres af en admin. Når der kommer en, står den her.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    // Ikke `.arkgruppe`: den klasse er arkenes idiom, og Mig er ikke et ark.
-    // Her adskiller en streg afsnittene, som ved `.livstid` lige over.
-    <div className="donorafsnit">
-      <span className="etiket">Tak til dem der har støttet</span>
-
+    <div className="donorside skaerm-ind">
       <div className="donorliste">
-        {viste.map((donor) => (
+        {donorer.map((donor) => (
           <div key={donor.userId} className="donor">
             <Avatar emoji={donor.avatar} navn={donor.name} farve={donor.color} />
 
@@ -94,10 +117,9 @@ export function Donorer() {
         ))}
       </div>
 
-      <p className="hjaelp">
+      <p className="hjaelp donorsum">
         {svar.total} kr. i alt fra {donorer.length}{" "}
         {donorer.length === 1 ? "person" : "personer"}.
-        {resten > 0 && ` ${resten} mere vises ikke her.`}
       </p>
     </div>
   );
