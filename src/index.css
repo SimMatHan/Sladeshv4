@@ -195,6 +195,21 @@
   --orb-c: #fb923c;
   --orb-dyb: #d97706;
   /*
+   * DE TO, DER KOMMER TIL. Se `.orbplet.e` og `.orbplet.f`: de er der ikke
+   * ved nul, og de toner ind, efterhånden som der bliver logget.
+   *
+   * De ligger LÆNGERE UDE end de fire ovenfor — rav og orange er naboer,
+   * det her er et skridt til hver side. Det er hele pointen: fire naboer
+   * giver en rolig kugle, og når aftenen skrider frem, skal der komme
+   * farver til, som ikke var der før.
+   *
+   * Stadig ikke en regnbue. Rød ligger på den varme side af orange, lime
+   * på den anden side af gult — begge dele er noget, en ravgul kugle kan
+   * bevæge sig hen imod uden at holde op med at være sig selv.
+   */
+  --orb-e: #f87171;
+  --orb-f: #a3e635;
+  /*
    * NÆRSORT, ikke ren sort. Ren #000 mod en lys flade er hårdere end noget
    * andet i appen; hver temas variant har et strejf af kuglens egen kulør i
    * sig, så teksten hører til på kuglen frem for at ligge oven på den.
@@ -440,6 +455,9 @@
     --orb-b: #4fb28c;
     --orb-c: #a5dcc4;
     --orb-dyb: #3da77f;
+    /* De to, der toner ind: et skridt mod turkis, et mod lime. */
+    --orb-e: #5eead4;
+    --orb-f: #bef264;
     --orb-tekst: #061a15;
 
     /*
@@ -2349,6 +2367,33 @@ input {
    * de fire moenstre beholder deres form og kun bliver stoerre.
    */
   --orbudsving: calc(1 + 1.4 * var(--orbintensitet));
+  /*
+   * HVOR SKARPE KANTERNE ER — og hvornaar de naar derhen.
+   *
+   * Skarpheden maa ikke folge intensiteten ligeud. Kurven i Mig.tsx er
+   * halveringsformet og giver 21% ved én genstand og 37% ved to; en
+   * skarphed, der bare fulgte med, ville flytte sloringen fra 18px til
+   * 15px paa den forste genstand, og DET kan man ikke se.
+   *
+   * Derfor ganges der op og klippes af: fuld skarphed allerede ved
+   * intensitet 0,55, altsaa omkring tredje genstand. Hele spaendet ligger
+   * dermed i den forste del af aftenen, hvor der er noget at se forskel
+   * paa — resten af vejen er det farten, udsvinget og de to nye farver,
+   * der barer aendringen.
+   *
+   *   0 genstande   0     pletterne lober helt sammen
+   *   1 genstand    0,45  forskellen fra nul er til at se
+   *   2 genstande   0,81  kanterne er der
+   *   3+            1     adskilte skiver med tydelige rande
+   *
+   * De faktiske sloringstal staar ved `filter` paa `.orbsky`.
+   *
+   * FORSTE FORSOG GANGEDE MED 1,8, og det var for lidt: forste genstand
+   * flyttede sloringen fra 18px til 12,7, og paa et skaermbillede ved
+   * siden af nul kunne man daarligt se forskel. Hele oevelsen handler om
+   * at kunne se, at man har logget noget.
+   */
+  --orbkant: clamp(0, calc(var(--orbintensitet) * 2.2), 1);
 
   position: relative;
   isolation: isolate;
@@ -2455,16 +2500,43 @@ input {
    * blegere end før, og en våd er mærkbart skarpere — forskellen er dét,
    * man skal kunne skimme uden at læse tallet.
    *
-   * SLØRINGEN SKRUES NED med intensiteten (16px → 9px). Skarpere pletter
-   * har tydeligere kanter, og kanter er det, der får noget til at se uroligt
-   * ud. En blød kugle kan bevæge sig hurtigt og stadig virke doven.
+   * SLØRINGEN SKRUES NED, nu helt til 2px (18px → 2px, var 16 → 9).
+   * Skarpere pletter har tydeligere kanter, og kanter er det, der får noget
+   * til at se uroligt ud. En blød kugle kan bevæge sig hurtigt og stadig
+   * virke doven.
+   *
+   * Ved 9px løb de seks pletter stadig sammen til en vædske. Ved 2-3 er de
+   * seks skiver med synlige rande, der skærer ind over hinanden — og det
+   * er DÉT, man skal kunne se uden at læse tallet.
+   *
+   * Den følger `--orbkant`, ikke `--orbintensitet`. Se noten ved den
+   * variabel: hele spændet skal ligge i de første par genstande, ellers
+   * sker der ingenting dér, hvor man kigger oftest.
    *
    * Ikke længere: `--orb-tekst` måles af `npm run revision` mod `--orb-lys`
    * og `--orb-dyb` i alle fire temaer, og de tokens er uændrede — men en
    * mætning, der blev ved, ville flytte den FAKTISKE kontrast væk fra det,
    * der er målt. 1,55 er sat med den grænse for øje.
    */
-  filter: blur(calc(16px - 7px * var(--orbintensitet)))
+  /*
+   * TO LED, ikke ét.
+   *
+   * Det store spring ligger på `--orbkant` og er brugt op omkring tredje
+   * genstand — det skal det være, for det er dér, man skal kunne se, at
+   * der sker noget.
+   *
+   * Men "flere skarpe kanter, jo mere der bliver logget" holder op med at
+   * være sandt, hvis sløringen bunder ved tre. Derfor det lille andet led
+   * på den rå intensitet: det bliver ved med at stramme hele vejen op,
+   * langsomt, så en aften på tolv stadig er skarpere end en på fire.
+   *
+   *   0 genstande   18px
+   *   1 genstand    11,2px
+   *   2 genstande   6,0px
+   *   3 genstande   3,5px
+   *   8 genstande   2,5px
+   */
+  filter: blur(calc(18px - 13px * var(--orbkant) - 3px * var(--orbintensitet)))
     saturate(calc(0.8 + 0.75 * var(--orbintensitet)));
   opacity: calc(0.55 + 0.42 * var(--orbintensitet));
   transition:
@@ -2488,6 +2560,17 @@ input {
   height: 54%;
   border-radius: var(--radius-rund);
   will-change: transform;
+  /*
+   * Kun for de to, der toner ind (e og f). De fire oprindelige har ingen
+   * `opacity` og rammes derfor ikke — en overgang paa en egenskab, der
+   * aldrig aendrer sig, koster ingenting.
+   *
+   * Den gor, at den femte farve GLIDER ind, naar man logger, frem for at
+   * blinke frem. Kvitteringen i skallen har en Fortryd-knap i seks
+   * sekunder, og en farve, der poppede op og forsvandt igen, ville vaere
+   * to ryk paa den tid.
+   */
+  transition: opacity var(--fart-lang) var(--kurve);
 }
 
 /*
@@ -2552,6 +2635,73 @@ input {
 }
 
 /*
+ * ── DE TO, DER KOMMER TIL ─────────────────────────────────────────────
+ *
+ * Kuglen har fire farver ved nul og seks, når aftenen er i gang. Det er
+ * ikke pynt: de fire ovenfor kan kun blive mere mættede og mere urolige,
+ * og en kugle, der laver det SAMME hurtigere, læses som travl frem for som
+ * "der er sket mere". Noget nyt skal kunne komme til.
+ *
+ * De toner ind PÅ SKIFT frem for sammen. Kom de begge to på én gang, ville
+ * der være to tilstande — rolig og vild — og springet imellem dem ville
+ * ligge et vilkårligt sted. Sådan her er der fire trin at aflæse:
+ *
+ *   0 genstande    fire farver, blød kugle
+ *   1 genstand     den femte er klart inde (66%), kanterne strammer
+ *   2 genstande    den femte er fuld, den sjette anes
+ *   3-4 genstande  den sjette kommer til, randene er skarpe
+ *   8 genstande    seks farver, seks tydelige skiver
+ *
+ * `clamp()` med rene tal: nul til den tager fat, én når den er fuld. Uden
+ * klipningen ville `opacity` gå over 1 og under 0, og begge dele er
+ * ugyldige — hele pletten ville falde tilbage til browserens standard og
+ * stå der fra første sekund.
+ */
+.orbplet.e {
+  top: 46%;
+  left: 34%;
+  /*
+   * MINDRE END DE FIRE (40% mod 54%).
+   *
+   * Foerste forsoeg gav dem samme stoerrelse, og resultatet var, at den
+   * sjette farve dakkede hele kuglen, saa snart den var fuldt tonet ind —
+   * de fire oprindelige var vaek, og kuglen skiftede identitet frem for at
+   * faa noget til.
+   *
+   * Smaa pletter goer to ting paa én gang: de laegger sig SOM pletter oven
+   * paa kuglen frem for at overmale den, og deres rand bliver synlig,
+   * fordi der er flade omkring den at se den imod. Det er praecis den
+   * kant, der skulle frem.
+   */
+  width: 40%;
+  height: 40%;
+  background: var(--orb-e);
+  /* 66% ved ÉN genstand, fuld ved to. Den skal kunne ses første gang
+     man logger — det er dér, man kigger efter, om der skete noget. */
+  opacity: clamp(0, calc(var(--orbintensitet) * 3.2), 1);
+  /* 13s. Stadig ingen fælles multipla med de fem andre. */
+  animation: orbdrift-e calc(13s + 21s * var(--orbrolighed)) ease-in-out infinite;
+}
+
+.orbplet.f {
+  top: 20%;
+  left: 20%;
+  /* Den mindste af de seks. Den er den skarpeste farve i paletten og
+     den sidste, der kommer — den skal ses, ikke overtage. */
+  width: 34%;
+  height: 34%;
+  background: var(--orb-f);
+  /*
+   * VENTER. Den anes ved anden genstand, er halvt inde ved tredje og
+   * fuld omkring den sjette. Den er aftenens sidste trin, og den skal
+   * ikke være brugt op, før man er i gang.
+   */
+  opacity: clamp(0, calc((var(--orbintensitet) - 0.28) * 2.6), 1);
+  /* 17s. */
+  animation: orbdrift-f calc(17s + 21s * var(--orbrolighed)) ease-in-out infinite;
+}
+
+/*
  * Fire forskellige og PRIMTALSAGTIGE varigheder (5/7/9/11s), så mønsteret
  * ikke gentager sig synligt. Falder de sammen om et fælles multiplum, kan
  * øjet fange takten, og så holder kuglen op med at være levende.
@@ -2607,6 +2757,37 @@ input {
   }
   75% {
     transform: translate3d(calc(-26% * var(--orbudsving)), calc(-8% * var(--orbudsving)), 0) scale(1.15);
+  }
+}
+
+/*
+ * De to tilkomne driver samme slags baner som de fire — samme form, samme
+ * afhaengighed af `--orbudsving`. De skal ikke opfoere sig anderledes, kun
+ * vaere der.
+ */
+@keyframes orbdrift-e {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(0.9);
+  }
+  45% {
+    transform: translate3d(calc(20% * var(--orbudsving)), calc(-26% * var(--orbudsving)), 0) scale(1.2);
+  }
+  80% {
+    transform: translate3d(calc(-16% * var(--orbudsving)), calc(-6% * var(--orbudsving)), 0) scale(1);
+  }
+}
+
+@keyframes orbdrift-f {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1.15);
+  }
+  30% {
+    transform: translate3d(calc(24% * var(--orbudsving)), calc(18% * var(--orbudsving)), 0) scale(0.88);
+  }
+  65% {
+    transform: translate3d(calc(-8% * var(--orbudsving)), calc(28% * var(--orbudsving)), 0) scale(1.1);
   }
 }
 
@@ -4413,6 +4594,9 @@ p.dagliste {
   --orb-b: #f05a5a;
   --orb-c: #fca5a5;
   --orb-dyb: #e56767;
+  /* De to, der toner ind: et skridt mod orange, et mod fuchsia. */
+  --orb-e: #fb923c;
+  --orb-f: #f0abfc;
   --orb-tekst: #240606;
 }
 
@@ -4441,6 +4625,9 @@ p.dagliste {
   --orb-b: #4bbcc8;
   --orb-c: #96e3ea;
   --orb-dyb: #3aa7b3;
+  /* De to, der toner ind: et skridt mod himmelblå, et mod grøn. */
+  --orb-e: #7dd3fc;
+  --orb-f: #86efac;
   --orb-tekst: #041c20;
 }
 

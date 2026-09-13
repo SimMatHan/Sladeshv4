@@ -94,6 +94,13 @@ export function Orb({
         <span className="orbplet b" />
         <span className="orbplet c" />
         <span className="orbplet d" />
+        {/* De to sidste er der ALTID i markup, men usynlige ved nul — deres
+            `opacity` hænger på intensiteten i CSS. At sætte dem ind og tage
+            dem ud igen i React ville betyde, at animationen startede forfra
+            hver gang man loggede, og at Fortryd fjernede et element midt i
+            en overgang. Se `.orbplet.e` i index.css. */}
+        <span className="orbplet e" />
+        <span className="orbplet f" />
       </div>
 
       <div className="orbindhold">
