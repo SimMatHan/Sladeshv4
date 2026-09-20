@@ -17,9 +17,12 @@ import {
   erLiveNu,
   erUdloebet,
   maaSeBeviser,
+  sladeshKanalVarsling,
+  sladeshKanaltag,
   sladeshUdfaldVarsling,
   sladeshVarsling,
   type CooldownTilstand,
+  type Kanalbegivenhed,
   type SladeshUdfald,
 } from "./sladeshRules";
 
@@ -142,7 +145,7 @@ export const getCooldown = query({
  * Fortæller AFSENDEREN, hvordan det gik.
  *
  * Afsenderen sad før tilbage med en venterbjælke, der bare forsvandt: åbnede
- * hun ikke appen i de ti minutter, fik hun aldrig at vide, om den blev
+ * hun ikke appen, mens fristen løb, fik hun aldrig at vide, om den blev
  * gennemført, opgivet eller løb ud. Det var hele grunden til at sende den.
  *
  * Kaldes fra ALLE TRE udgange — gennemført, opgivet, udløbet — og fra ét
@@ -153,6 +156,11 @@ async function varslAfsender(
   udfordring: Doc<"sladeshChallenges">,
   udfald: SladeshUdfald,
 ): Promise<void> {
+  // Kanalen hører om ALLE tre udfald herfra. Lagt i den funktion, der
+  // allerede kaldes fra hver eneste udgang — se dens note om netop det —
+  // så et fjerde udfald en dag ikke kan komme til at glemme den ene.
+  await varslKanalen(ctx, udfordring, udfald);
+
   const varsling = sladeshUdfaldVarsling(udfordring.recipientName, udfald);
   await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
     userIds: [udfordring.senderId],
@@ -163,6 +171,70 @@ async function varslAfsender(
     // hinanden; taggen samler i stedet alt om ÉN udfordring, hvis den
     // samme udfordring nogensinde skulle sige mere end én ting.
     tag: `sladesh-${udfordring._id}`,
+  });
+}
+
+/**
+ * Fortæller RESTEN AF KANALEN, hvad der sker.
+ *
+ * Sladesh var en samtale mellem to: afsenderen hørte, hvordan det gik,
+ * modtageren fik udfordringen, og alle andre opdagede det kun, hvis de
+ * tilfældigvis havde stillingen åben imens. I en app, hvis hele pointe er
+ * at følge med i hinandens aften, er det den mest dramatiske ting, der
+ * sker — og den skete i stilhed.
+ *
+ * Kaldes fra ALLE FIRE overgange (sendt · i gang · afgjort × 3) og fra ét
+ * sted per overgang, som `varslAfsender`.
+ *
+ * ## De to, der er MED, får den ikke
+ *
+ * Afsenderen har sin egen besked fra `varslAfsender`, og modtageren står
+ * med skærmen åben. Fik de denne også, ville de have to notifikationer om
+ * den samme begivenhed — og modtagerens ville fortælle hende noget, hun
+ * lige selv har gjort.
+ *
+ * ## Én notifikation per forløb, ikke tre
+ *
+ * Alle overgange deler `sladeshKanaltag`, så telefonen ERSTATTER den
+ * forrige frem for at stable. Kanalen ser én linje, der ændrer sig. Uden
+ * det ville en aften med fem Sladesh give femten notifikationer til alle —
+ * forskellen på at følge med og at blive plaget.
+ *
+ * ## Uden Kanal sker der ingenting
+ *
+ * `channelId` er valgfri i schemaet (gamle rækker fra migreringen har den
+ * ikke). Er den væk, er der ingen at fortælle det til, og funktionen går
+ * stille hjem. Den må ALDRIG vælte selve udfordringen.
+ */
+async function varslKanalen(
+  ctx: MutationCtx,
+  udfordring: Doc<"sladeshChallenges">,
+  begivenhed: Kanalbegivenhed,
+): Promise<void> {
+  const channelId = udfordring.channelId;
+  if (channelId === undefined) return;
+
+  const kanal = await ctx.db.get(channelId);
+  if (kanal === null) return;
+
+  const modtagere = kanal.members.filter(
+    (medlemId) =>
+      medlemId !== udfordring.senderId && medlemId !== udfordring.recipientId,
+  );
+  if (modtagere.length === 0) return;
+
+  const varsling = sladeshKanalVarsling({
+    kanalNavn: kanal.name,
+    afsenderNavn: udfordring.senderName,
+    modtagerNavn: udfordring.recipientName,
+    begivenhed,
+  });
+
+  await ctx.scheduler.runAfter(0, internal.push.sendTilBrugere, {
+    userIds: modtagere,
+    title: varsling.titel,
+    body: varsling.tekst,
+    tag: sladeshKanaltag(udfordring._id),
   });
 }
 
@@ -183,7 +255,7 @@ async function udloebHvisForaeldet(
    * Den planlagte kørsel fyrer PRÆCIS ved `deadlineAt`, og `erUdloebet` er
    * `now > deadlineAt` — altså strengt. Rammer scheduleren millisekundet
    * rent, ville tjekket sige "ikke udløbet endnu", og udfordringen ville
-   * blive hængende, til sikkerhedsnettet fandt den ti minutter senere.
+   * blive hængende, til sikkerhedsnettet fandt den efter fristen.
    *
    * `udloebSladesh` havde derfor sin egen kopi af hele udløbet uden
    * fristtjek. To kopier af "marker udløbet og tæl fejl op" er to steder,
@@ -383,7 +455,7 @@ export const sendSladesh = mutation({
     /*
      * VARSLINGEN. Uden den var Sladesh appens eneste funktion med en hård
      * frist og ingen måde at få det at vide på: udfordringen dukkede op i
-     * skallen, næste gang modtageren åbnede appen, og de ti minutter løb
+     * skallen, næste gang modtageren åbnede appen, og fristen løb
      * imens. Lå telefonen i lommen, var den tabt, før den var set.
      *
      * Push kom til appen efter Sladesh blev skrevet, og modulet blev ikke
@@ -403,6 +475,18 @@ export const sendSladesh = mutation({
       // afsluttet ikke overskriver noget, modtageren stadig kigger på.
       tag: `sladesh-${challengeId}`,
     });
+
+    /*
+     * OG RESTEN AF KANALEN. Udfordringen står nu; de andre skal kunne
+     * følge med i den uden at have appen åben. Se `varslKanalen`.
+     *
+     * Slået op på ny frem for at bruge felterne herover: helperen tager
+     * hele rækken, og den er lige indsat. Ét ekstra opslag i en mutation,
+     * der allerede har skrevet, er billigere end to veje ind i den samme
+     * tekst.
+     */
+    const indsat = await ctx.db.get(challengeId);
+    if (indsat !== null) await varslKanalen(ctx, indsat, "sendt");
 
     console.log("[Sladesh] sendt", {
       challengeId,
@@ -455,7 +539,7 @@ export const sendSladesh = mutation({
  * Kanalen, MENS udfordringen kører. Denne query — arkivet — er uændret og
  * viser dem stadig kun til de to parter. Det er den forskel, der gør
  * udvidelsen mulig uden at bryde løftet bagud: en aktiv udfordring lever
- * højst ti minutter, så intet billede taget før den ændring kan nås af den.
+ * højst én frist, så intet billede taget før den ændring kan nås af den.
  * Skal arkivet nogensinde åbnes, er det en ny og rigtig beslutning, ikke en
  * konsekvens af denne.
  *
@@ -634,6 +718,20 @@ export const registrerBevis = mutation({
     }
 
     await ctx.db.patch(args.challengeId, felter);
+
+    /*
+     * DET FØRSTE BILLEDE er det første holdepunkt for, at modtageren
+     * faktisk er i gang — frem for bare at have fået beskeden. Derfor
+     * netop den fase og ikke `awaiting_filled`, som kun betyder, at
+     * kameraet er åbnet.
+     *
+     * Det TOMME billede varsles ikke: det efterfølges af `afslutSladesh`
+     * inden for sekunder, og "er i gang" fulgt af "klarede den" er hele
+     * historien. En besked imellem dem ville sige det samme to gange.
+     */
+    if (args.phase === "filled_captured") {
+      await varslKanalen(ctx, udfordring, "igang");
+    }
 
     console.log("[Sladesh] fase rykket frem", {
       challengeId: args.challengeId,
@@ -845,7 +943,7 @@ export const fejlEfterladte = internalMutation({
  * ## Den udvider ikke bagud
  *
  * Fordi kun AKTIVE udfordringer svares på, og en aktiv udfordring lever
- * højst ti minutter, kan denne query ikke vise et eneste billede taget før
+ * højst én frist, kan denne query ikke vise et eneste billede taget før
  * den blev udrullet. Alt, der allerede ligger i storage, er taget under det
  * snævre løfte og bliver dér — `getSladeshHistorik` er uændret.
  *
@@ -875,7 +973,7 @@ export const getLiveSladesh = query({
 
     // Bagud fra to gange fristen. Én ville være nok for en udfordring, der
     // opfører sig, men en pending, hvis planlagte lukning aldrig skete,
-    // ryddes først af cron'en inden for ti minutter — og indtil da skal den
+    // ryddes først af cron'en, når fristen er løbet — og indtil da skal den
     // stadig kunne findes, saa `deadlineAt`-tjekket nedenfor kan afvise den.
     const fra = now - 2 * SLADESH_TIME_LIMIT_MS;
 

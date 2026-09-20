@@ -63,6 +63,7 @@ export function Mig({
     api.scoreboard.getScoreboard,
     channelId === undefined ? "skip" : { channelId },
   );
+  const bedsteAften = useQuery(api.drinkLogs.getBedsteAften, {});
   const resetRun = useMutation(api.drinkLogs.resetRun);
   const { signOut } = useAuth();
 
@@ -167,6 +168,45 @@ export function Mig({
           <div>
             <span className="etiket">Check ins</span>
             <div className="vaerdi">{mig.checkInCount ?? 0}</div>
+          </div>
+
+          {/*
+            REKORDEN — den vådeste aften, og hvornår den var.
+
+            Den manglede. Appen kunne fortælle, hvor mange genstande man
+            havde logget i alt og hvor mange dage i træk, men ikke det ene
+            tal, folk faktisk husker hinanden på: hvor meget blev det den
+            aften.
+
+            Datoen står med, fordi den er halvdelen af pointen. "17" er et
+            tal; "17 — lørdag den 8. august" er en aften, man kan komme i
+            tanke om.
+
+            Den regnes af historikken frem for at ligge som et felt på
+            brugeren — se `bedsteDrikkedag` i convex/drinkRules.ts. Kort
+            fortalt: fortryder man en logning, skal rekorden kunne gå ned
+            igen, og det kan et maksimum-felt ikke.
+          */}
+          <div>
+            <span className="etiket">Rekord</span>
+            {/*
+              TRE tilstande, ikke to. `undefined` er "henter stadig",
+              `null` er "ingen rekord endnu" — se `getBedsteAften`. Begge
+              viser en streg, men af hver sin grund, og at slaa dem sammen
+              ville betyde, at cellen sagde "ingen" et halvt sekund, hver
+              gang siden aabnede.
+
+              En streg frem for et nul: nul er et resultat, og det her er
+              fravaeret af et.
+            */}
+            <div className="vaerdi">
+              {bedsteAften === undefined || bedsteAften === null
+                ? "–"
+                : genstande(bedsteAften.genstande)}
+            </div>
+            {bedsteAften !== undefined && bedsteAften !== null && (
+              <span className="rekorddato">{rekorddato(bedsteAften.dayStart)}</span>
+            )}
           </div>
         </div>
       </div>
@@ -609,6 +649,24 @@ function Hero({
       <Faner valg={FANER} aktiv={valg} onVaelg={skift} />
     </div>
   );
+}
+
+/**
+ * "lørdag den 8. august" — rekordens dato, kort.
+ *
+ * Uden år: en rekord fra i forfjor står stadig som en ugedag og en dato,
+ * og årstallet ville fylde en fjerdedel af cellen for at sige noget, der
+ * sjældent betyder noget. Historik-siden gør det samme (`datoLang`), bare
+ * med "I dag" og "I går" ovenpå — de to har ingen plads her, og en
+ * rekord, der er sat i dag, er alligevel allerede stillingens øverste
+ * linje.
+ */
+function rekorddato(dayStart: number): string {
+  return new Date(dayStart).toLocaleDateString("da-DK", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
 }
 
 /** "Sidste for 24 min siden" — eller intet at måle fra endnu. */

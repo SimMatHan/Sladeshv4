@@ -3,6 +3,9 @@ import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { SLADESH_TIME_LIMIT_MS } from "../../convex/sladeshRules";
+
+/** Fristen i hele minutter, til teksterne. Se `SLADESH_TIME_LIMIT_MS`. */
+const SLADESH_MINUTTER = Math.round(SLADESH_TIME_LIMIT_MS / 60000);
 import { fejltekst, formatUr } from "../lib/visning";
 import { Fremdriftsring } from "./Fremdriftsring";
 import { slag } from "./haptik";
@@ -21,7 +24,7 @@ const UR_TYKKELSE = 10;
 /**
  * At modtage en Sladesh.
  *
- * Den ene skærm i appen, der AFBRYDER. Der er 10 minutter, og alt andet kan
+ * Den ene skærm i appen, der AFBRYDER. Der er en frist, og alt andet kan
  * vente — derfor er den ikke en fane og ikke et ark, men en overtagelse.
  * Lukker man den, bliver en bjælke stående med nedtællingen (se App.tsx);
  * man kan ikke komme til at glemme den.
@@ -133,6 +136,7 @@ export function SladeshOvertagelse({
    */
   const andelTilbage = Math.min(Math.max(tilbage / SLADESH_TIME_LIMIT_MS, 0), 1);
 
+
   return (
     <div className="overtagelse">
       <input
@@ -153,9 +157,9 @@ export function SladeshOvertagelse({
           ▾
         </button>
         {/* Uret som en RING, der tømmes. Et tal, der tæller ned, læses;
-            en ring, der løber tom, mærkes — og det er dét, de ti minutter
-            skal føles som. Tallet står stadig inde i den: man skal kunne
-            se, at der er halvandet minut tilbage, ikke bare at der er lidt. */}
+            en ring, der løber tom, mærkes — og det er dét, fristen skal
+            føles som. Tallet står stadig inde i den: man skal kunne se, at
+            der er halvandet minut tilbage, ikke bare at der er lidt. */}
         <div className={udloebet ? "urring udloebet" : "urring"}>
           <Fremdriftsring
             andel={andelTilbage}
@@ -274,7 +278,13 @@ function Trin({
     case "intro":
       return (
         <>
-          <p className="under">Find en genstand. Du har 10 minutter.</p>
+          {/* Minuttallet REGNES, det skrives ikke. Fristen gik fra 10 til
+              30, og en haardkodet tekst her ville have lovet noget andet
+              end uret lige over den. Samme regel som `sladeshVarsling` i
+              convex/sladeshRules.ts foelger. */}
+          <p className="under">
+            Find en genstand. Du har {SLADESH_MINUTTER} minutter.
+          </p>
           <button className="knap primaer" disabled={arbejder} onClick={onKlar}>
             Jeg er klar
           </button>

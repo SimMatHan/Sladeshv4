@@ -11,6 +11,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
 import { bundskaev } from "../src/ui/bundskaevregler";
+import { bedsteDrikkedag } from "../convex/drinkRules.ts";
 import {
   AABNINGER_FOER_OPFORDRING,
   bestemPlatform,
@@ -60,6 +61,8 @@ import {
   getBlockEnd,
   getBlockStart,
   SLADESH_TIME_LIMIT_MS,
+  sladeshKanalVarsling,
+  sladeshKanaltag,
   sladeshUdfaldVarsling,
   sladeshVarsling,
   sladeshForStilling,
@@ -1083,7 +1086,7 @@ console.log("\n[Logic] sladesh-varslingen");
     varsling.tekst.includes(`${Math.round(SLADESH_TIME_LIMIT_MS / 60000)} minutter`),
     true,
   );
-  check("fristen er 10 minutter", SLADESH_TIME_LIMIT_MS, 10 * 60 * 1000);
+  check("fristen er 30 minutter", SLADESH_TIME_LIMIT_MS, 30 * 60 * 1000);
 
   check(
     "et tomt navn falder tilbage",
@@ -1308,8 +1311,8 @@ console.log("\n[Logic] Sladesh — faser, status og frist");
   check("expired er afsluttet", erAfsluttetStatus("expired"), true);
   check("pending er ikke afsluttet", erAfsluttetStatus("pending"), false);
 
-  // Fristen er 10 minutter.
-  check("fristen er 10 minutter", SLADESH_TIME_LIMIT_MS, 10 * 60 * 1000);
+  // Fristen er 30 minutter.
+  check("fristen er 30 minutter", SLADESH_TIME_LIMIT_MS, 30 * 60 * 1000);
   const start = cest("2026-08-13T20:00:00");
   const frist = start + SLADESH_TIME_LIMIT_MS;
   check("ikke udløbet et sekund før", erUdloebet(frist, frist - 1000), false);
@@ -2633,6 +2636,204 @@ console.log("\n[Logic] tastaturets op og ned");
       hjemmeskaermgrunde(platform).length,
     );
   }
+}
+
+console.log("\n[Logic] Kanalens udsigt til en Sladesh");
+{
+  const grund = {
+    kanalNavn: "Drengene",
+    afsenderNavn: "Anders",
+    modtagerNavn: "Mathias",
+  };
+
+  check(
+    "titlen er Kanalens navn, ikke appens",
+    sladeshKanalVarsling({ ...grund, begivenhed: "sendt" }).titel,
+    "Drengene",
+  );
+
+  /*
+   * BEGGE NAVNE i "sendt". Resten af Kanalen skal vide baade hvem der
+   * sendte og hvem der fik — én af delene er et rygte.
+   */
+  const sendt = sladeshKanalVarsling({ ...grund, begivenhed: "sendt" }).tekst;
+  check("sendt naevner afsenderen", sendt.includes("Anders"), true);
+  check("sendt naevner modtageren", sendt.includes("Mathias"), true);
+
+  /*
+   * DE TRE OEVRIGE handler om modtageren alene. Det er hende, der er i
+   * gang, klarer den eller giver op — afsenderen har gjort sit.
+   */
+  for (const begivenhed of ["igang", "completed", "failed", "expired"] as const) {
+    const tekst = sladeshKanalVarsling({ ...grund, begivenhed }).tekst;
+    check(`${begivenhed} naevner modtageren`, tekst.includes("Mathias"), true);
+    check(`${begivenhed} er ikke tom`, tekst.trim().length > 0, true);
+  }
+
+  // ALLE FEM skal sige noget forskelligt. To ens tekster ville betyde, at
+  // Kanalen ikke kunne se forskel paa "er i gang" og "klarede den" — og
+  // med den faelles tag ville den ene erstatte den anden usynligt.
+  const alle = (["sendt", "igang", "completed", "failed", "expired"] as const).map(
+    (begivenhed) => sladeshKanalVarsling({ ...grund, begivenhed }).tekst,
+  );
+  check("fem forskellige tekster", new Set(alle).size, 5);
+
+  // Udloebet naevner fristen, og minuttallet regnes — saa en aendret frist
+  // ikke efterlader en tekst, der lover noget andet.
+  check(
+    "udloebet naevner fristen i minutter",
+    sladeshKanalVarsling({ ...grund, begivenhed: "expired" }).tekst.includes(
+      `${Math.round(SLADESH_TIME_LIMIT_MS / 60000)} minutter`,
+    ),
+    true,
+  );
+
+  check(
+    "tomme navne falder tilbage",
+    sladeshKanalVarsling({
+      kanalNavn: "   ",
+      afsenderNavn: "  ",
+      modtagerNavn: "",
+      begivenhed: "sendt",
+    }),
+    { titel: "Kanalen", tekst: "\u{1F37A} Nogen har sladeshet Nogen" },
+  );
+
+  /*
+   * DEN FAELLES TAG er hele grunden til, at tre oejeblikke ikke bliver til
+   * tre notifikationer. Gik den paa begivenheden i stedet for paa
+   * udfordringen, ville de stable — og en aften med fem Sladesh ville give
+   * femten beskeder til alle.
+   */
+  check("taggen er per udfordring", sladeshKanaltag("abc123"), "sladesh-kanal-abc123");
+  check(
+    "to udfordringer faar hver sin",
+    sladeshKanaltag("abc") === sladeshKanaltag("def"),
+    false,
+  );
+}
+
+console.log("\n[Logic] Den vaadeste aften");
+{
+  // Drikkedagen gaar 10 -> 10. Kl. 03 hoerer til aftenen foer.
+  const log = (iso: string, ekstra: Record<string, unknown> = {}) => ({
+    categoryId: "beer",
+    variationName: "Tuborg",
+    timestamp: cest(iso),
+    ...ekstra,
+  });
+
+  check("ingen logninger giver ingen rekord", bedsteDrikkedag([]), undefined);
+
+  /*
+   * TO AFTENER. Den 13. har tre (heraf én kl. 02 natten til den 14., som
+   * stadig hoerer til den 13.), den 15. har to. Rekorden er den 13.
+   */
+  const toAftener = [
+    log("2026-08-13T21:00:00"),
+    log("2026-08-13T23:00:00"),
+    log("2026-08-14T02:00:00"),
+    log("2026-08-15T22:00:00"),
+    log("2026-08-15T23:00:00"),
+  ];
+  const bedste = bedsteDrikkedag(toAftener);
+  check("rekorden er tre", bedste?.genstande, 3);
+  check(
+    "og den ligger paa den 13.",
+    bedste?.dayStart,
+    getDrinkDayStart(cest("2026-08-13T21:00:00")),
+  );
+
+  /*
+   * NATTEN TAELLER MED I AFTENEN FOER. Uden den regel ville kl. 02-logningen
+   * ovenfor have vaeret sin egen dag, og rekorden var blevet to — delt
+   * mellem to dage, praecis som enhver god aften ville blive.
+   */
+  check(
+    "kl. 02 hoerer til aftenen foer",
+    getDrinkDayStart(cest("2026-08-14T02:00:00")),
+    getDrinkDayStart(cest("2026-08-13T21:00:00")),
+  );
+
+  // NULSTILLINGER og IKKE-DRIKKEVARER taeller ikke — samme regel som
+  // historikken og stillingen.
+  check(
+    "en nulstilling taeller ikke",
+    bedsteDrikkedag([
+      log("2026-08-13T21:00:00"),
+      log("2026-08-13T22:00:00", { isReset: true }),
+    ])?.genstande,
+    1,
+  );
+  check(
+    "cigaretter taeller ikke",
+    bedsteDrikkedag([
+      log("2026-08-13T21:00:00"),
+      log("2026-08-13T22:00:00", { categoryId: "other" }),
+    ])?.genstande,
+    1,
+  );
+  check(
+    "en aften med kun cigaretter er ingen rekord",
+    bedsteDrikkedag([log("2026-08-13T21:00:00", { categoryId: "other" })]),
+    undefined,
+  );
+
+  /*
+   * FORTRYDELSER TRAEKKER FRA. `removeDrink` skriver en modpost med negativ
+   * `sizeMultiplier`, og rekorden skal kunne GAA NED igen — det er hele
+   * grunden til, at tallet regnes frem for at ligge som et felt paa
+   * brugeren.
+   */
+  check(
+    "en fortrydelse traekker sig selv fra",
+    bedsteDrikkedag([
+      log("2026-08-13T21:00:00"),
+      log("2026-08-13T21:30:00"),
+      log("2026-08-13T21:31:00", { sizeMultiplier: -1 }),
+      log("2026-08-15T22:00:00"),
+    ]),
+    { dayStart: getDrinkDayStart(cest("2026-08-13T21:00:00")), genstande: 1 },
+  );
+  check(
+    "en aften, der er taget helt tilbage, er ingen rekord",
+    bedsteDrikkedag([
+      log("2026-08-13T21:00:00"),
+      log("2026-08-13T21:31:00", { sizeMultiplier: -1 }),
+    ]),
+    undefined,
+  );
+
+  // VAEGTEDE historiske raekker: foer stoerrelserne blev fjernet taalte en
+  // Stor 2,0. De raekker ligger der stadig — se bevidst undtagelse 2.
+  check(
+    "gamle stoerrelser taeller med deres egen vaegt",
+    bedsteDrikkedag([
+      log("2026-08-13T21:00:00", { sizeMultiplier: 2 }),
+      log("2026-08-13T22:00:00", { sizeMultiplier: 1.5 }),
+    ])?.genstande,
+    3.5,
+  );
+  // Og flydende-komma-stoej rundes vaek, praecis som i historikken.
+  check(
+    "ingen 3.0000000000000004",
+    bedsteDrikkedag([
+      log("2026-08-13T21:00:00", { sizeMultiplier: 0.1 }),
+      log("2026-08-13T22:00:00", { sizeMultiplier: 0.2 }),
+    ])?.genstande,
+    0.3,
+  );
+
+  // STAAR TO AFTENER LIGE, vinder den AELDSTE. Rekorden blev sat dengang.
+  const uafgjort = bedsteDrikkedag([
+    log("2026-08-13T21:00:00"),
+    log("2026-08-15T22:00:00"),
+  ]);
+  check(
+    "uafgjort gaar til den aeldste",
+    uafgjort?.dayStart,
+    getDrinkDayStart(cest("2026-08-13T21:00:00")),
+  );
 }
 
 console.log(

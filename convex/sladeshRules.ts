@@ -12,8 +12,23 @@ import { localWallClock } from "./constants";
  * kaldte bare videre.
  */
 
-/** 10 minutter. Fra SLADESH_TIME_LIMIT_MS i det gamle repo. */
-export const SLADESH_TIME_LIMIT_MS = 10 * 60 * 1000;
+/**
+ * Fristen paa en Sladesh.
+ *
+ * TREDIVE MINUTTER, ikke ti. Det gamle repo havde ti, og appen arvede
+ * tallet uden at proeve det: ti minutter er nok, hvis man staar ved baren
+ * med telefonen i haanden, og for lidt til alt andet. Er man paa
+ * dansegulvet, i koeen eller udenfor, er udfordringen tabt, foer den er
+ * set — og en frist, folk ikke kan naa, goer Sladesh til noget man
+ * undgaar frem for noget man tager imod.
+ *
+ * Tredive minutter er stadig en frist. Man skal stadig rejse sig nu.
+ *
+ * TALLET STAAR ÉT STED. Baade varslingerne nedenfor og teksterne i
+ * SladeshOvertagelse.tsx regner minuttallet HERAF frem for at skrive det,
+ * saa appen ikke kan komme til at love ét og give noget andet.
+ */
+export const SLADESH_TIME_LIMIT_MS = 30 * 60 * 1000;
 
 /**
  * Fejlkoder. Bevaret ordret fra det gamle repos SLADESH_ERRORS, så et
@@ -169,8 +184,9 @@ export const SLADESH_UKENDT_AFSENDER = "Nogen";
  * deployment.
  *
  * Minuttallet regnes af `SLADESH_TIME_LIMIT_MS` frem for at stå skrevet.
- * Ændres fristen, ændres teksten med — ellers ville appen love ti minutter
- * og give noget andet.
+ * Ændres fristen, ændres teksten med — ellers ville appen love ét minuttal
+ * og give et andet. Det er sket: fristen gik fra 10 til 30, og denne tekst
+ * fulgte med af sig selv.
  */
 export function sladeshVarsling(afsenderNavn: string): {
   titel: string;
@@ -385,3 +401,90 @@ export function maaSeBeviser(input: {
   if (input.erPart) return true;
   return input.afgjortAt >= input.dayStart;
 }
+
+/**
+ * ─── KANALENS UDSIGT TIL EN SLADESH ──────────────────────────────────────
+ *
+ * En Sladesh var hidtil en samtale mellem to. Afsenderen fik at vide,
+ * hvordan det gik, modtageren fik udfordringen — og resten af Kanalen
+ * opdagede det kun, hvis de tilfaeldigvis havde stillingen aaben, mens det
+ * stod paa. Det er en fejl i en app, hvis hele pointe er, at man foelger
+ * med i hinandens aften: Sladesh er det mest dramatiske, der sker, og det
+ * skete i stilhed for alle andre end de to.
+ *
+ * ## ÉT FORLOEB, ÉN NOTIFIKATION
+ *
+ * De tre oejeblikke — sendt, i gang, afgjort — er IKKE tre beskeder. De er
+ * den samme besked, der bliver opdateret, og de deler derfor `tag`
+ * (`sladeshKanaltag`). Telefonen erstatter den forrige i stedet for at
+ * stable, saa Kanalen ser ÉN linje, der aendrer sig:
+ *
+ *   "Anders har sladeshet Mathias"
+ *     → "Mathias er i gang"
+ *       → "Mathias klarede den"
+ *
+ * Uden den faelles tag ville en aften med fem Sladesh give femten
+ * notifikationer til alle. Med den giver den fem, og hver af dem staar paa
+ * sit seneste. Det er forskellen paa at foelge med og at blive plaget.
+ *
+ * ## ALLE FIRE UDFALD, ikke kun det gode
+ *
+ * "Gennemfoert" alene ville efterlade Kanalen med et "er i gang", der
+ * aldrig blev afsluttet — og en halv historie er vaerre end ingen. Naar
+ * notifikationen alligevel erstatter sig selv, koster de tre oevrige
+ * udfald ingenting i stoej.
+ */
+
+/** Alle tre oejeblikke i ét forloeb deler tag, saa de erstatter hinanden. */
+export function sladeshKanaltag(challengeId: string): string {
+  return `sladesh-kanal-${challengeId}`;
+}
+
+export type Kanalbegivenhed = "sendt" | "igang" | SladeshUdfald;
+
+/**
+ * Teksten til resten af Kanalen.
+ *
+ * `kanalNavn` som titel, praecis som `varslingUdeIAften` i
+ * convex/kanaler.ts: det er Kanalen, der siger noget, ikke appen.
+ */
+export function sladeshKanalVarsling(input: {
+  kanalNavn: string;
+  afsenderNavn: string;
+  modtagerNavn: string;
+  begivenhed: Kanalbegivenhed;
+}): { titel: string; tekst: string } {
+  const afsender = input.afsenderNavn.trim() || SLADESH_UKENDT_AFSENDER;
+  const modtager = input.modtagerNavn.trim() || SLADESH_UKENDT_AFSENDER;
+  const titel = input.kanalNavn.trim() || "Kanalen";
+
+  return { titel, tekst: kanaltekst(afsender, modtager, input.begivenhed) };
+}
+
+function kanaltekst(
+  afsender: string,
+  modtager: string,
+  begivenhed: Kanalbegivenhed,
+): string {
+  switch (begivenhed) {
+    case "sendt":
+      return `🍺 ${afsender} har sladeshet ${modtager}`;
+    /*
+     * FOERSTE BILLEDE. Fasen hedder `filled_captured` — modtageren har
+     * fotograferet den fyldte genstand — og det er det foerste
+     * holdepunkt for, at hun rent faktisk er i gang frem for bare at
+     * have faaet beskeden.
+     */
+    case "igang":
+      return `📸 ${modtager} er i gang`;
+    case "completed":
+      return `✅ ${modtager} klarede den`;
+    case "failed":
+      return `🏳️ ${modtager} gav op`;
+    case "expired": {
+      const minutter = Math.round(SLADESH_TIME_LIMIT_MS / 60000);
+      return `⏳ ${modtager} naaede det ikke paa ${minutter} minutter`;
+    }
+  }
+}
+

@@ -2,6 +2,16 @@ import { useState } from "react";
 import { Ark } from "./Ark";
 import { Faner } from "./Faner";
 import { bestemPlatform, hjemmeskaermtrin } from "./hjemmeskaermregler";
+import { SLADESH_TIME_LIMIT_MS } from "../../convex/sladeshRules";
+
+/**
+ * Fristen i hele minutter.
+ *
+ * Regnet, ikke skrevet. Hjælpesiden er netop dér, hvor en forældet
+ * paastand goer mest skade: den bliver laest af en, der ikke kender
+ * reglen i forvejen. Se `SLADESH_TIME_LIMIT_MS`.
+ */
+const SLADESH_MINUTTER = Math.round(SLADESH_TIME_LIMIT_MS / 60000);
 
 /**
  * Hjælp — hvad appen er, og hvad den ved om dig.
@@ -114,7 +124,8 @@ function SaadanVirkerDet() {
         <h3>Sladesh</h3>
         <p className="hjaelp">
           En udfordring til én bestemt person: drik en genstand nu. Du sender
-          den fra personkortet, og modtageren har <strong>ti minutter</strong>.
+          den fra personkortet, og modtageren har{" "}
+          <strong>{SLADESH_MINUTTER} minutter</strong>.
         </p>
         <p className="hjaelp">
           Modtageren tager to billeder undervejs — den fyldte og den tomme —

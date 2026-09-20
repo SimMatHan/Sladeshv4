@@ -1,4 +1,4 @@
-import { isDrinkCategory } from "./constants";
+import { getDrinkDayStart, isDrinkCategory } from "./constants";
 
 /**
  * Hvad et "run" er, og hvordan logninger lægges sammen.
@@ -139,3 +139,66 @@ export function nettoForVariant(
 ): number {
   return aggregat.perVariant[variantNoegle(categoryId, variationName)] ?? 0;
 }
+
+/**
+ * Den vaadeste aften nogensinde — hvor mange, og hvornaar.
+ *
+ * ## Hvorfor den regnes og ikke gemmes
+ *
+ * Et `users.bedsteAften`-felt, opdateret ved hver logning, ville vaere
+ * billigere at laese og forkert at vedligeholde: fortryder man en logning,
+ * skal rekorden kunne GAA NED igen, og det kan et maksimum-felt ikke uden
+ * at scanne det hele alligevel. Appen har allerede vaeret igennem netop
+ * den faelde med milepaelsvarslingen, hvor svaret blev "husk det hoejeste,
+ * der er naaet" — det er rigtigt for en fejring, man ikke kan tage
+ * tilbage, og forkert for et tal, der paastaar at vaere sandt.
+ *
+ * Her er tallet en paastand om, hvad der faktisk staar i historikken. Saa
+ * skal den regnes af historikken.
+ *
+ * ## Samme optaellingsregel som alle andre steder
+ *
+ * Nulstillinger springes over, kun drikkevarer taeller, og vaegten er
+ * `sizeMultiplier ?? 1` — negativ paa en fortrydelses modpost, saa en
+ * fortrudt genstand traekker sig selv fra igen. Identisk med
+ * `getKanalHistorik` og `byggAggregat`; det er derfor, den ligger her
+ * blandt de andre rene regler frem for inde i en query.
+ *
+ * ## Doegnet er drikkedagen
+ *
+ * Kl. 10 til kl. 10, ikke midnat — `getDrinkDayStart`. "En aften/nat" er
+ * praecis dét: klokken tre om natten hoerer til aftenen foer, og en
+ * rekord, der knaekkede ved midnat, ville dele enhver god aften i to.
+ */
+export function bedsteDrikkedag(
+  logs: readonly LogLite[],
+): { dayStart: number; genstande: number } | undefined {
+  const perDag = new Map<number, number>();
+
+  for (const log of logs) {
+    if (log.isReset === true) continue;
+    if (!isDrinkCategory(log.categoryId)) continue;
+
+    const dag = getDrinkDayStart(log.timestamp);
+    perDag.set(dag, (perDag.get(dag) ?? 0) + (log.sizeMultiplier ?? 1));
+  }
+
+  let bedste: { dayStart: number; genstande: number } | undefined;
+  for (const [dayStart, sum] of perDag) {
+    // `>` og ikke `>=`: staar to aftener lige, vinder den AELDSTE. Samme
+    // afgoerelse som stillingen traeffer ved lige antal, og den rigtige
+    // her af en anden grund: rekorden blev sat dengang.
+    if (bedste === undefined || sum > bedste.genstande) {
+      bedste = { dayStart, genstande: sum };
+    }
+  }
+
+  // En dag kan lande paa nul eller derunder, hvis alt i den er fortrudt.
+  // Det er ikke en rekord, det er en aften der blev taget tilbage.
+  if (bedste === undefined || bedste.genstande <= 0) return undefined;
+
+  // Undgaar flydende-komma-stoej som 3.0000000000000004, praecis som
+  // historikken. De vaegtede, historiske raekker kan give decimaler.
+  return { dayStart: bedste.dayStart, genstande: Number(bedste.genstande.toFixed(2)) };
+}
+

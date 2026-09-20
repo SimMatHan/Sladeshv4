@@ -24,7 +24,7 @@ import { Ur } from "./Ur";
  * hvorfor de to har hver sin regel.
  *
  * Konsekvensen er, at denne skærm ikke kan vise et eneste billede taget,
- * før den blev bygget: en aktiv udfordring lever højst ti minutter. Det var
+ * før den blev bygget: en aktiv udfordring lever højst én frist. Det var
  * betingelsen for at udvide — man kan altid åbne mere, aldrig lukke igen.
  *
  * ## Tomme pladser er fremdrift
