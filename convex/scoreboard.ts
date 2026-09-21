@@ -110,7 +110,7 @@ export const getScoreboard = query({
     //
     // Fra `dayStart` og ikke længere tilbage: "taget i aften" er netop
     // drikkedagen, som resten af stillingen, og en aktiv udfordring lever
-    // højst ti minutter (`SLADESH_TIME_LIMIT_MS`), saa den kan ikke være
+    // højst én frist (`SLADESH_TIME_LIMIT_MS`), saa den kan ikke være
     // ældre end vinduet uden allerede at være lukket af cron'en.
     //
     // Udfordringer uden `channelId` falder uden for scannet. Klienten sætter

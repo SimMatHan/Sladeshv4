@@ -2213,13 +2213,43 @@ input {
  * under er ens, så de to halvdele vejer lige meget — den ene er ikke en
  * fodnote til den anden.
  */
+/*
+ * TO KOLONNER, ikke tre.
+ *
+ * Der var tre tal, og de stod i tre kolonner. Rekorden gjorde dem til
+ * fire, og en fjerde kolonne paa en 360 px telefon giver hver celle godt
+ * 70 px — for lidt til baade "Check ins" og et tal, og alt for lidt til
+ * rekordens dato.
+ *
+ * To kolonner i to raekker giver hver celle det dobbelte. Kortet bliver
+ * lidt hoejere og markant nemmere at laese, og tallene staar parvis frem
+ * for i en stribe, oejet skal scanne.
+ */
 .livstid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--luft-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  /*
+   * `start`, saa en celle med en ekstra linje — rekordens dato — ikke
+   * straekker sin naboer. Uden den ville de tre tal uden dato faa en
+   * tilfaeldig luft under sig for at matche den ene, der har en.
+   */
+  align-items: start;
+  gap: var(--luft-4) var(--luft-3);
   margin-top: var(--luft-4);
   padding-top: var(--luft-4);
   border-top: 1px solid var(--kant);
+}
+
+/*
+ * Rekordens dato. Den er ikke et tal og skal ikke laeses som et — den er
+ * fodnoten, der goer tallet til en aften, man kan huske.
+ */
+.rekorddato {
+  font-size: var(--tekst-xs);
+  color: var(--tekst-svag);
+  /* Ugedag plus dato kan blive lang ("onsdag den 13. september"). Den maa
+     gerne bryde til to linjer frem for at skubbe cellen ud af sin kolonne. */
+  line-height: 1.35;
 }
 
 .livstid > div {
@@ -2888,7 +2918,7 @@ input {
 /* ------------------------------------------------------------ overtagelse */
 /*
  * En modtaget Sladesh. Den ene skærm der afbryder alt andet, fordi der er
- * 10 minutter. Derfor dækker den hele viewporten og ligger over navigationen.
+ * en halv time. Derfor dækker den hele viewporten og ligger over navigationen.
  */
 
 .overtagelse {
@@ -2944,7 +2974,7 @@ input {
  * OVERTAGELSENS ur: en ring der tømmes.
  *
  * Et tal, der tæller ned, læses. En ring, der løber tom, mærkes — og det
- * er dét, de ti minutter skal føles som. Tallet står stadig inde i ringen,
+ * er dét, fristen skal føles som. Tallet står stadig inde i ringen,
  * fordi "halvandet minut" og "lidt" ikke er samme oplysning.
  *
  * `--urfarve` skifter ved udløb. Den ligger som variabel og ikke som to

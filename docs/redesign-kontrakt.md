@@ -166,6 +166,35 @@ der sker, er værre end ingen besked.
 Ingen mutation, intet felt og intet index er ændret. Kun betingelsen på to
 felter i `getSladeshHistorik`.
 
+**Bevidst undtagelse 10:** tre efterspurgte rettelser til Sladesh og
+profilen, som alle tre ligger i forretningsreglerne frem for på skærmen:
+
+1. **Fristen er 30 minutter, ikke 10.** `SLADESH_TIME_LIMIT_MS` i
+   `convex/sladeshRules.ts`. Ti minutter var arvet fra det gamle repo og
+   aldrig prøvet: det er nok ved baren med telefonen i hånden og for lidt
+   på et dansegulv. Tallet stod allerede ét sted, og alle tekster regner
+   det deraf — se note 2 nedenfor.
+2. **Resten af Kanalen får besked, når en Sladesh sendes, går i gang og
+   afgøres.** Ny ren funktion `sladeshKanalVarsling` og én helper
+   `varslKanalen` i `convex/sladesh.ts`. Det er en KOBLING af push til en
+   funktion, der fandtes i forvejen — samme mangel og samme rettelse som
+   beacons og Sladesh selv havde, og dermed inden for den oprindelige
+   push-undtagelse ovenfor.
+3. **Profilen viser den vådeste aften.** Ny ren funktion `bedsteDrikkedag`
+   i `convex/drinkRules.ts` og en ny query `getBedsteAften` i
+   `convex/drinkLogs.ts`.
+
+**Intet felt, ingen tabel og intet index er tilføjet.** Rekorden regnes af
+de logrækker, der allerede ligger der, med samme optællingsregel som
+`getKanalHistorik` — nulstillinger springes over, kun drikkevarer tæller,
+vægten er `sizeMultiplier ?? 1`. Det er bevidst: et `users.bedsteAften`-felt
+ville skulle kunne gå NED igen, når nogen fortryder en logning, og det kan
+et maksimum-felt ikke uden at scanne det hele alligevel.
+
+`scripts/logic-test.ts` har fået 28 prøver på de to nye rene funktioner. Den
+hører til samme kategori som `scripts/revision.ts` i undtagelse 4 — den
+læser og tæller efter, og kan ikke røre data.
+
 ---
 
 ## 2. Afhængigheder

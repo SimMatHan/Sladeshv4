@@ -3,7 +3,7 @@ import { mutation, query } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { evaluerAchievements } from "./achievements";
 import { getDrinkDayStart } from "./constants";
-import { beregnRunStart, byggAggregat, erUdeIDag } from "./drinkRules";
+import { bedsteDrikkedag, beregnRunStart, byggAggregat, erUdeIDag } from "./drinkRules";
 import { varslingMilepael, varslingUdeIAften } from "./kanaler";
 import { beslutMilepael } from "./paamindelseRules";
 import { requireCanViewUser, requireCurrentUser } from "./identity";
@@ -409,3 +409,58 @@ export const getDrinkLogsForUser = query({
       .take(args.limit ?? 50);
   },
 });
+
+/**
+ * Den vaadeste aften nogensinde.
+ *
+ * ## Hvorfor den scanner det hele
+ *
+ * En rekord er per definition et maksimum over ALT, hvad der er logget —
+ * der er ingen vej udenom at se paa det hele. Indekset
+ * `by_user_and_timestamp` gør det til ét raekke-scan over én persons egne
+ * raekker, ikke over tabellen, og Convex holder resultatet cachet, indtil
+ * en af netop de raekker aendrer sig.
+ *
+ * Alternativet — et taellefelt paa brugeren — er afvist i
+ * `bedsteDrikkedag`, og af en grund der taeller: fortryder man en logning,
+ * skal rekorden kunne gaa ned igen, og det kan et maksimum-felt ikke uden
+ * at scanne det hele alligevel.
+ *
+ * ## Den er ikke Kanal-afhaengig
+ *
+ * Rekorden er personens egen paa tvaers af alle Kanaler, praecis som
+ * livstidstallene ved siden af den paa Mig. Et menneske har én vaadeste
+ * aften, uanset hvem hun var i Kanal med dengang.
+ *
+ * ## `null`, ikke `undefined`
+ *
+ * `bedsteDrikkedag` svarer `undefined` for "ingen rekord endnu", og det er
+ * det rigtige for en ren funktion. Men over ledningen er `undefined` det,
+ * `useQuery` selv bruger til at sige "henter stadig" — og de to maa ikke
+ * vaere det samme vaerdi, for saa viser skaermen "ingen rekord" i det
+ * halve sekund, foer svaret er der. Derfor oversaettes den her.
+ */
+export const getBedsteAften = query({
+  args: { userId: v.optional(v.id("users")) },
+  handler: async (
+    ctx,
+    args,
+  ): Promise<{ dayStart: number; genstande: number } | null> => {
+    const viewer = await requireCurrentUser(ctx);
+    const targetId = args.userId ?? viewer._id;
+
+    // Samme adgangsregel som `getDrinkLogsForUser` lige over: sit eget maa
+    // man altid se, en andens kun hvis man deler Kanal.
+    if (targetId !== viewer._id) {
+      await requireCanViewUser(ctx, targetId);
+    }
+
+    const logs = await ctx.db
+      .query("drinkLogs")
+      .withIndex("by_user_and_timestamp", (q) => q.eq("userId", targetId))
+      .collect();
+
+    return bedsteDrikkedag(logs) ?? null;
+  },
+});
+
