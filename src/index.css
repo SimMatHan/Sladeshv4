@@ -3400,12 +3400,28 @@ input {
   font-size: var(--tekst-s);
 }
 
-/* Samlede beskeder rykkes ind under avataren, saa traaden staar lige —
-   afstanden er DERFOR afledt af avatarens bredde plus rækkens gap, ikke et
-   selvstændigt tal. */
-.besked.samlet:not(.min) .boble {
-  margin-left: calc(var(--avatar-lille) + var(--luft-2));
-}
+/*
+ * INGEN INDRYKNING af samlede beskeder.
+ *
+ * Her stod `margin-left: avatar + gap` med den begrundelse, at boblerne
+ * skulle staa lige under avataren. Reglen var skrevet til et layout, appen
+ * ikke har: den gaar ud fra, at avataren staar i en venstre RENDE med
+ * boblen ved siden af, som i iMessage.
+ *
+ * Det goer den ikke. `.besked` er en flex-KOLONNE, saa [avatar + navn] er
+ * sin egen linje OVER boblen, og den foerste boble starter helt ude til
+ * venstre. Indrykningen flyttede derfor kun de opfoelgende bobler — og
+ * resultatet var en traad, der knaekkede 34 px ind, hver gang nogen skrev
+ * to gange i traek. Det flade hjoerne foroven pegede samtidig paa ingenting.
+ *
+ * Egne beskeder havde aldrig indrykningen, og de stod rigtigt hele tiden.
+ * Det var forskellen, der afsloerede den.
+ *
+ * Grupperingen klares af det flade hjoerne og den mindre afstand —
+ * `.besked.samlet` og `.besked.samlet:not(.min) .boble` nedenfor. Det er
+ * nok: to bobler, der staar taet med et fladt hjoerne imellem, laeses som
+ * én, der fortsaetter.
+ */
 
 .boble {
   position: relative;
