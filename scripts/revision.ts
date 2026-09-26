@@ -289,6 +289,17 @@ const PAR: Array<[string, string]> = [
    */
   ["--orb-tekst", "--orb-lys"],
   ["--orb-tekst", "--orb-dyb"],
+  /*
+   * De to, der toner ind, når man logger.
+   *
+   * De ligger LÆNGERE UDE i farvecirklen end de fire andre — det er hele
+   * grunden til, at de findes — og netop derfor skal de måles. Uden de to
+   * par her kunne et nyt tema give kuglen en femte farve, der var mørk nok
+   * til at slå tallet ud, og revisionen ville ikke sige et ord. Den ville
+   * kun vise sig hos den, der havde drukket nok til at se farven.
+   */
+  ["--orb-tekst", "--orb-e"],
+  ["--orb-tekst", "--orb-f"],
 ];
 
 const GRAENSE = 4.5;
