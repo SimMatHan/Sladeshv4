@@ -34,6 +34,21 @@ import {
   type Kandidat,
 } from "../src/ui/tilfaeldigValg";
 import {
+  farveindeks,
+  feltVedVinkel,
+  forkort,
+  slutvinkel,
+  vaelgPlads,
+} from "../src/ui/straffehjulValg";
+import {
+  FELT_TEKST_MAX,
+  MAX_AKTIVE_FELTER,
+  STANDARDFELTER,
+  harPladsTilAktivt,
+  rensEmoji,
+  rensTekst,
+} from "../convex/straffehjulRules";
+import {
   AVATAR_COLORS,
   AVATAR_COLOR_NAMES,
   DRINK_CATEGORIES,
@@ -569,6 +584,86 @@ console.log("\n[Logic] skæbnens hjul");
   check("første trin er hurtigst", rullepause(0, 22) < rullepause(21, 22), true);
   check("den bremser hele vejen", rullepause(5, 22) < rullepause(15, 22), true);
   check("ét trin har ingen pause", rullepause(0, 1), 0);
+}
+
+console.log("\n[Logic] straffehjulet");
+{
+  // Trækningen. Samme kanter som skæbnens hjul: 0, midten, og et 1, som
+  // Math.random aldrig giver, men en indsprøjtet funktion kan.
+  check("0 vælger det første felt", vaelgPlads(10, () => 0), 0);
+  check("0,99 vælger det sidste", vaelgPlads(10, () => 0.99), 9);
+  check("1 rammer ikke ved siden af", vaelgPlads(10, () => 1), 9);
+  check("intet hjul, intet felt", vaelgPlads(0, () => 0.5), -1);
+
+  // DET VIGTIGSTE: hjulet lander dér, hvor trækningen sagde. For hvert
+  // antal felter, hvert felt, flere startvinkler og begge yderkanter af
+  // skubbet inden for feltet.
+  let rammer = 0;
+  let alle = 0;
+  for (const antal of [2, 3, 7, 10, 24]) {
+    for (let vinder = 0; vinder < antal; vinder++) {
+      for (const start of [0, 37, 359.5, 1800, -90]) {
+        for (const skub of [0, 0.5, 0.999]) {
+          const v = slutvinkel(start, vinder, antal, 5, () => skub);
+          alle++;
+          if (feltVedVinkel(v, antal) === vinder) rammer++;
+        }
+      }
+    }
+  }
+  check("hjulet lander altid på det trukne felt", rammer, alle);
+
+  // Altid fremad og mindst fem omgange — hjulet må aldrig snurre baglæns.
+  const fra = 1234;
+  const til = slutvinkel(fra, 3, 10, 5, () => 0.5);
+  check("drejer fremad", til > fra, true);
+  check("mindst fem omgange", til - fra >= 5 * 360, true);
+  check("under seks omgange", til - fra < 6 * 360, true);
+
+  // Uden animation: nul omgange, men stadig det rigtige felt.
+  const roligt = slutvinkel(0, 4, 8, 0, () => 0.5);
+  check("roligt drej er under én omgang", roligt < 360, true);
+  check("roligt drej rammer også", feltVedVinkel(roligt, 8), 4);
+
+  // Farverne: aldrig to ens side om side, heller ikke hvor hjulet lukker sig.
+  for (const antal of [2, 3, 5, 6, 10, 11, 16, 21, 24]) {
+    let naboer = 0;
+    for (let i = 0; i < antal; i++) {
+      const naeste = (i + 1) % antal;
+      if (antal > 2 && farveindeks(i, antal, 5) === farveindeks(naeste, antal, 5)) naboer++;
+    }
+    check(`${antal} felter: ingen ens naboer`, naboer, 0);
+  }
+
+  check("kort tekst røres ikke", forkort("Bund", 14), "Bund");
+  check("lang tekst får ellipse", forkort("Drik med venstre hånd", 10), "Drik med…");
+  check("emoji tæller som ét tegn", forkort("🍺🍺🍺🍺", 3), "🍺🍺…");
+
+  // Felternes regler på serveren.
+  check("tekst trimmes", rensTekst("  Tag et shot ") , { tekst: "Tag et shot" });
+  check("tom tekst afvises", "afslag" in rensTekst("   "), true);
+  check(
+    "for lang tekst afvises",
+    "afslag" in rensTekst("x".repeat(FELT_TEKST_MAX + 1)),
+    true,
+  );
+  check("tom emoji er ingen emoji", rensEmoji("  "), { emoji: undefined });
+  check("flag er en gyldig emoji", rensEmoji("🇩🇰"), { emoji: "🇩🇰" });
+  check("tekst i emojifeltet afvises", "afslag" in rensEmoji("Bund din drink nu"), true);
+  check("plads til et felt mere", harPladsTilAktivt(MAX_AKTIVE_FELTER - 1), true);
+  check("fuldt hjul", harPladsTilAktivt(MAX_AKTIVE_FELTER), false);
+
+  // Pladsholderne skal selv overholde reglerne, ellers kan de ikke sættes ind.
+  check(
+    "standardfelterne er gyldige",
+    STANDARDFELTER.every((f) => !("afslag" in rensTekst(f.tekst)) && !("afslag" in rensEmoji(f.emoji))),
+    true,
+  );
+  check(
+    "standardfelterne kan være på hjulet",
+    STANDARDFELTER.length <= MAX_AKTIVE_FELTER,
+    true,
+  );
 }
 
 console.log("\n[Logic] hvem må se bevisbillederne");

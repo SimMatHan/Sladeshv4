@@ -4533,6 +4533,36 @@ p.dagliste {
   font-size: var(--tekst-m);
 }
 
+/*
+ * Straffehjulets rækker har tre knapper — Sluk, Redigér, Slet — og det er
+ * én for meget til at stå på linje med teksten på en telefon. Teksten får
+ * hele den første linje, knapperne lægger sig under.
+ */
+.hjulraekke {
+  flex-wrap: wrap;
+}
+
+/* `nowrap`: emojien skal blive ved teksten, også når en lang straf
+   ombrydes. Teksten ombryder inde i sig selv i stedet. */
+.hjulraekke .adminnavn {
+  flex-basis: 100%;
+  flex-wrap: nowrap;
+}
+
+.hjulraekke .felt {
+  flex: 1 1 10em;
+}
+
+/* Emojifeltet i redigeringen er smalt — der skal stå ét tegn i det. */
+.hjulraekke .hjulemojifelt {
+  flex: 0 0 4.5em;
+}
+
+/* Et slukket felt er der stadig, men ikke på hjulet. */
+.adminnavn.slukket {
+  opacity: 0.5;
+}
+
 /* Kvitteringen på en gennemført admin-handling. Grøn, fordi den står side om
    side med `.fejl` og skal kunne skelnes på et blik. */
 .kvitteringstekst {
@@ -5020,6 +5050,113 @@ p.dagliste {
   font-size: var(--tekst-m);
   font-weight: var(--vaegt-medium);
   color: var(--accent);
+}
+
+/* ---------------------------------------------------------- straffehjulet */
+
+/*
+ * Straffehjulet — åbnes fra hjulknappen i Kanal-fanens top. Se
+ * Straffehjul.tsx. En skive, en viser, straffen og én knap.
+ */
+.straffehjul {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-4);
+  padding-bottom: var(--luft-4);
+}
+
+/* Kvadratisk og aldrig bredere end skærmen. `min()` frem for en fast
+   størrelse: på en lille telefon skal hele hjulet stadig kunne ses, uden at
+   arket skal rulles for at nå knappen. */
+.straffehjulramme {
+  position: relative;
+  width: min(100%, 320px, 42dvh);
+  aspect-ratio: 1;
+}
+
+/*
+ * Drejet. Fire sekunder, en kurve der starter hurtigt og bremser længe —
+ * det er bremsningen, der er spændingen. Varigheden SKAL passe med
+ * `DREJETID_MS` i Straffehjul.tsx; landingen venter på en timer, ikke på
+ * `transitionend`, som ikke altid kommer, hvis fanen er i baggrunden.
+ */
+.straffehjulskive {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-rund);
+  box-shadow: var(--skygge-svaev);
+  transition: transform 4.2s cubic-bezier(0.15, 0.6, 0.1, 1);
+}
+
+.straffehjulskive path {
+  stroke: var(--flade);
+  stroke-width: 1;
+}
+
+.straffehjultekst {
+  fill: var(--orb-tekst);
+  font-weight: var(--vaegt-fed);
+  text-anchor: start;
+  dominant-baseline: central;
+}
+
+.straffehjulnav {
+  fill: var(--flade);
+  stroke: var(--kant);
+}
+
+/* Viseren: en trekant over klokken tolv, der peger ned i skiven. Tegnet med
+   `clip-path` frem for kant-tricket, så den har én farve og ingen søm. */
+.straffehjulviser {
+  position: absolute;
+  top: calc(var(--luft-2) * -1);
+  left: 50%;
+  z-index: 1;
+  width: 22px;
+  height: 26px;
+  transform: translateX(-50%);
+  background: var(--tekst);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  filter: drop-shadow(var(--skygge-lav));
+}
+
+/* Fast mindstehøjde, så knappen under ikke hopper, når straffen dukker op. */
+.straffehjulresultat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--luft-2);
+  min-height: calc(var(--tekst-xl) * 2.6);
+  text-align: center;
+}
+
+/* Emojien OVER teksten, ikke ved siden af: en straf på to linjer skubbede
+   den ud til venstre, hvor den så ud til at høre til noget andet. */
+.straffehjulstraf {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-1);
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-titel);
+  line-height: 1.2;
+  color: var(--accent);
+  animation: op var(--fart-lang) var(--kurve);
+}
+
+.straffehjul > .knap {
+  align-self: stretch;
+}
+
+/* Toppens knapper — hjulet og Kanalskiftet side om side. */
+.topknapper {
+  flex: 0 0 auto;
+  display: flex;
+  gap: var(--luft-2);
 }
 
 /* ------------------------------------------------------------ drej tilbage */
