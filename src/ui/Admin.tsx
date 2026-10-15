@@ -3,6 +3,13 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { DRINK_CATEGORIES } from "../../convex/constants";
+import {
+  FELT_EMOJI_MAX,
+  FELT_TEKST_MAX,
+  MAX_AKTIVE_FELTER,
+  MIN_AKTIVE_FELTER,
+  STANDARDFELTER,
+} from "../../convex/straffehjulRules";
 import { fejltekst, genstande, klokken } from "../lib/visning";
 import { Ark } from "./Ark";
 import { Avatar } from "./Avatar";
@@ -34,6 +41,7 @@ import { Faner } from "./Faner";
 type Omraade =
   | "oversigt"
   | "drikkevarer"
+  | "hjul"
   | "brugere"
   | "kanaler"
   | "beacons"
@@ -44,6 +52,7 @@ type Omraade =
 const OMRAADER = [
   { id: "oversigt", etiket: "Oversigt" },
   { id: "drikkevarer", etiket: "Drikkevarer" },
+  { id: "hjul", etiket: "Hjul" },
   { id: "brugere", etiket: "Brugere" },
   { id: "kanaler", etiket: "Kanaler" },
   { id: "beacons", etiket: "Beacons" },
@@ -70,6 +79,8 @@ export function Admin({
           <Oversigt />
         ) : omraade === "drikkevarer" ? (
           <Drikkevarer />
+        ) : omraade === "hjul" ? (
+          <Hjul />
         ) : omraade === "brugere" ? (
           <Brugere />
         ) : omraade === "kanaler" ? (
@@ -283,6 +294,224 @@ function Drikkevarer() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {besked}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------- hjul */
+
+/**
+ * Straffehjulets felter — se Straffehjul.tsx og convex/straffehjul.ts.
+ *
+ * Samme form som kataloget ovenfor: en formular øverst, listen under, og
+ * sletning spørger én gang. Forskellen er "Sluk": et felt kan holde pause
+ * uden at blive slettet, så en straf til julefrokosten kan komme igen.
+ */
+function Hjul() {
+  const felter = useQuery(api.straffehjul.getAlleFelter, {});
+  const opret = useMutation(api.straffehjul.opretFelt);
+  const opdater = useMutation(api.straffehjul.opdaterFelt);
+  const slet = useMutation(api.straffehjul.sletFelt);
+  const indsaet = useMutation(api.straffehjul.indsaetStandardfelter);
+  const { arbejder, koer, besked } = useHandling();
+
+  const [tekst, setTekst] = useState("");
+  const [emoji, setEmoji] = useState("");
+  const [redigerer, setRedigerer] = useState<Id<"hjulfelter"> | undefined>();
+  const [redigeretTekst, setRedigeretTekst] = useState("");
+  const [redigeretEmoji, setRedigeretEmoji] = useState("");
+  const [bekraeftSlet, setBekraeftSlet] = useState<Id<"hjulfelter"> | undefined>();
+
+  if (felter === undefined) return <p className="midtstillet">Henter …</p>;
+
+  const aktive = felter.filter((felt) => felt.aktiv).length;
+  const fuldt = aktive >= MAX_AKTIVE_FELTER;
+
+  return (
+    <>
+      <div className="arkgruppe adminform">
+        <h3>Nyt felt</h3>
+        <input
+          className="felt"
+          value={tekst}
+          maxLength={FELT_TEKST_MAX}
+          placeholder="Fx Bund din drink"
+          onChange={(event) => setTekst(event.target.value)}
+        />
+        <input
+          className="felt"
+          value={emoji}
+          maxLength={FELT_EMOJI_MAX}
+          placeholder="Emoji (valgfri), fx 🍺"
+          onChange={(event) => setEmoji(event.target.value)}
+        />
+        <button
+          className="knap primaer"
+          disabled={arbejder || fuldt || tekst.trim().length === 0}
+          onClick={() =>
+            void koer("opretFelt", async () => {
+              await opret({
+                tekst: tekst.trim(),
+                ...(emoji.trim().length > 0 ? { emoji: emoji.trim() } : {}),
+              });
+              setTekst("");
+              setEmoji("");
+              return `"${tekst.trim()}" er på hjulet.`;
+            })
+          }
+        >
+          Tilføj
+        </button>
+        {fuldt && (
+          <p className="hjaelp">
+            Hjulet er fuldt med {MAX_AKTIVE_FELTER} aktive felter. Sluk eller slet et
+            for at gøre plads.
+          </p>
+        )}
+      </div>
+
+      <div className="arkgruppe">
+        <h3>
+          På hjulet · {aktive}
+          {felter.length > aktive && ` (+${felter.length - aktive} slukket)`}
+        </h3>
+
+        {aktive < MIN_AKTIVE_FELTER && (
+          <p className="hjaelp">
+            Hjulet skal have mindst {MIN_AKTIVE_FELTER} aktive felter, før nogen kan
+            dreje det.
+          </p>
+        )}
+
+        {/* Kun i et HELT tomt hjul — serveren afviser ellers alligevel. */}
+        {felter.length === 0 && (
+          <button
+            className="knap"
+            disabled={arbejder}
+            onClick={() =>
+              void koer("indsaetStandardfelter", async () => {
+                const antal = await indsaet({});
+                return `${antal} eksempler er sat ind. Ret dem til, som I vil.`;
+              })
+            }
+          >
+            Fyld med {STANDARDFELTER.length} eksempler
+          </button>
+        )}
+
+        <div className="adminliste">
+          {felter.map((felt) => (
+            <div key={felt._id} className="adminraekke hjulraekke">
+              {redigerer === felt._id ? (
+                <>
+                  <input
+                    className="felt hjulemojifelt"
+                    value={redigeretEmoji}
+                    maxLength={FELT_EMOJI_MAX}
+                    aria-label="Emoji"
+                    onChange={(event) => setRedigeretEmoji(event.target.value)}
+                  />
+                  <input
+                    className="felt"
+                    value={redigeretTekst}
+                    maxLength={FELT_TEKST_MAX}
+                    aria-label="Tekst"
+                    onChange={(event) => setRedigeretTekst(event.target.value)}
+                  />
+                  <button
+                    className="knap primaer"
+                    disabled={arbejder || redigeretTekst.trim().length === 0}
+                    onClick={() =>
+                      void koer("opdaterFelt", async () => {
+                        await opdater({
+                          feltId: felt._id,
+                          tekst: redigeretTekst.trim(),
+                          // Tomt felt betyder "fjern emojien", ikke "rør den ikke".
+                          emoji:
+                            redigeretEmoji.trim().length > 0
+                              ? redigeretEmoji.trim()
+                              : null,
+                        });
+                        setRedigerer(undefined);
+                        return "Feltet er rettet.";
+                      })
+                    }
+                  >
+                    Gem
+                  </button>
+                  <button className="knap" onClick={() => setRedigerer(undefined)}>
+                    Fortryd
+                  </button>
+                </>
+              ) : bekraeftSlet === felt._id ? (
+                <>
+                  <span className="adminnavn">Slet "{felt.tekst}"?</span>
+                  <button
+                    className="knap fare"
+                    disabled={arbejder}
+                    onClick={() =>
+                      void koer("sletFelt", async () => {
+                        await slet({ feltId: felt._id });
+                        setBekraeftSlet(undefined);
+                        return `"${felt.tekst}" er slettet.`;
+                      })
+                    }
+                  >
+                    Ja, slet
+                  </button>
+                  <button className="knap" onClick={() => setBekraeftSlet(undefined)}>
+                    Fortryd
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className={felt.aktiv ? "adminnavn" : "adminnavn slukket"}>
+                    <span className="emoji">{felt.emoji ?? "🎡"}</span>
+                    {felt.tekst}
+                    {!felt.aktiv && <span className="hjaelp"> · slukket</span>}
+                  </span>
+                  <button
+                    className="knap"
+                    disabled={arbejder || (!felt.aktiv && fuldt)}
+                    onClick={() =>
+                      void koer("opdaterFelt", async () => {
+                        await opdater({ feltId: felt._id, aktiv: !felt.aktiv });
+                        return felt.aktiv
+                          ? `"${felt.tekst}" er slukket.`
+                          : `"${felt.tekst}" er tilbage på hjulet.`;
+                      })
+                    }
+                  >
+                    {felt.aktiv ? "Sluk" : "Tænd"}
+                  </button>
+                  <button
+                    className="knap"
+                    onClick={() => {
+                      setRedigerer(felt._id);
+                      setRedigeretTekst(felt.tekst);
+                      setRedigeretEmoji(felt.emoji ?? "");
+                      setBekraeftSlet(undefined);
+                    }}
+                  >
+                    Redigér
+                  </button>
+                  <button
+                    className="knap fare"
+                    onClick={() => {
+                      setBekraeftSlet(felt._id);
+                      setRedigerer(undefined);
+                    }}
+                  >
+                    Slet
+                  </button>
+                </>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 

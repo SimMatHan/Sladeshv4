@@ -14,7 +14,7 @@ import { Donorer } from "./ui/Donorer";
 import { Drejtilbage } from "./ui/Drejtilbage";
 import { useBundskaev } from "./ui/bundskaev";
 import { Faner } from "./ui/Faner";
-import { KanalIkon, MigIkon, PlusIkon, SkiftIkon } from "./ui/Ikoner";
+import { HjulIkon, KanalIkon, MigIkon, PlusIkon, SkiftIkon } from "./ui/Ikoner";
 import { Sideundertekst } from "./ui/Sideundertekst";
 import { Forbindelse } from "./ui/Forbindelse";
 import { Historik } from "./ui/Historik";
@@ -28,6 +28,7 @@ import { Onboarding } from "./ui/Onboarding";
 import { Personkort } from "./ui/Personkort";
 import { SladeshOvertagelse } from "./ui/SladeshOvertagelse";
 import { Stilling } from "./ui/Stilling";
+import { Straffehjul } from "./ui/Straffehjul";
 
 /**
  * Kortet hentes dovent.
@@ -131,6 +132,7 @@ function Appen() {
   const [visning, setVisning] = useState<Visning>("stilling");
   const [logAabent, setLogAabent] = useState(false);
   const [kanalAabent, setKanalAabent] = useState(false);
+  const [hjulAabent, setHjulAabent] = useState(false);
   const [valgtPerson, setValgtPerson] = useState<Id<"users"> | undefined>();
   // `logId` er valgfri: en logning kan fortrydes, en afgjort Sladesh kan ikke.
   const [kvittering, setKvittering] = useState<
@@ -277,13 +279,26 @@ function Appen() {
             )}
           </div>
 
-          <button
-            className="kanalskift"
-            aria-label={harKanal ? "Skift Kanal" : "Meld dig ind i en Kanal"}
-            onClick={() => setKanalAabent(true)}
-          >
-            <SkiftIkon />
-          </button>
+          <div className="topknapper">
+            {/* Straffehjulet. Står her og ikke på Mig, fordi det er en leg
+                ved bordet — man drejer det sammen med dem, man er ude med.
+                Samme form som Kanalskiftet, så toppen har ét slags knap. */}
+            <button
+              className="kanalskift"
+              aria-label="Straffehjulet"
+              onClick={() => setHjulAabent(true)}
+            >
+              <HjulIkon />
+            </button>
+
+            <button
+              className="kanalskift"
+              aria-label={harKanal ? "Skift Kanal" : "Meld dig ind i en Kanal"}
+              onClick={() => setKanalAabent(true)}
+            >
+              <SkiftIkon />
+            </button>
+          </div>
         </header>
       )}
 
@@ -473,6 +488,8 @@ function Appen() {
       {kanalAabent && (
         <KanalVaelger aktivId={channelId} onLuk={() => setKanalAabent(false)} />
       )}
+
+      {hjulAabent && <Straffehjul onLuk={() => setHjulAabent(false)} />}
 
       {valgtPerson !== undefined && (
         <Personkort

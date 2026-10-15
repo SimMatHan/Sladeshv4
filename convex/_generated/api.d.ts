@@ -39,6 +39,8 @@ import type * as scoreboard from "../scoreboard.js";
 import type * as sladesh from "../sladesh.js";
 import type * as sladeshRules from "../sladeshRules.js";
 import type * as stats from "../stats.js";
+import type * as straffehjul from "../straffehjul.js";
+import type * as straffehjulRules from "../straffehjulRules.js";
 import type * as streaks from "../streaks.js";
 import type * as testing from "../testing.js";
 import type * as users from "../users.js";
@@ -81,6 +83,8 @@ declare const fullApi: ApiFromModules<{
   sladesh: typeof sladesh;
   sladeshRules: typeof sladeshRules;
   stats: typeof stats;
+  straffehjul: typeof straffehjul;
+  straffehjulRules: typeof straffehjulRules;
   streaks: typeof streaks;
   testing: typeof testing;
   users: typeof users;

@@ -135,3 +135,18 @@ export function VinkelIkon() {
     </svg>
   );
 }
+
+/**
+ * Straffehjulet — en skive med eger og en lille viser foroven.
+ *
+ * I Kanal-fanens top ved siden af Kanalskiftet. Samme 24-grid og
+ * stregtykkelse som de øvrige, så de to knapper vejer ens.
+ */
+export function HjulIkon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" {...streg}>
+      <circle cx="12" cy="13" r="8" />
+      <path d="M12 13V5M12 13l6.9 4M12 13l-6.9 4M10 2h4l-2 2.5z" />
+    </svg>
+  );
+}

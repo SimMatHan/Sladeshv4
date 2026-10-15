@@ -632,6 +632,27 @@ export default defineSchema({
   }).index("by_noegle", ["noegle"]),
 
   /**
+   * Straffehjulets felter — det, hjulet kan lande på.
+   *
+   * NYT i v4; det gamle repo havde intet hjul. Felterne er GLOBALE som
+   * drikkekataloget — de samme for alle Kanaler — og kun admins kan ændre
+   * dem. Se convex/straffehjul.ts.
+   *
+   * `aktiv` frem for sletning, når et felt skal holde pause: en straf, der
+   * passer til julefrokosten, skal kunne komme igen uden at blive skrevet
+   * forfra.
+   */
+  hjulfelter: defineTable({
+    tekst: v.string(),
+    /** Valgfri. Fraværende betyder "ingen emoji", aldrig en tom streng. */
+    emoji: v.optional(v.string()),
+    aktiv: v.boolean(),
+    oprettetAf: v.optional(v.id("users")),
+    createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
+  }).index("by_aktiv", ["aktiv"]),
+
+  /**
    * Web Push-abonnementer. Én række per ENHED en bruger har givet
    * tilladelse fra — en bruger med både telefon og bærbar har to.
    *

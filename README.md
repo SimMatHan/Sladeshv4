@@ -89,6 +89,7 @@ convex/
   scoreboard.ts    Scoreboard som live query (IKKE en tabel)
   historik.ts      Kanalens aktivitet dag for dag
   kort.ts          Hvem er ude, og hvor
+  straffehjul.ts   Straffehjulets felter — globale, styres under Admin → Hjul
 
   *Rules.ts        Rene regler uden database — afprøves af test:logic
   streaks.ts       Stræk- og pointregler
