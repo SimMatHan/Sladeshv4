@@ -28,18 +28,40 @@ import {
  * kommer til at bo.
  */
 
-/** Felterne på hjulet, i den rækkefølge de blev oprettet. */
+/** Det, hjulet skal bruge for at tegne et felt. */
+export type HjulFelt = { _id: string; tekst: string; emoji?: string };
+
+/**
+ * Felterne på hjulet, i den rækkefølge de blev oprettet.
+ *
+ * ## Et HELT tomt hjul drejer på eksemplerne
+ *
+ * Har tabellen ingen rækker overhovedet — heller ikke slukkede — står
+ * `STANDARDFELTER` på hjulet i stedet. Så virker hjulet i det øjeblik, det
+ * er deployet, uden at en admin først skal ind og trykke på noget.
+ *
+ * Eksemplerne bliver til rigtige rækker, når en admin trykker "Fyld med
+ * eksempler" eller opretter sit første felt; fra da af er det tabellen, der
+ * gælder. Vil man have et tomt hjul, så sluk felterne frem for at slette
+ * dem — en slukket række tæller som "hjulet har felter".
+ */
 export const getFelter = query({
   args: {},
-  handler: async (ctx): Promise<Doc<"hjulfelter">[]> => {
+  handler: async (ctx): Promise<HjulFelt[]> => {
     await requireCurrentUser(ctx);
 
     // Rækkefølgen er `_creationTime`, som indexet slutter på — så et nyt felt
     // lander sidst på hjulet frem for at skubbe de andre rundt.
-    return await ctx.db
+    const aktive = await ctx.db
       .query("hjulfelter")
       .withIndex("by_aktiv", (q) => q.eq("aktiv", true))
       .take(MAX_AKTIVE_FELTER);
+    if (aktive.length > 0) return aktive;
+
+    const findes = await ctx.db.query("hjulfelter").first();
+    if (findes !== null) return [];
+
+    return STANDARDFELTER.map((felt, i) => ({ _id: `standard-${i}`, ...felt }));
   },
 });
 

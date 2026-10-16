@@ -380,7 +380,7 @@ function Hjul() {
           {felter.length > aktive && ` (+${felter.length - aktive} slukket)`}
         </h3>
 
-        {aktive < MIN_AKTIVE_FELTER && (
+        {felter.length > 0 && aktive < MIN_AKTIVE_FELTER && (
           <p className="hjaelp">
             Hjulet skal have mindst {MIN_AKTIVE_FELTER} aktive felter, før nogen kan
             dreje det.
@@ -388,6 +388,13 @@ function Hjul() {
         )}
 
         {/* Kun i et HELT tomt hjul — serveren afviser ellers alligevel. */}
+        {felter.length === 0 && (
+          <p className="hjaelp">
+            Hjulet drejer lige nu på de {STANDARDFELTER.length} eksempler. Sæt dem
+            ind for at kunne rette i dem — eller tilføj dit eget felt, så er det
+            dine felter, der gælder.
+          </p>
+        )}
         {felter.length === 0 && (
           <button
             className="knap"

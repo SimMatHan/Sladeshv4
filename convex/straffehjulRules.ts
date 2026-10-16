@@ -30,12 +30,15 @@ export const MAX_AKTIVE_FELTER = 24;
 export const MIN_AKTIVE_FELTER = 2;
 
 /**
- * Pladsholderne, en admin kan fylde hjulet med i ét tryk.
+ * Pladsholderne — det, et tomt hjul drejer på, og det en admin kan fylde
+ * hjulet med i ét tryk.
  *
  * Eksempler, ikke en facitliste. De er skrevet til at blive rettet, slettet
- * og slået fra under Admin → Hjul — derfor ligger de som rækker i
- * databasen, når de først er sat ind, og ikke som en reserve i koden, der
- * dukker op igen, hvis man sletter dem alle.
+ * og slået fra under Admin → Hjul, og så skal de ligge som rækker i
+ * databasen.
+ *
+ * Indtil da drejer et HELT tomt hjul på dem direkte herfra — se
+ * `getFelter` i straffehjul.ts — så hjulet virker fra første deploy.
  */
 export const STANDARDFELTER: readonly { tekst: string; emoji: string }[] = [
   { emoji: "🍺", tekst: "Bund din drink" },
