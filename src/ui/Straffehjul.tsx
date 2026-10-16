@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { Doc } from "../../convex/_generated/dataModel";
+import type { HjulFelt } from "../../convex/straffehjul";
 import { MIN_AKTIVE_FELTER } from "../../convex/straffehjulRules";
 import { Ark } from "./Ark";
 import { dunk, slag, tik } from "./haptik";
@@ -42,7 +42,7 @@ const KUN_EMOJI_OVER = 12;
  */
 const PALET = ["--orb-a", "--orb-e", "--orb-f", "--orb-c", "--orb-b"];
 
-type Felt = Pick<Doc<"hjulfelter">, "_id" | "tekst" | "emoji">;
+type Felt = HjulFelt;
 
 type Tilstand =
   | { slags: "klar" }
