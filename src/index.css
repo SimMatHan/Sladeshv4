@@ -348,6 +348,51 @@
    */
   --bundskaev: 0px;
   --top-sikker: env(safe-area-inset-top, 0px);
+
+  /* ------------------------------------------------------- opstarten */
+
+  /*
+   * Opstartsskærmens figurer — se Opstart.tsx.
+   *
+   * INGEN af dem skifter med temaet, af samme grund som `--paa-farve`: de
+   * er tegningens egne farver, ikke appens flader. Øl er ravgul og en
+   * hudfarve er en hudfarve, uanset om siden bag dem er nærsort eller
+   * creme. Flisen er ikonets flaskegrønne, så den ligner det, man lige
+   * har trykket på på hjemmeskærmen.
+   */
+  --oel: #f5a524;
+  --oel-mork: #d9821a;
+  --skum: #fff8ea;
+  --glas: #d6e6ee;
+  --hud: #f4c8a0;
+  --hud-rasende: #ec6a52;
+  --haar: #4a2f1f;
+  --ansigt: #2b1a12;
+  --mund: #6b1f1a;
+  --tunge: #e8746a;
+  --kind: #f08c7c;
+  --damp: #f2f3f5;
+  --troeje: #1b4d3e;
+  --logo-lys: #2f7560;
+  --logo-flade: #1b4d3e;
+  --logo-side: #0f2e25;
+  --logo-haand-side: #b9cbc2;
+  --logo-fold: #c9d8d0;
+  --disk: #6b4428;
+  --disk-mork: #4a2e1b;
+  --disk-kant: #8a5c38;
+
+  /* Mål. Ringens radius er større end manden er bred, så emojierne går
+     fri af ham på siderne og kun skjules, når de er bag ham. */
+  --opstartlogo: 120px;
+  --opstartscene: 250px;
+  --ringradius: 146px;
+  --diskhoejde: 30px;
+  --diskdybde: 36px;
+  /* Det samme på en lav telefon — se bunden af OPSTARTEN. */
+  --opstartlogo-lav: 84px;
+  --opstartscene-lav: 190px;
+  --ringradius-lav: 112px;
 }
 
 /*
@@ -5296,4 +5341,1109 @@ p.dagliste {
   margin: 0;
   padding-top: var(--luft-2);
   border-top: 1px solid var(--kant);
+}
+
+/* ==========================================================================
+   OPSTARTEN
+   ==========================================================================
+
+   Det, man ser, mens appen kommer op. Se Opstart.tsx for hvorfor den ser ud,
+   som den gør, og opstartsregler.ts for hvornår den skifter.
+
+   Den er IKKE en ny hentetilstand ved siden af `.midtstillet` (regel 4).
+   Den står kun ved koldstarten, før der er en app at hente noget i;
+   alt inde i appen henter stadig med `.midtstillet`.
+
+   ALLE gentagende animationer herunder har `var(--opstart-forskudt)` som
+   forsinkelse. Den er negativ og lig med den tid, der allerede er ventet,
+   så en ny udgave af skærmen står præcis dér, hvor den forrige slap. De
+   få, der KUN skal køre én gang ved et skift — teksten, der slår ind, og
+   flisen, der besvimer — har den med vilje ikke.
+
+   Bevægelsen kan slås fra: den fælles `prefers-reduced-motion`-blok gør
+   hver animation færdig med det samme, og så står scenen i grundstillingen
+   herunder — manden med glasset hævet, flisen let drejet, så dybden stadig
+   kan ses. Teksten skifter stadig; den er skærmens besked, ikke dens pynt.
+*/
+
+.opstart {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--luft-4);
+  padding: calc(var(--top-sikker) + var(--luft-5)) var(--luft-5)
+    calc(var(--bund-sikker) + var(--luft-5));
+  overflow: hidden;
+  text-align: center;
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, var(--accent) 18%, var(--bund)),
+    var(--bund) 70%
+  );
+}
+
+/* Shakaens `<symbol>` skal ligge i dokumentet for at kunne bruges, men selv
+   fylde ingenting. */
+.opstartsymboler {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------ boblerne */
+
+.opstartbobler {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.opstartbobler span {
+  position: absolute;
+  left: var(--x);
+  bottom: calc(var(--str) * -2);
+  width: var(--str);
+  height: var(--str);
+  border-radius: var(--radius-rund);
+  border: 1px solid color-mix(in srgb, var(--oel) 50%, transparent);
+  background: color-mix(in srgb, var(--oel) 12%, transparent);
+  animation: opstartboble var(--varighed) linear
+    calc(var(--opstart-forskudt) - var(--fase)) infinite;
+}
+
+@keyframes opstartboble {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 1;
+  }
+  50% {
+    transform: translate3d(var(--luft-2), -55dvh, 0);
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(calc(var(--luft-2) * -1), -110dvh, 0);
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------- flisen */
+
+/*
+ * Ikonet som en klods.
+ *
+ * Tolv lag flise og seks lag shaka på hver side, med halvanden pixel
+ * imellem. Set forfra dækker det forreste lag resten; drejet ser man
+ * kanten af stakken, og den mørkere farve på de indre lag er det, der får
+ * den til at læses som en side frem for som en skygge.
+ */
+.opstartlogo {
+  position: relative;
+  width: var(--opstartlogo);
+  height: var(--opstartlogo);
+  perspective: 520px;
+}
+
+.logosvaev {
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: logosvaev 3.2s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.logodrej {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  /* Grundstillingen: drejet nok til, at man kan se, den er tyk. */
+  transform: rotateX(14deg) rotateY(-28deg);
+  animation: logodrej 7s var(--kurve) var(--opstart-forskudt) infinite;
+}
+
+.logoflise {
+  position: absolute;
+  inset: 0;
+  border-radius: 24%;
+  background: var(--logo-side);
+  transform: translateZ(calc((var(--lag) - 5.5) * 1.5px));
+}
+
+.logoflise.flade {
+  overflow: hidden;
+  background: linear-gradient(
+    150deg,
+    var(--logo-lys),
+    var(--logo-flade) 55%,
+    var(--logo-side)
+  );
+}
+
+/* Et lysglimt, der løber hen over forsiden. Det er `transform` på et
+   pseudo-element frem for en baggrund, der flytter sig — det sidste ville
+   tegne fladen om i hvert eneste billede. */
+.logoflise.flade::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    color-mix(in srgb, var(--paa-farve) 30%, transparent) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  animation: logoglimt 7s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.logoshaka {
+  position: absolute;
+  top: 14%;
+  left: 14%;
+  width: 72%;
+  height: 72%;
+  overflow: visible;
+  color: var(--logo-haand-side);
+  /* Flisens forside står på 8,25px (lag 11 af 0–11, centreret). */
+  transform: translateZ(calc(8.25px + (var(--lag) + 1) * 1.2px));
+}
+
+.logoshaka.bag {
+  transform: rotateY(180deg) translateZ(calc(8.25px + (var(--lag) + 1) * 1.2px));
+}
+
+.logoshaka.oeverst {
+  color: var(--paa-farve);
+  --shakafold: var(--logo-fold);
+}
+
+.logoskygge {
+  position: absolute;
+  left: 15%;
+  right: 15%;
+  bottom: calc(var(--luft-4) * -1);
+  height: var(--luft-3);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--tekst) 30%, transparent),
+    transparent
+  );
+  animation: logoskygge 3.2s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+@keyframes logosvaev {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, calc(var(--luft-2) * -1), 0);
+  }
+}
+
+@keyframes logoskygge {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.8);
+    opacity: 0.6;
+  }
+}
+
+/*
+ * Vugger, og drejer så én hel omgang. -388 er -28 plus en omgang, så
+ * slutningen og starten er samme stilling, og løkken ikke hopper.
+ */
+@keyframes logodrej {
+  0% {
+    transform: rotateX(14deg) rotateY(-28deg);
+  }
+  28% {
+    transform: rotateX(6deg) rotateY(26deg);
+  }
+  52% {
+    transform: rotateX(14deg) rotateY(-28deg);
+  }
+  82%,
+  100% {
+    transform: rotateX(14deg) rotateY(-388deg);
+  }
+}
+
+@keyframes logoglimt {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  80%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+/* ------------------------------------------------------------- scenen */
+
+.opstartscene {
+  width: var(--opstartscene);
+  height: var(--opstartscene);
+  perspective: 640px;
+  perspective-origin: 50% 20%;
+}
+
+.opstartrum {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  animation: opstartrum 9s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+@keyframes opstartrum {
+  0%,
+  100% {
+    transform: rotateY(-12deg);
+  }
+  50% {
+    transform: rotateY(12deg);
+  }
+}
+
+/* Lyskeglen på gulvet, han står i. Lagt ned i rummet, så den drejer med. */
+.scenegulv {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: calc(var(--ringradius) * 2.3);
+  height: calc(var(--ringradius) * 2.3);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--accent) 45%, transparent),
+    color-mix(in srgb, var(--accent) 12%, transparent) 60%,
+    transparent
+  );
+  transform: translate3d(-50%, 50%, 0) rotateX(90deg);
+}
+
+/*
+ * Bardisken: en forside og en plade, der er vippet bagud ind i rummet.
+ * Den står foran manden, så den dækker, hvor tegningen af ham slutter.
+ */
+.bardisk {
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  bottom: 0;
+  height: var(--diskhoejde);
+  transform-style: preserve-3d;
+  transform: translateZ(var(--diskdybde));
+}
+
+.diskfront {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lille) var(--radius-lille) 0 0;
+  background: linear-gradient(var(--disk), var(--disk-mork));
+  box-shadow: inset 0 2px 0 var(--disk-kant);
+}
+
+.diskplade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: calc(var(--diskdybde) * 1.6);
+  border-radius: var(--radius-lille);
+  background: linear-gradient(var(--disk-mork), var(--disk-kant));
+  transform-origin: top;
+  transform: rotateX(-90deg);
+}
+
+.mand {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Leddene. Alle drejer om et punkt i tegningens egne koordinater. */
+.mand .mandhoved,
+.mand .mandarm,
+.mand .glas,
+.mand .adamsaeble,
+.mand .draabe,
+.mand .damp circle,
+.mand .zzz text {
+  transform-box: view-box;
+}
+
+.mand .mandhoved {
+  transform-origin: 92px 130px;
+}
+
+/* Grundstillingen: glasset løftet til en skål. */
+.mand .mandarm {
+  transform-origin: 106px 156px;
+  transform: rotate(10deg);
+}
+
+/* Om HÅNDEN, ikke om glassets midte — ellers glider glasset ud af den. */
+.mand .glas {
+  transform-origin: 146px 108px;
+}
+
+.mand .oel {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.mand .hud {
+  fill: var(--hud);
+  transition: fill 1.2s ease;
+}
+
+.mand .troeje {
+  fill: var(--troeje);
+}
+
+.mand .aerme {
+  fill: none;
+  stroke: var(--troeje);
+  stroke-width: 15;
+  stroke-linecap: round;
+}
+
+.mand .troejetryk {
+  color: var(--paa-farve);
+  --shakafold: var(--logo-fold);
+}
+
+.mand .haar {
+  fill: var(--haar);
+}
+
+.mand .kind {
+  fill: var(--kind);
+  opacity: 0.55;
+}
+
+.mand .adamsaeble {
+  transform-origin: 100px 136px;
+}
+
+.mand .oereskal {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ansigt) 35%, var(--hud));
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.mand .streg {
+  fill: none;
+  stroke: var(--ansigt);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.mand .streg.tyk {
+  stroke-width: 4.5;
+}
+
+.mand .oeje {
+  fill: var(--ansigt);
+}
+
+.mand .mund {
+  fill: var(--mund);
+}
+
+.mand .tunge {
+  fill: var(--tunge);
+}
+
+.mand .taender {
+  fill: var(--paa-farve);
+}
+
+.mand .oelvaeske {
+  fill: var(--oel);
+}
+
+.mand .oelskum {
+  fill: var(--skum);
+}
+
+.mand .oelboble {
+  fill: var(--skum);
+  opacity: 0.7;
+}
+
+.mand .glaskant {
+  fill: color-mix(in srgb, var(--glas) 22%, transparent);
+  stroke: var(--glas);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.mand .draabe {
+  fill: var(--oel);
+  opacity: 0;
+}
+
+.mand .damp circle {
+  fill: var(--damp);
+  opacity: 0;
+}
+
+.mand .zzz text {
+  fill: var(--tekst-daempet);
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-fed);
+  opacity: 0;
+}
+
+/* Ét ansigt ad gangen. Det glade er grundstillingen. */
+.mand .ansigt {
+  display: none;
+}
+
+.opstart[data-humoer="glad"] .ansigt.glad,
+.opstart[data-humoer="utaalmodig"] .ansigt.sur,
+.opstart[data-humoer="rasende"] .ansigt.raab,
+.opstart[data-humoer="opgivet"] .ansigt.sover {
+  display: inline;
+}
+
+/* --- glad: skål, bund, grin, fyld op, forfra ----------------------- */
+
+.opstart[data-humoer="glad"] .mandarm {
+  animation: arm-glad 4.4s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="glad"] .glas {
+  animation: glas-glad 4.4s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="glad"] .mandhoved {
+  animation: hoved-glad 4.4s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="glad"] .oel {
+  animation: oel-glad 4.4s linear var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="glad"] .adamsaeble {
+  animation: slurk 4.4s linear var(--opstart-forskudt) infinite;
+}
+
+@keyframes arm-glad {
+  0%,
+  100% {
+    transform: rotate(10deg);
+  }
+  7% {
+    transform: rotate(0deg);
+  }
+  12% {
+    transform: rotate(8deg);
+  }
+  22% {
+    transform: rotate(-8deg);
+  }
+  60% {
+    transform: rotate(-14deg);
+  }
+  67% {
+    transform: rotate(16deg);
+  }
+  72% {
+    transform: rotate(10deg);
+  }
+}
+
+/* Glasset vipper mere, jo mindre der er tilbage — som når man bunder. */
+@keyframes glas-glad {
+  0%,
+  12%,
+  100% {
+    transform: rotate(0deg);
+  }
+  22% {
+    transform: rotate(-70deg);
+  }
+  30% {
+    transform: rotate(-85deg);
+  }
+  60% {
+    transform: rotate(-105deg);
+  }
+  67% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes hoved-glad {
+  0%,
+  14%,
+  88%,
+  100% {
+    transform: rotate(0deg);
+  }
+  24%,
+  60% {
+    transform: rotate(-15deg);
+  }
+  67% {
+    transform: rotate(0deg);
+  }
+  72%,
+  80% {
+    transform: rotate(-7deg);
+  }
+  76%,
+  84% {
+    transform: rotate(2deg);
+  }
+}
+
+/*
+ * Øllen tømmes fra BUNDEN, når glasset er vendt — det, der er tilbage,
+ * ligger ved kanten og munden — og fyldes op fra bunden, når det står.
+ * Omdrejningspunktet skifter, mens der ingen øl er, så skiftet ses ikke.
+ */
+@keyframes oel-glad {
+  0%,
+  26% {
+    transform: scaleY(1);
+    transform-origin: 50% 0%;
+  }
+  60% {
+    transform: scaleY(0);
+    transform-origin: 50% 0%;
+  }
+  74% {
+    transform: scaleY(0);
+    transform-origin: 50% 100%;
+  }
+  94%,
+  100% {
+    transform: scaleY(1);
+    transform-origin: 50% 100%;
+  }
+}
+
+@keyframes slurk {
+  0%,
+  26%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  31%,
+  41%,
+  51% {
+    transform: translateY(4px);
+  }
+  36%,
+  46%,
+  56% {
+    transform: translateY(0);
+  }
+}
+
+/* --- utålmodig: glasset er tomt, og der kommer ikke mere ----------- */
+
+.opstart[data-humoer="utaalmodig"] .oel,
+.opstart[data-humoer="rasende"] .oel,
+.opstart[data-humoer="opgivet"] .oel {
+  transform: scaleY(0);
+}
+
+.opstart[data-humoer="utaalmodig"] .mandarm {
+  animation: arm-utaalmodig 2.8s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="utaalmodig"] .glas {
+  animation: glas-utaalmodig 2.8s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="utaalmodig"] .mandhoved {
+  animation: hoved-utaalmodig 2.8s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="utaalmodig"] .draabe {
+  animation: draabe 2.8s ease-in var(--opstart-forskudt) infinite;
+}
+
+@keyframes arm-utaalmodig {
+  0%,
+  100% {
+    transform: rotate(10deg);
+  }
+  14%,
+  54% {
+    transform: rotate(25deg);
+  }
+  66% {
+    transform: rotate(10deg);
+  }
+}
+
+@keyframes glas-utaalmodig {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  14%,
+  54% {
+    transform: rotate(-195deg);
+  }
+  20%,
+  28%,
+  36%,
+  44% {
+    transform: rotate(-183deg);
+  }
+  24%,
+  32%,
+  40%,
+  48% {
+    transform: rotate(-207deg);
+  }
+  66% {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes hoved-utaalmodig {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  14%,
+  56% {
+    transform: rotate(9deg);
+  }
+  68%,
+  92% {
+    transform: rotate(-4deg);
+  }
+}
+
+/* Én sølle dråbe. Den står i tegningens egne koordinater ved glassets kant
+   i den vendte stilling og falder ned bag disken. */
+@keyframes draabe {
+  0%,
+  30% {
+    transform: translate(148px, 154px);
+    opacity: 0;
+  }
+  34% {
+    transform: translate(148px, 157px);
+    opacity: 1;
+  }
+  46% {
+    transform: translate(148px, 196px);
+    opacity: 1;
+  }
+  48%,
+  100% {
+    transform: translate(148px, 196px);
+    opacity: 0;
+  }
+}
+
+/* --- rasende: rød i hovedet, damp ud af ørerne --------------------- */
+
+.opstart[data-humoer="rasende"] .hud {
+  fill: var(--hud-rasende);
+}
+
+.opstart[data-humoer="rasende"] .mand {
+  animation: rystelse 0.4s linear var(--opstart-forskudt) infinite;
+}
+
+/* Hamrer det tomme glas i disken. Glasset drejes den anden vej, så det
+   står op, når det rammer. */
+.opstart[data-humoer="rasende"] .mandarm {
+  animation: arm-rasende 0.6s ease-in var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="rasende"] .glas {
+  animation: glas-rasende 0.6s ease-in var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="rasende"] .mandhoved {
+  animation: hoved-rasende 0.6s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="rasende"] .damp circle {
+  animation: damp 1.2s ease-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="rasende"] .damp circle:nth-child(2) {
+  animation-delay: calc(var(--opstart-forskudt) - 0.4s);
+}
+
+.opstart[data-humoer="rasende"] .damp circle:nth-child(3) {
+  animation-delay: calc(var(--opstart-forskudt) - 0.8s);
+}
+
+@keyframes rystelse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  25% {
+    transform: translate3d(-2px, 1px, 0);
+  }
+  50% {
+    transform: translate3d(2px, -1px, 0);
+  }
+  75% {
+    transform: translate3d(-1px, -2px, 0);
+  }
+}
+
+@keyframes arm-rasende {
+  0%,
+  100% {
+    transform: rotate(2deg);
+  }
+  42% {
+    transform: rotate(45deg);
+    animation-timing-function: ease-out;
+  }
+  52% {
+    transform: rotate(40deg);
+  }
+}
+
+@keyframes glas-rasende {
+  0%,
+  100% {
+    transform: rotate(-2deg);
+  }
+  42% {
+    transform: rotate(-45deg);
+    animation-timing-function: ease-out;
+  }
+  52% {
+    transform: rotate(-40deg);
+  }
+}
+
+@keyframes hoved-rasende {
+  0%,
+  100% {
+    transform: rotate(-5deg);
+  }
+  50% {
+    transform: rotate(4deg);
+  }
+}
+
+@keyframes damp {
+  0% {
+    transform: translate(0, 0) scale(0.3);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate(-10px, -34px) scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* --- opgivet: hovedet falder, armen hænger, han sover -------------- */
+
+.opstart[data-humoer="opgivet"] .mandhoved {
+  transform: rotate(26deg);
+  animation: hoved-opgivet 3.6s ease-in-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="opgivet"] .mandarm {
+  transform: rotate(62deg);
+}
+
+.opstart[data-humoer="opgivet"] .glas {
+  transform: rotate(-150deg);
+}
+
+.opstart[data-humoer="opgivet"] .zzz text {
+  animation: zzz 3.6s ease-out var(--opstart-forskudt) infinite;
+}
+
+.opstart[data-humoer="opgivet"] .zzz text:nth-child(2) {
+  animation-delay: calc(var(--opstart-forskudt) - 1.2s);
+}
+
+.opstart[data-humoer="opgivet"] .zzz text:nth-child(3) {
+  animation-delay: calc(var(--opstart-forskudt) - 2.4s);
+}
+
+@keyframes hoved-opgivet {
+  0%,
+  100% {
+    transform: rotate(26deg);
+  }
+  50% {
+    transform: rotate(30deg);
+  }
+}
+
+@keyframes zzz {
+  0% {
+    transform: translate(0, 6px);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(8px, -10px);
+    opacity: 0;
+  }
+}
+
+/* -------------------------------------------------------------- ringen */
+
+/*
+ * Emojierne står i en ring om manden og vender altid ansigtet mod en.
+ *
+ * Ringen drejer én vej; hver emoji drejer sin egen vinkel PLUS ringens
+ * tilbage igen (`.ringvend`), så summen er nul. Uden det ville de vise
+ * kanten frem, når de var ude på siden, og bagsiden, når de var bag ham.
+ */
+.emojiring {
+  position: absolute;
+  left: 50%;
+  top: 64%;
+  transform-style: preserve-3d;
+  transform: rotateX(-10deg);
+}
+
+.ringdrej {
+  transform-style: preserve-3d;
+  animation: ringdrej 11s linear var(--opstart-forskudt) infinite;
+}
+
+.ringplads {
+  position: absolute;
+  transform-style: preserve-3d;
+  transform: rotateY(var(--vinkel)) translateZ(var(--ringradius));
+}
+
+.ringvend {
+  display: block;
+  transform-style: preserve-3d;
+  transform: rotateY(calc(var(--vinkel) * -1));
+  animation: ringvend 11s linear var(--opstart-forskudt) infinite;
+}
+
+.ringgrin {
+  display: block;
+  font-size: var(--tekst-xl);
+  line-height: 1;
+  transform: translate(-50%, -50%);
+  animation: grin 0.9s ease-in-out
+    calc(var(--opstart-forskudt) - var(--nr) * 0.13s) infinite;
+}
+
+@keyframes ringdrej {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+
+@keyframes ringvend {
+  from {
+    transform: rotateY(calc(var(--vinkel) * -1));
+  }
+  to {
+    transform: rotateY(calc(var(--vinkel) * -1 - 360deg));
+  }
+}
+
+/* Grinet: hop og vrid, som en der ikke kan lade være. */
+@keyframes grin {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(-9deg) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -64%) rotate(9deg) scale(1.14);
+  }
+}
+
+/* Jo surere han bliver, jo mere griner de AF ham. */
+.opstart[data-humoer="utaalmodig"] .ringgrin {
+  animation-duration: 0.6s;
+}
+
+.opstart[data-humoer="rasende"] .ringgrin {
+  animation-duration: 0.36s;
+}
+
+/* Og når han giver op, er festen slut: ringen står stille, og de falder
+   og er væk. Han sidder alene tilbage — og teksten under ham skal kunne
+   læses uden en emoji hen over. */
+.opstart[data-humoer="opgivet"] .ringdrej,
+.opstart[data-humoer="opgivet"] .ringvend {
+  animation-play-state: paused;
+}
+
+.opstart[data-humoer="opgivet"] .ringgrin {
+  animation: emojifald 0.9s cubic-bezier(0.5, 0, 0.9, 0.5) both;
+}
+
+@keyframes emojifald {
+  from {
+    transform: translate(-50%, -50%) rotate(0deg);
+    opacity: 1;
+  }
+  to {
+    transform: translate(-50%, 120%) rotate(100deg);
+    opacity: 0;
+  }
+}
+
+/* Flisen besvimer. Én gang, fra skiftet — derfor ingen forskydning. */
+.opstart[data-humoer="opgivet"] .logosvaev {
+  animation-play-state: paused;
+}
+
+.opstart[data-humoer="opgivet"] .logodrej {
+  animation: logobesvim 1.4s var(--kurve) both;
+}
+
+@keyframes logobesvim {
+  from {
+    transform: rotateX(14deg) rotateY(-28deg);
+  }
+  to {
+    transform: rotateX(58deg) rotateY(-10deg) rotateZ(-14deg);
+  }
+}
+
+/* De to sure stemninger får flisen til at dreje hurtigere og hurtigere. */
+.opstart[data-humoer="utaalmodig"] .logodrej {
+  animation-duration: 4.5s;
+}
+
+.opstart[data-humoer="rasende"] .logodrej {
+  animation-duration: 2.2s;
+}
+
+/* -------------------------------------------------------------- teksten */
+
+.opstarttekst {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--luft-2);
+  max-width: var(--bredde);
+  /* Plads til den længste tekst på to linjer OG knappen, så scenen ikke
+     hopper op, når teksten bliver længere, eller knappen kommer. */
+  min-height: calc(
+    var(--tekst-xl) * 2.6 + var(--tekst-xs) * 2 + var(--tryk) + var(--luft-4)
+  );
+  justify-content: flex-start;
+}
+
+.opstartraab {
+  margin: 0;
+  font-size: var(--tekst-m);
+  font-weight: var(--vaegt-medium);
+  color: var(--tekst-daempet);
+  text-wrap: balance;
+  animation: raabind var(--fart-lang) var(--kurve) both;
+}
+
+.opstart:not([data-humoer="glad"]) .opstartraab {
+  font-size: var(--tekst-xl);
+  font-weight: var(--vaegt-fed);
+  letter-spacing: var(--spor-titel);
+  color: var(--tekst);
+}
+
+/* "For helvede" skal RYSTE. Indslaget først, så rystelsen. */
+.opstart[data-humoer="rasende"] .opstartraab {
+  color: var(--fare);
+  animation:
+    raabind var(--fart-lang) var(--kurve) both,
+    raabryst 0.32s linear var(--fart-lang) infinite;
+}
+
+.opstartstatus {
+  margin: 0;
+  font-size: var(--tekst-xs);
+  font-weight: var(--vaegt-medium);
+  letter-spacing: var(--spor-etiket);
+  text-transform: uppercase;
+  color: var(--tekst-svag);
+}
+
+.opstartknap {
+  width: auto;
+  margin-top: var(--luft-2);
+  padding: var(--luft-3) var(--luft-6);
+}
+
+@keyframes raabind {
+  from {
+    opacity: 0;
+    transform: scale(0.7) translate3d(0, var(--luft-2), 0);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes raabryst {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+  }
+  25% {
+    transform: translate3d(-2px, 0, 0) rotate(-1deg);
+  }
+  75% {
+    transform: translate3d(2px, 0, 0) rotate(1deg);
+  }
+}
+
+/* En lav telefon (SE, eller et landskab, der lige er drejet tilbage) får
+   en mindre scene, så teksten og knappen ikke ryger ud forneden. */
+@media (max-height: 640px) {
+  .opstart {
+    --opstartlogo: var(--opstartlogo-lav);
+    --opstartscene: var(--opstartscene-lav);
+    --ringradius: var(--ringradius-lav);
+    gap: var(--luft-2);
+  }
 }
