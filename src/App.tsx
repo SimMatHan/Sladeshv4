@@ -25,6 +25,7 @@ import { Ur } from "./ui/Ur";
 import { LogArk } from "./ui/LogArk";
 import { Mig } from "./ui/Mig";
 import { Onboarding } from "./ui/Onboarding";
+import { Opstart } from "./ui/Opstart";
 import { Personkort } from "./ui/Personkort";
 import { SladeshOvertagelse } from "./ui/SladeshOvertagelse";
 import { Stilling } from "./ui/Stilling";
@@ -93,12 +94,15 @@ function Indgang() {
   const { user, loading } = useAuth();
   const { isAuthenticated, isLoading: convexTjekker } = useConvexAuth();
 
-  if (loading) return <p className="midtstillet">Indlæser …</p>;
+  // Opstartsskærmen dækker HELE vejen ind — de to trin her og de to i
+  // `Appen` nedenfor. Den holder selv styr på, hvor længe der er ventet,
+  // også når React skifter fra den ene udgave til den næste. Se Opstart.tsx.
+  if (loading) return <Opstart status="Starter" />;
   if (user === null) return <LoginSkaerm />;
 
   // Firebase har en session, men Convex har ikke nået at verificere tokenet
   // endnu. Uden dette blink ville hver query kortvarigt fejle som uautoriseret.
-  if (convexTjekker) return <p className="midtstillet">Logger ind …</p>;
+  if (convexTjekker) return <Opstart status="Logger ind" />;
 
   if (!isAuthenticated) {
     return (
@@ -218,8 +222,8 @@ function Appen() {
     return () => clearTimeout(timer);
   }, [kvittering]);
 
-  if (mig === undefined) return <p className="midtstillet">Henter din profil …</p>;
-  if (mig === null) return <p className="midtstillet">Opretter din profil …</p>;
+  if (mig === undefined) return <Opstart status="Henter din profil" />;
+  if (mig === null) return <Opstart status="Opretter din profil" />;
 
   const channelId = mig.activeChannelId;
   const harKanal = mig.joinedChannelIds.length > 0;

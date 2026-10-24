@@ -96,7 +96,7 @@ man skifter mellem hele aftenen:
 
 | Query | Hvad det redder |
 |---|---|
-| `users.getMe` | Hele skallen. Uden den står appen på "Henter din profil …" |
+| `users.getMe` | Hele skallen. Uden den står appen på opstartsskærmen (`src/ui/Opstart.tsx`) |
 | `scoreboard.getScoreboard` | Stillingen, appens forside |
 | `kanaler.getKanal` | Kanalens navn i toppen |
 | `drinkVariations.getDrinkVariations` | ( + )-arket er fyldt ud, når det åbner |

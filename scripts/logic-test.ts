@@ -11,6 +11,13 @@
 import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
 import { bundskaev } from "../src/ui/bundskaevregler";
+import {
+  OPSTARTSTRIN,
+  SIDSTE_TRIN,
+  opstartstekst,
+  opstartstrin,
+  tilNaesteTrin,
+} from "../src/ui/opstartsregler";
 import { bedsteDrikkedag } from "../convex/drinkRules.ts";
 import {
   AABNINGER_FOER_OPFORDRING,
@@ -428,6 +435,68 @@ console.log("\n[Logic] skævheden i bunden");
 
   // Afrundet: CSS faar hele pixels.
   check("broekdele rundes", s(800, 860.4), 60);
+}
+
+console.log("\n[Logic] opstartsskærmen");
+{
+  // Det første trin er det, næsten alle ser. Det må ikke være surt.
+  check("ved start", opstartstrin(0), 0);
+  check("efter et sekund", opstartstrin(1000), 0);
+  check("første trin er glad", OPSTARTSTRIN[0].humoer, "glad");
+
+  // Grænserne er inklusive: præcis 5000 ms er trinnet, der starter dér.
+  check("lige før kom-nu", opstartstrin(4999), 1);
+  check("præcis kom-nu", opstartstrin(5000), 2);
+  check(
+    "for helvede efter 12 s",
+    OPSTARTSTRIN[opstartstrin(12000)].tekst,
+    "Kom nu, jeg vil gerne drikke for helvede!",
+  );
+
+  // Det sidste trin er knappen. Det skal nås — og blive.
+  check("efter et halvt minut", opstartstrin(30000), SIDSTE_TRIN);
+  check("efter ti minutter", opstartstrin(600000), SIDSTE_TRIN);
+
+  // Et ur fra et andet `performance.now()` kan give et negativt tal. Det
+  // rolige gæt er det rigtige, ikke "genstart".
+  check("negativ ventetid", opstartstrin(-500), 0);
+  check("NaN", opstartstrin(Number.NaN), 0);
+
+  // Tidslinjen skal gå fremad, ellers springer `opstartstrin` trin over.
+  check(
+    "trinnene står i rækkefølge",
+    OPSTARTSTRIN.every((t, i) => i === 0 || t.fraMs > OPSTARTSTRIN[i - 1].fraMs),
+    true,
+  );
+  check("første trin starter ved 0", OPSTARTSTRIN[0].fraMs, 0);
+
+  // Uret sættes til NÆSTE skift — ikke en interval.
+  check("til næste fra start", tilNaesteTrin(0), 2500);
+  check("til næste midt i et trin", tilNaesteTrin(6000), 2000);
+  check("intet efter det sidste", tilNaesteTrin(45000), undefined);
+  check("negativ ventetid regnes fra 0", tilNaesteTrin(-1000), 2500);
+
+  // Uden dækning siger det sidste trin, hvad der faktisk er galt.
+  check(
+    "sidste trin online",
+    opstartstekst(SIDSTE_TRIN, false),
+    "Den er helt gal. Genstart appen.",
+  );
+  check(
+    "sidste trin offline",
+    opstartstekst(SIDSTE_TRIN, true),
+    "Ingen dækning. Find noget net, og genstart appen.",
+  );
+  check(
+    "sjove trin er ens offline",
+    opstartstekst(3, true),
+    opstartstekst(3, false),
+  );
+  check(
+    "trin uden for listen klemmes",
+    opstartstekst(99, false),
+    opstartstekst(SIDSTE_TRIN, false),
+  );
 }
 
 console.log("\n[Logic] positionens holdbarhed");
