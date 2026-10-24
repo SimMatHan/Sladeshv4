@@ -41,7 +41,8 @@ bygget; det femte blev droppet, se nedenfor.
 ## Afklaret undervejs
 
 - **`--accent` har nu en farve per tema.** Det var det ene token, der skulle
-  flyttes: mørk beholder ravgul, kun lys bliver grøn. Alle accenttonede flader
+  flyttes: mørk beholdt ravgul, kun lys blev grøn. (Senere er mørk også
+  blevet flaskegrøn, et trin lysere — se `:root` i `src/index.css`.) Alle accenttonede flader
   er `color-mix(in srgb, var(--accent) N%, var(--flade))` og fulgte med af sig
   selv — ingen komponent skulle røres.
 - **`--medgang` og accenten er samme familie i lys, og det er i orden.** De

@@ -23,7 +23,7 @@ export function Fremdriftsring({
    * ringvariabler ind, fordi dens farve betyder noget: se `farveForNiveau`
    * i Mig.tsx og `beruselsesniveau` i convex/promilleRules.ts.
    */
-  farve = "var(--ringneutral, var(--accent))",
+  farve = "var(--ringneutral, var(--accent-forgrund))",
   /**
    * Overstyrer skærmlæserens tekst. Default er procenten, som er rigtig for
    * en fremdriftsbue, men forkert for en promillering — der er "2,5 ‰

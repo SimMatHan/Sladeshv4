@@ -21,9 +21,8 @@
  *
  * ## Farven kommer fra temaet
  *
- * `--accent` er ravgul i mørk, flaskegrøn i lys, og festivaltemaerne
- * overskriver den. Kuglen blander sig med `--bund`, så den følger med af sig
- * selv frem for at være tegnet til ét tema.
+ * Kuglen har sin egen palet per tema (`--orb-*` i index.css) — flaskegrøn
+ * i både lys og mørk, og festivaltemaerne overskriver den.
  *
  * ## Bevægelsen kan slås fra
  *
@@ -83,37 +82,45 @@ export function Orb({
   const klemt = intensitet > 1 ? 1 : intensitet > 0 ? intensitet : 0;
 
   return (
+    // RAMMEN bærer intensiteten, så kuglen OG bølgerne uden om den slår i
+    // samme takt. Bølgerne kan ikke ligge i selve kuglen: den klipper alt,
+    // der går ud over dens rand, og det er netop dét, de skal.
     <div
-      className="orb"
+      className="orbramme"
       style={{ "--orbintensitet": klemt } as React.CSSProperties}
     >
-      {/* `aria-hidden`: pletterne er udelukkende udseende. En skærmlæser
-          skal have tallet og etiketten, ikke tre tomme span. */}
-      <div className="orbsky" aria-hidden="true">
-        <span className="orbplet a" />
-        <span className="orbplet b" />
-        <span className="orbplet c" />
-        <span className="orbplet d" />
-        {/* De to sidste er der ALTID i markup, men usynlige ved nul — deres
-            `opacity` hænger på intensiteten i CSS. At sætte dem ind og tage
-            dem ud igen i React ville betyde, at animationen startede forfra
-            hver gang man loggede, og at Fortryd fjernede et element midt i
-            en overgang. Se `.orbplet.e` i index.css. */}
-        <span className="orbplet e" />
-        <span className="orbplet f" />
-      </div>
+      <span className="orbskygge" aria-hidden="true" />
+      <span className="orbboelge" aria-hidden="true" />
+      <span className="orbboelge anden" aria-hidden="true" />
+      <div className="orb">
+        {/* `aria-hidden`: pletterne er udelukkende udseende. En skærmlæser
+            skal have tallet og etiketten, ikke tre tomme span. */}
+        <div className="orbsky" aria-hidden="true">
+          <span className="orbplet a" />
+          <span className="orbplet b" />
+          <span className="orbplet c" />
+          <span className="orbplet d" />
+          {/* De to sidste er der ALTID i markup, men usynlige ved nul — deres
+              `opacity` hænger på intensiteten i CSS. At sætte dem ind og tage
+              dem ud igen i React ville betyde, at animationen startede forfra
+              hver gang man loggede, og at Fortryd fjernede et element midt i
+              en overgang. Se `.orbplet.e` i index.css. */}
+          <span className="orbplet e" />
+          <span className="orbplet f" />
+        </div>
 
-      <div className="orbindhold">
-        <span className="orbtal">{tal}</span>
-        <span className="orbetiket">{etiket}</span>
-        {undertekst !== undefined &&
-          (onUndertekst === undefined ? (
-            <span className="orbundertekst">{undertekst}</span>
-          ) : (
-            <button className="orbundertekst orblink" onClick={onUndertekst}>
-              {undertekst} →
-            </button>
-          ))}
+        <div className="orbindhold">
+          <span className="orbtal">{tal}</span>
+          <span className="orbetiket">{etiket}</span>
+          {undertekst !== undefined &&
+            (onUndertekst === undefined ? (
+              <span className="orbundertekst">{undertekst}</span>
+            ) : (
+              <button className="orbundertekst orblink" onClick={onUndertekst}>
+                {undertekst} →
+              </button>
+            ))}
+        </div>
       </div>
     </div>
   );

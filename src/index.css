@@ -86,9 +86,29 @@
    */
   --tekst-svag: #848b99;
 
-  --accent: #f59e0b;
-  --accent-mork: #d97706;
-  --accent-tekst: #1a1206;
+  /*
+   * FLASKEGRØN, også i mørke — appikonets farve, så appen ligner det, man
+   * trykker på på hjemmeskærmen. Den var ravgul.
+   *
+   * Et trin LYSERE end det lyse temas #1b4d3e. Mod nærsort forsvandt den
+   * mørke grønne helt; den her kan ses som flade (3,1:1 mod bunden) og
+   * bærer stadig cremehvid tekst (5,6:1).
+   */
+  --accent: #256b53;
+  --accent-mork: #1b4d3e;
+  --accent-tekst: #f4f1e9;
+  /*
+   * Accenten som TEKST, IKON eller KANT på siden — ikke som flade.
+   *
+   * Den findes, fordi en grøn, der er mørk nok til at bære lys tekst, er
+   * for mørk til selv at være tekst på nærsort (2,9:1). Ravgul kunne begge
+   * dele; flaskegrøn kan ikke. Så fladen og forgrunden er to tokens:
+   * knappen er flaskegrøn, den valgte fane er mintgrøn, 8,1:1.
+   *
+   * I lys er de den samme farve. Festivaltemaerne sætter den til deres egen
+   * accent, så intet ændrer sig dér.
+   */
+  --accent-forgrund: #5fbf98;
 
   --fare: #ef4444;
   --medgang: #34d399;
@@ -186,14 +206,14 @@
    *      `--orb-dyb` i hvert eneste tema. Falder en af dem under 4,5:1,
    *      fejler revisionen. Målt nu: 5,49 i det værste tema.
    *
-   * Tallene her er det mørke temas: rav, gylden, orange — accenten
-   * #f59e0b i familie.
+   * Tallene her er det mørke temas: flaskegrønnens familie, som i lys —
+   * kuglen er lys i begge temaer, så den kan bruge de samme tinter.
    */
-  --orb-lys: #fde8c3;
-  --orb-a: #fbbf24;
-  --orb-b: #f59e0b;
-  --orb-c: #fb923c;
-  --orb-dyb: #d97706;
+  --orb-lys: #d3ece0;
+  --orb-a: #7fcbac;
+  --orb-b: #4fb28c;
+  --orb-c: #a5dcc4;
+  --orb-dyb: #3da77f;
   /*
    * DE TO, DER KOMMER TIL. Se `.orbplet.e` og `.orbplet.f`: de er der ikke
    * ved nul, og de toner ind, efterhånden som der bliver logget.
@@ -207,14 +227,14 @@
    * på den anden side af gult — begge dele er noget, en ravgul kugle kan
    * bevæge sig hen imod uden at holde op med at være sig selv.
    */
-  --orb-e: #f87171;
-  --orb-f: #a3e635;
+  --orb-e: #5eead4;
+  --orb-f: #bef264;
   /*
    * NÆRSORT, ikke ren sort. Ren #000 mod en lys flade er hårdere end noget
    * andet i appen; hver temas variant har et strejf af kuglens egen kulør i
    * sig, så teksten hører til på kuglen frem for at ligge oven på den.
    */
-  --orb-tekst: #26160a;
+  --orb-tekst: #061a15;
 
   /* -------------------------------------------------------- bevægelse */
 
@@ -409,12 +429,11 @@
  * for skærm, og grønt er både nordisk og dansk ølgrønt, så det er hjemme i
  * en drikkeleg uden at være pjattet.
  *
- * ## Accenten er det ENE token, der har en farve per tema
+ * ## Accenten er flaskegrøn i begge temaer
  *
- * Alt andet her er samme rolle i en anden lyshed. `--accent` er en anden
- * FARVE: ravgul i mørke, flaskegrøn i lys. Det er et bevidst valg — mørk er
- * appens udgangspunkt og beholder sin signatur; lys er en anden stemning,
- * ikke en afblegning af den samme.
+ * Den var ravgul i mørke og grøn her. Nu er den grøn begge steder — i
+ * mørke et trin lysere, så den kan ses mod nærsort, og med sin egen
+ * `--accent-forgrund` til tekst. Se `:root` ovenfor.
  *
  * Konsekvensen skal kendes: alle de afledte flader i filen er
  * `color-mix(in srgb, var(--accent) N%, var(--flade))` og følger derfor med
@@ -477,6 +496,7 @@
     --accent: #1b4d3e;
     --accent-mork: #123528;
     --accent-tekst: #f4f1e9;
+    --accent-forgrund: #1b4d3e;
 
     /*
      * De semantiske farver er lånt fra den mørke palet og kan ikke bare
@@ -972,7 +992,7 @@ input {
  * netop fordi der kun er to at vælge imellem.
  */
 .navknap[aria-current="page"] {
-  color: var(--accent);
+  color: var(--accent-forgrund);
 }
 
 /*
@@ -1551,7 +1571,7 @@ input {
    er" til den mest larmende ting i et ark, man kun åbner for at komme
    videre. */
 .kanalrk.aktiv {
-  border-color: var(--accent);
+  border-color: var(--accent-forgrund);
   background: color-mix(in srgb, var(--accent) 8%, var(--flade));
 }
 
@@ -1565,7 +1585,7 @@ input {
 
 .kanalflueben {
   flex: 0 0 auto;
-  color: var(--accent);
+  color: var(--accent-forgrund);
   font-weight: var(--vaegt-fed);
 }
 
@@ -1699,7 +1719,7 @@ input {
 }
 
 .felt:focus {
-  border-color: var(--accent);
+  border-color: var(--accent-forgrund);
 }
 
 /*
@@ -1824,7 +1844,7 @@ input {
 .maerkat.aktiv {
   background: color-mix(in srgb, var(--accent) 16%, var(--flade));
   border-color: color-mix(in srgb, var(--accent) 40%, var(--kant));
-  color: var(--accent);
+  color: var(--accent-forgrund);
 }
 
 /* ------------------------------------------------------------ fremdriften */
@@ -2436,8 +2456,10 @@ input {
    * `intensitet` med, bliver hvert `calc()` nedenfor ugyldigt, og så falder
    * BÅDE farve og fart tilbage til browserens standard — en gennemsigtig
    * kugle, der ikke bevæger sig. Med reserven bliver den bare rolig.
+   *
+   * Selve reserven står på `.orbramme`, som bærer tallet fra Orb.tsx —
+   * stod den også her, ville den overskrive det, kuglen arver.
    */
-  --orbintensitet: 0;
   /*
    * Den modsatte vej, regnet ÉN gang frem for i fem `calc()`. Farten hænger
    * på roligheden — varigheden skal OP, når intensiteten går ned.
@@ -2528,6 +2550,155 @@ input {
         transparent
       );
   transition: box-shadow var(--fart-lang) var(--kurve);
+  /*
+   * HJERTESLAGET. Kuglen var en cirkel, der lå stille, med farver, der
+   * drev rundt indeni — man skulle kigge efter for at se, den levede. Nu
+   * slår den: et "dunk-dunk", hurtigere og kraftigere, jo mere man har
+   * drukket. Et roligt hjerte ved nul, et der hamrer en våd aften.
+   *
+   * Kun `transform`, så laget skaleres af grafikkortet og ikke tegnes om.
+   */
+  will-change: transform;
+  animation: orbslag var(--orbslag) ease-in-out infinite;
+}
+
+/*
+ * Rammen om kuglen: den bærer `--orbintensitet` fra Orb.tsx, så kuglen,
+ * bølgerne og skyggen slår i samme takt.
+ */
+.orbramme {
+  --orbintensitet: 0;
+  /* Slagets længde: 3,6s ved nul (≈ 33 slag i minuttet), 1,5s en våd aften. */
+  --orbslag: calc(3.6s - 2.1s * var(--orbintensitet));
+  /* Hvor meget kuglen svulmer i slaget. */
+  --orbpuls: calc(0.022 + 0.035 * var(--orbintensitet));
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+@keyframes orbslag {
+  0%,
+  50%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(calc(1 + var(--orbpuls)));
+  }
+  22% {
+    transform: scale(calc(1 + var(--orbpuls) * 0.25));
+  }
+  32% {
+    transform: scale(calc(1 + var(--orbpuls) * 0.7));
+  }
+}
+
+/*
+ * VOLUMEN. Et lag oven på farverne og under tallet, der gør cirklen til en
+ * kugle: et blankt højlys øverst til venstre, hvor lyset kommer fra (samme
+ * sted som bundens gradient), kanter der mørkner mod `--orb-dyb`, og en
+ * stribe reflekslys langs bunden, som på en glaskugle på et bord.
+ *
+ * Kanterne mørkner først uden for 58% af radius — tallet står i midten og
+ * mærker det ikke. `--orb-tekst` er målt mod `--orb-dyb` selv, så heller
+ * ikke undertekstens yderste bogstaver kan komme under det målte.
+ */
+.orb::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      circle at 31% 21%,
+      color-mix(in srgb, var(--paa-farve) 85%, transparent) 0,
+      color-mix(in srgb, var(--paa-farve) 28%, transparent) 8%,
+      transparent 24%
+    ),
+    radial-gradient(
+      circle at 46% 40%,
+      transparent 58%,
+      color-mix(in srgb, var(--orb-dyb) 55%, transparent) 100%
+    );
+  box-shadow:
+    inset 0 -14px 26px -12px color-mix(in srgb, var(--paa-farve) 70%, transparent),
+    inset 0 12px 22px -16px color-mix(in srgb, var(--paa-farve) 60%, transparent);
+}
+
+/*
+ * BØLGERNE. To ringe, der ruller ud fra kanten i takt med slaget — én på
+ * "dunk" og én på det efterfølgende "dunk". Svage ved nul, tydelige en våd
+ * aften. De ligger UDEN FOR kuglen, i rammen, for kuglen klipper alt ved
+ * sin rand.
+ */
+.orbboelge {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-rund);
+  border: 2px solid color-mix(in srgb, var(--orb-b) 75%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--orb-a) 45%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: orbboelge var(--orbslag) ease-out infinite;
+}
+
+.orbboelge.anden {
+  animation-delay: calc(var(--orbslag) * 0.2);
+}
+
+@keyframes orbboelge {
+  0%,
+  8% {
+    transform: scale(1);
+    opacity: 0;
+  }
+  12% {
+    transform: scale(1.02);
+    opacity: calc(0.25 + 0.55 * var(--orbintensitet));
+  }
+  70%,
+  100% {
+    transform: scale(1.42);
+    opacity: 0;
+  }
+}
+
+/*
+ * Skyggen på "gulvet" under kuglen — i kuglens egen farve, så den kan ses
+ * på nærsort, hvor en mørk skygge ville forsvinde. Den trækker sig sammen,
+ * når kuglen svulmer, som en bold, der letter.
+ */
+.orbskygge {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: calc(var(--luft-4) * -1);
+  height: var(--luft-4);
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--orb-dyb) calc(30% + 30% * var(--orbintensitet)), transparent),
+    transparent
+  );
+  pointer-events: none;
+  animation: orbskygge var(--orbslag) ease-in-out infinite;
+}
+
+@keyframes orbskygge {
+  0%,
+  50%,
+  100% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(0.82);
+  }
+  32% {
+    transform: scale(0.9);
+  }
 }
 
 /*
@@ -2887,6 +3058,9 @@ input {
  */
 .orbindhold {
   position: relative;
+  /* Over volumenlaget (`.orb::after`) — tallet skal ikke have højlys hen
+     over sig. */
+  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3839,7 +4013,7 @@ input {
 }
 
 .dagraekke.idag .tal {
-  color: var(--accent);
+  color: var(--accent-forgrund);
 }
 
 .dagraekke .midt {
@@ -4140,8 +4314,8 @@ p.dagliste {
 }
 
 .emojiknap[aria-pressed="true"] {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent);
+  border-color: var(--accent-forgrund);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-forgrund) 30%, transparent);
 }
 
 .farver {
@@ -4170,8 +4344,8 @@ p.dagliste {
 /* En "til/fra"-knap: samme form som de oevrige, men markeret naar den er slaaet
    til. Et rigtigt kontaktpunkt er stoerre end en switch og lettere at ramme. */
 .knap[aria-pressed="true"] {
-  border-color: var(--accent);
-  color: var(--accent);
+  border-color: var(--accent-forgrund);
+  color: var(--accent-forgrund);
 }
 
 .onboarding {
@@ -4281,7 +4455,7 @@ p.dagliste {
 /* Genbruger `.etiket`s størrelse/vægt/sporing, men i accentfarve — dette
    kort skal skille sig ud fra resten, ikke dæmpes som enhver anden etiket. */
 .taettestmidt .etiket {
-  color: var(--accent);
+  color: var(--accent-forgrund);
 }
 
 /*
@@ -4573,7 +4747,7 @@ p.dagliste {
 }
 
 .adminraekke.vaelgbar[aria-pressed="true"] {
-  border-color: var(--accent);
+  border-color: var(--accent-forgrund);
   background: color-mix(in srgb, var(--accent) 10%, var(--flade));
 }
 
@@ -4661,7 +4835,7 @@ p.dagliste {
 }
 
 .oplaasningsetiket {
-  color: var(--accent);
+  color: var(--accent-forgrund);
 }
 
 .oplaasningstitel {
@@ -4713,6 +4887,8 @@ p.dagliste {
   --tekst-svag: #8b8b8b;
 
   --accent: #c41e1e;
+  /* Lysere end fladens røde: #c41e1e som tekst på nærsort er 2,9:1. */
+  --accent-forgrund: #f26b6b;
   --accent-mork: #8f1616;
   --accent-tekst: #f5f5f5;
 
@@ -4748,6 +4924,7 @@ p.dagliste {
   --tekst-svag: #8f8f8f;
 
   --accent: #3aa7b3;
+  --accent-forgrund: #3aa7b3;
   --accent-mork: #2a7f8a;
   --accent-tekst: #121212;
 
@@ -5106,7 +5283,7 @@ p.dagliste {
   margin: 0;
   font-size: var(--tekst-m);
   font-weight: var(--vaegt-medium);
-  color: var(--accent);
+  color: var(--accent-forgrund);
 }
 
 /* ---------------------------------------------------------- straffehjulet */
@@ -5201,7 +5378,7 @@ p.dagliste {
   font-weight: var(--vaegt-fed);
   letter-spacing: var(--spor-titel);
   line-height: 1.2;
-  color: var(--accent);
+  color: var(--accent-forgrund);
   animation: op var(--fart-lang) var(--kurve);
 }
 

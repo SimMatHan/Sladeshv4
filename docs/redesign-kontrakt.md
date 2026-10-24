@@ -254,9 +254,10 @@ aldrig en farve direkte i en komponent.** Tilføj gerne nye variabler.
 --tekst-daempet: #9ba1ad;
 --tekst-svag: #6b7280;
 
---accent: #f59e0b;          /* ravgul — appens signaturfarve */
---accent-mork: #d97706;
---accent-tekst: #1a1206;
+--accent: #256b53;          /* flaskegrøn — appikonets farve, et trin lysere i mørk */
+--accent-mork: #1b4d3e;
+--accent-tekst: #f4f1e9;
+--accent-forgrund: #5fbf98; /* accenten som tekst/ikon på nærsort */
 
 --fare: #ef4444;
 --medgang: #34d399;
