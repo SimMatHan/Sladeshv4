@@ -250,6 +250,9 @@
      sit eget lag over det. Se `.hjul`. */
   --lag-hjuldug: 45;
   --lag-hjul: 46;
+  /* Opstartsskærmen ligger OVEN PÅ appen, mens appen bygges under den —
+     over ark og fejringer, som appen kan nå at åbne imens. Se Opstart.tsx. */
+  --lag-opstart: 80;
   /* Over alt: "drej telefonen tilbage" dækker skærmen, og der er intet
      under, man skal kunne nå først. */
   --lag-drej: 90;
@@ -1031,6 +1034,15 @@ input {
 
 .logknap:active {
   transform: scale(0.93);
+}
+
+/* Kun i de første sekunder, før profilen er hentet — se `Appen`. */
+.logknap:disabled {
+  opacity: 0.45;
+}
+
+.logknap:disabled:active {
+  transform: none;
 }
 
 /* ----------------------------------------------------------------- kort */
@@ -5354,12 +5366,6 @@ p.dagliste {
    Den står kun ved koldstarten, før der er en app at hente noget i;
    alt inde i appen henter stadig med `.midtstillet`.
 
-   ALLE gentagende animationer herunder har `var(--opstart-forskudt)` som
-   forsinkelse. Den er negativ og lig med den tid, der allerede er ventet,
-   så en ny udgave af skærmen står præcis dér, hvor den forrige slap. De
-   få, der KUN skal køre én gang ved et skift — teksten, der slår ind, og
-   flisen, der besvimer — har den med vilje ikke.
-
    Bevægelsen kan slås fra: den fælles `prefers-reduced-motion`-blok gør
    hver animation færdig med det samme, og så står scenen i grundstillingen
    herunder — manden med glasset hævet, flisen let drejet, så dybden stadig
@@ -5369,6 +5375,7 @@ p.dagliste {
 .opstart {
   position: fixed;
   inset: 0;
+  z-index: var(--lag-opstart);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -5411,8 +5418,8 @@ p.dagliste {
   border-radius: var(--radius-rund);
   border: 1px solid color-mix(in srgb, var(--oel) 50%, transparent);
   background: color-mix(in srgb, var(--oel) 12%, transparent);
-  animation: opstartboble var(--varighed) linear
-    calc(var(--opstart-forskudt) - var(--fase)) infinite;
+  animation: opstartboble var(--varighed) linear calc(var(--fase) * -1)
+    infinite;
 }
 
 @keyframes opstartboble {
@@ -5456,7 +5463,7 @@ p.dagliste {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  animation: logosvaev 3.2s ease-in-out var(--opstart-forskudt) infinite;
+  animation: logosvaev 3.2s ease-in-out infinite;
 }
 
 .logodrej {
@@ -5466,7 +5473,7 @@ p.dagliste {
   transform-style: preserve-3d;
   /* Grundstillingen: drejet nok til, at man kan se, den er tyk. */
   transform: rotateX(14deg) rotateY(-28deg);
-  animation: logodrej 7s var(--kurve) var(--opstart-forskudt) infinite;
+  animation: logodrej 7s var(--kurve) infinite;
 }
 
 .logoflise {
@@ -5501,7 +5508,7 @@ p.dagliste {
     transparent 70%
   );
   transform: translateX(-120%);
-  animation: logoglimt 7s ease-in-out var(--opstart-forskudt) infinite;
+  animation: logoglimt 7s ease-in-out infinite;
 }
 
 .logoshaka {
@@ -5537,7 +5544,7 @@ p.dagliste {
     color-mix(in srgb, var(--tekst) 30%, transparent),
     transparent
   );
-  animation: logoskygge 3.2s ease-in-out var(--opstart-forskudt) infinite;
+  animation: logoskygge 3.2s ease-in-out infinite;
 }
 
 @keyframes logosvaev {
@@ -5607,7 +5614,7 @@ p.dagliste {
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
-  animation: opstartrum 9s ease-in-out var(--opstart-forskudt) infinite;
+  animation: opstartrum 9s ease-in-out infinite;
 }
 
 @keyframes opstartrum {
@@ -5830,23 +5837,23 @@ p.dagliste {
 /* --- glad: skål, bund, grin, fyld op, forfra ----------------------- */
 
 .opstart[data-humoer="glad"] .mandarm {
-  animation: arm-glad 4.4s ease-in-out var(--opstart-forskudt) infinite;
+  animation: arm-glad 4.4s ease-in-out infinite;
 }
 
 .opstart[data-humoer="glad"] .glas {
-  animation: glas-glad 4.4s ease-in-out var(--opstart-forskudt) infinite;
+  animation: glas-glad 4.4s ease-in-out infinite;
 }
 
 .opstart[data-humoer="glad"] .mandhoved {
-  animation: hoved-glad 4.4s ease-in-out var(--opstart-forskudt) infinite;
+  animation: hoved-glad 4.4s ease-in-out infinite;
 }
 
 .opstart[data-humoer="glad"] .oel {
-  animation: oel-glad 4.4s linear var(--opstart-forskudt) infinite;
+  animation: oel-glad 4.4s linear infinite;
 }
 
 .opstart[data-humoer="glad"] .adamsaeble {
-  animation: slurk 4.4s linear var(--opstart-forskudt) infinite;
+  animation: slurk 4.4s linear infinite;
 }
 
 @keyframes arm-glad {
@@ -5973,19 +5980,19 @@ p.dagliste {
 }
 
 .opstart[data-humoer="utaalmodig"] .mandarm {
-  animation: arm-utaalmodig 2.8s ease-in-out var(--opstart-forskudt) infinite;
+  animation: arm-utaalmodig 2.8s ease-in-out infinite;
 }
 
 .opstart[data-humoer="utaalmodig"] .glas {
-  animation: glas-utaalmodig 2.8s ease-in-out var(--opstart-forskudt) infinite;
+  animation: glas-utaalmodig 2.8s ease-in-out infinite;
 }
 
 .opstart[data-humoer="utaalmodig"] .mandhoved {
-  animation: hoved-utaalmodig 2.8s ease-in-out var(--opstart-forskudt) infinite;
+  animation: hoved-utaalmodig 2.8s ease-in-out infinite;
 }
 
 .opstart[data-humoer="utaalmodig"] .draabe {
-  animation: draabe 2.8s ease-in var(--opstart-forskudt) infinite;
+  animation: draabe 2.8s ease-in infinite;
 }
 
 @keyframes arm-utaalmodig {
@@ -6073,33 +6080,33 @@ p.dagliste {
 }
 
 .opstart[data-humoer="rasende"] .mand {
-  animation: rystelse 0.4s linear var(--opstart-forskudt) infinite;
+  animation: rystelse 0.4s linear infinite;
 }
 
 /* Hamrer det tomme glas i disken. Glasset drejes den anden vej, så det
    står op, når det rammer. */
 .opstart[data-humoer="rasende"] .mandarm {
-  animation: arm-rasende 0.6s ease-in var(--opstart-forskudt) infinite;
+  animation: arm-rasende 0.6s ease-in infinite;
 }
 
 .opstart[data-humoer="rasende"] .glas {
-  animation: glas-rasende 0.6s ease-in var(--opstart-forskudt) infinite;
+  animation: glas-rasende 0.6s ease-in infinite;
 }
 
 .opstart[data-humoer="rasende"] .mandhoved {
-  animation: hoved-rasende 0.6s ease-in-out var(--opstart-forskudt) infinite;
+  animation: hoved-rasende 0.6s ease-in-out infinite;
 }
 
 .opstart[data-humoer="rasende"] .damp circle {
-  animation: damp 1.2s ease-out var(--opstart-forskudt) infinite;
+  animation: damp 1.2s ease-out infinite;
 }
 
 .opstart[data-humoer="rasende"] .damp circle:nth-child(2) {
-  animation-delay: calc(var(--opstart-forskudt) - 0.4s);
+  animation-delay: -0.4s;
 }
 
 .opstart[data-humoer="rasende"] .damp circle:nth-child(3) {
-  animation-delay: calc(var(--opstart-forskudt) - 0.8s);
+  animation-delay: -0.8s;
 }
 
 @keyframes rystelse {
@@ -6174,7 +6181,7 @@ p.dagliste {
 
 .opstart[data-humoer="opgivet"] .mandhoved {
   transform: rotate(26deg);
-  animation: hoved-opgivet 3.6s ease-in-out var(--opstart-forskudt) infinite;
+  animation: hoved-opgivet 3.6s ease-in-out infinite;
 }
 
 .opstart[data-humoer="opgivet"] .mandarm {
@@ -6186,15 +6193,15 @@ p.dagliste {
 }
 
 .opstart[data-humoer="opgivet"] .zzz text {
-  animation: zzz 3.6s ease-out var(--opstart-forskudt) infinite;
+  animation: zzz 3.6s ease-out infinite;
 }
 
 .opstart[data-humoer="opgivet"] .zzz text:nth-child(2) {
-  animation-delay: calc(var(--opstart-forskudt) - 1.2s);
+  animation-delay: -1.2s;
 }
 
 .opstart[data-humoer="opgivet"] .zzz text:nth-child(3) {
-  animation-delay: calc(var(--opstart-forskudt) - 2.4s);
+  animation-delay: -2.4s;
 }
 
 @keyframes hoved-opgivet {
@@ -6240,7 +6247,7 @@ p.dagliste {
 
 .ringdrej {
   transform-style: preserve-3d;
-  animation: ringdrej 11s linear var(--opstart-forskudt) infinite;
+  animation: ringdrej 11s linear infinite;
 }
 
 .ringplads {
@@ -6253,7 +6260,7 @@ p.dagliste {
   display: block;
   transform-style: preserve-3d;
   transform: rotateY(calc(var(--vinkel) * -1));
-  animation: ringvend 11s linear var(--opstart-forskudt) infinite;
+  animation: ringvend 11s linear infinite;
 }
 
 .ringgrin {
@@ -6261,8 +6268,7 @@ p.dagliste {
   font-size: var(--tekst-xl);
   line-height: 1;
   transform: translate(-50%, -50%);
-  animation: grin 0.9s ease-in-out
-    calc(var(--opstart-forskudt) - var(--nr) * 0.13s) infinite;
+  animation: grin 0.9s ease-in-out calc(var(--nr) * -0.13s) infinite;
 }
 
 @keyframes ringdrej {
@@ -6351,6 +6357,145 @@ p.dagliste {
 
 .opstart[data-humoer="rasende"] .logodrej {
   animation-duration: 2.2s;
+}
+
+/* -------------------------------------------------------------- udgangen */
+
+/*
+ * "Skål!" — når appen er klar, og skærmen har stået i tre sekunder.
+ *
+ * Manden løfter et fyldt glas, emojierne springer ud til siderne, flisen
+ * drejer en sidste omgang og vender sig mod en, og så zoomer hele skærmen
+ * væk, mens appen kommer frem under den. Alt kører ÉN gang og står stille
+ * bagefter (`both`) — skærmen tages ned af et ur i Opstart.tsx, ikke af et
+ * `animationend`, der aldrig kommer med reduceret bevægelse.
+ *
+ * Appen under bliver IKKE selv animeret. Den har faste elementer —
+ * navigationen, chattens skriver — og en `transform` på noget over dem
+ * ville flytte dem med, så længe overgangen varer.
+ */
+.opstart.ud {
+  /* Trykket skal ramme appen, så snart den kan ses. */
+  pointer-events: none;
+  animation: opstartud 0.6s cubic-bezier(0.55, 0, 0.75, 0.3) 0.4s both;
+}
+
+@keyframes opstartud {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+}
+
+.opstart[data-humoer="skaal"] .ansigt.glad {
+  display: inline;
+}
+
+.opstart[data-humoer="skaal"] .mandarm {
+  animation: arm-skaal 0.45s var(--kurve) both;
+}
+
+.opstart[data-humoer="skaal"] .glas {
+  animation: glas-skaal 0.45s var(--kurve) both;
+}
+
+.opstart[data-humoer="skaal"] .mandhoved {
+  animation: hoved-skaal 0.45s var(--kurve) both;
+}
+
+/* Et frisk glas til skålen — også hvis han lige havde drukket det tomt. */
+.opstart[data-humoer="skaal"] .oel {
+  animation: oel-skaal 0.35s ease-out both;
+}
+
+/* Glasset rækkes FREM mod en, ikke op til munden — det er en skål, ikke
+   en slurk. */
+@keyframes arm-skaal {
+  from {
+    transform: rotate(10deg);
+  }
+  to {
+    transform: rotate(-2deg);
+  }
+}
+
+@keyframes glas-skaal {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(16deg);
+  }
+}
+
+@keyframes hoved-skaal {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(-9deg);
+  }
+}
+
+@keyframes oel-skaal {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/*
+ * Ringen skaleres i alle tre retninger, så emojierne flyver UD i rummet —
+ * også dem bag ham. Gennemsigtigheden ligger på hver emoji og ikke på
+ * ringen: `opacity` på en `preserve-3d`-beholder lægger den flad, og så
+ * ville dem bag manden pludselig stå foran ham.
+ */
+.opstart.ud .emojiring {
+  animation: ringud 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+.opstart.ud .ringgrin {
+  animation: grinud 0.6s ease-out both;
+}
+
+@keyframes ringud {
+  from {
+    transform: rotateX(-10deg) scale3d(1, 1, 1);
+  }
+  to {
+    transform: rotateX(-10deg) scale3d(2.2, 2.2, 2.2);
+  }
+}
+
+@keyframes grinud {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.5);
+  }
+}
+
+/* En sidste hel omgang, der ender med forsiden mod en og et stykke nærmere. */
+.opstart.ud .logodrej {
+  animation: logoud 0.8s cubic-bezier(0.3, 0, 0.2, 1) both;
+}
+
+@keyframes logoud {
+  from {
+    transform: rotateX(14deg) rotateY(-28deg) translateZ(0);
+  }
+  to {
+    transform: rotateX(0deg) rotateY(360deg) translateZ(60px);
+  }
 }
 
 /* -------------------------------------------------------------- teksten */

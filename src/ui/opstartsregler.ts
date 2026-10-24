@@ -22,9 +22,11 @@ type Trin = {
 /**
  * Tidslinjen.
  *
- * Det første trin er det, næsten alle ser: en koldstart tager omkring et
- * sekund, når appen ligger i cachen. Resten er til den, der står i en
- * kælderbar med én streg — og skal være sjovere, jo længere man står der.
+ * Det første trin er det, næsten alle ser: skærmen står i mindst
+ * `MINDSTE_VISNING_MS`, og appen er som regel klar inden da. Det andet trin
+ * ligger derfor et sekund EFTER de tre — lå det før, ville man se det blinke
+ * forbi lige inden "Skål!". Resten er til den, der står i en kælderbar med
+ * én streg, og skal være sjovere, jo længere man står der.
  *
  * Det SIDSTE trin er ikke en vittighed. Efter et halvt minut er det mere
  * sandsynligt, at noget er gået i stå, end at nettet bare er langsomt, og
@@ -33,18 +35,41 @@ type Trin = {
  */
 export const OPSTARTSTRIN: readonly Trin[] = [
   { fraMs: 0, tekst: "Skænker op …", humoer: "glad" },
-  { fraMs: 2500, tekst: "Skummet skal lige lægge sig …", humoer: "glad" },
-  { fraMs: 5000, tekst: "Kom nu …", humoer: "utaalmodig" },
-  { fraMs: 8000, tekst: "Kom nu, jeg vil gerne drikke", humoer: "utaalmodig" },
+  { fraMs: 4000, tekst: "Skummet skal lige lægge sig …", humoer: "glad" },
+  { fraMs: 6500, tekst: "Kom nu …", humoer: "utaalmodig" },
+  { fraMs: 9500, tekst: "Kom nu, jeg vil gerne drikke", humoer: "utaalmodig" },
   {
-    fraMs: 12000,
+    fraMs: 13000,
     tekst: "Kom nu, jeg vil gerne drikke for helvede!",
     humoer: "rasende",
   },
-  { fraMs: 17000, tekst: "HALLO?! ØLLEN BLIVER LUNKEN!", humoer: "rasende" },
-  { fraMs: 23000, tekst: "Bartenderen er vist gået hjem …", humoer: "opgivet" },
+  { fraMs: 18000, tekst: "HALLO?! ØLLEN BLIVER LUNKEN!", humoer: "rasende" },
+  { fraMs: 24000, tekst: "Bartenderen er vist gået hjem …", humoer: "opgivet" },
   { fraMs: 30000, tekst: "Den er helt gal. Genstart appen.", humoer: "opgivet" },
 ];
+
+/**
+ * Hvor længe skærmen MINDST står, før den går — også når appen er klar.
+ *
+ * Et ønske, ikke en teknisk grænse: en skærm, der blinker væk efter et
+ * halvt sekund, ligner en fejl, og appen bruger tiden på at hente under den.
+ */
+export const MINDSTE_VISNING_MS = 3000;
+
+/** Hvor længe udgangen varer — "Skål!" og zoomet ind i appen. */
+export const UDGANG_MS = 1000;
+
+/** Det, skærmen siger, når den går. */
+export const SKAAL = "Skål! 🍻";
+
+/**
+ * Millisekunder, til skærmen må gå, når appen er klar, og den har været
+ * vist i `vistMs`. Nul, hvis den allerede har stået længe nok.
+ */
+export function tilUdgang(vistMs: number): number {
+  const vist = Number.isFinite(vistMs) && vistMs > 0 ? vistMs : 0;
+  return Math.max(0, MINDSTE_VISNING_MS - vist);
+}
 
 /** Det sidste trin — det med knappen. */
 export const SIDSTE_TRIN = OPSTARTSTRIN.length - 1;

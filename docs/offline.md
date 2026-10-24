@@ -96,7 +96,7 @@ man skifter mellem hele aftenen:
 
 | Query | Hvad det redder |
 |---|---|
-| `users.getMe` | Hele skallen. Uden den står appen på opstartsskærmen (`src/ui/Opstart.tsx`) |
+| `users.getMe` | Det meste af skallen. Uden den tegnes skallen alligevel, men Kanalen siger "Henter …", og ( + ) venter |
 | `scoreboard.getScoreboard` | Stillingen, appens forside |
 | `kanaler.getKanal` | Kanalens navn i toppen |
 | `drinkVariations.getDrinkVariations` | ( + )-arket er fyldt ud, når det åbner |
