@@ -1,7 +1,8 @@
 import { v } from "convex/values";
-import { query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import { query, type QueryCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
 import { drikkedageBagud, getDrinkDayStart, isDrinkCategory } from "./constants";
+import { kanalensLogninger } from "./drinkRules";
 import { requireKanalMedlem } from "./identity";
 
 /**
@@ -18,7 +19,46 @@ import { requireKanalMedlem } from "./identity";
  * igangværende run. Nulstiller man sit run, forsvinder man fra stillingen —
  * men aftenen står stadig i historikken. Det er to forskellige spørgsmål:
  * "hvem fører lige nu" og "hvad skete der i tirsdags".
+ *
+ * Kanalens logninger er medlemmernes logninger i ALLE Kanaler plus det, der
+ * er logget i Kanalen selv — se `kanalensLogninger` i drinkRules.ts.
  */
+
+/**
+ * Logningerne, en Kanal tæller med, i vinduet [fra, til).
+ *
+ * To slags indekserede scan: ét over Kanalen selv (så tidligere medlemmer
+ * bliver i historikken) og ét per nuværende medlem (så det, de har logget i
+ * andre Kanaler, kommer med).
+ */
+async function hentKanalensLogninger(
+  ctx: QueryCtx,
+  kanal: Doc<"kanaler">,
+  fra: number,
+  til?: number,
+): Promise<Doc<"drinkLogs">[]> {
+  const iKanalen = await ctx.db
+    .query("drinkLogs")
+    .withIndex("by_kanal_and_timestamp", (q) => {
+      const efter = q.eq("channelId", kanal._id).gte("timestamp", fra);
+      return til === undefined ? efter : efter.lt("timestamp", til);
+    })
+    .collect();
+
+  const medlemmernes = await Promise.all(
+    kanal.members.map((userId) =>
+      ctx.db
+        .query("drinkLogs")
+        .withIndex("by_user_and_timestamp", (q) => {
+          const efter = q.eq("userId", userId).gte("timestamp", fra);
+          return til === undefined ? efter : efter.lt("timestamp", til);
+        })
+        .collect(),
+    ),
+  );
+
+  return kanalensLogninger(iKanalen, medlemmernes.flat());
+}
 
 /** Default og loft på hvor langt tilbage der kigges. */
 const DAGE_STANDARD = 14;
@@ -49,13 +89,8 @@ export const getKanalHistorik = query({
     const antal = Math.min(Math.max(args.dage ?? DAGE_STANDARD, 1), DAGE_MAKS);
     const dagsStarter = drikkedageBagud(now, antal);
 
-    // Ét indekseret range-scan fra den ældste dags grænse og frem.
-    const logs = await ctx.db
-      .query("drinkLogs")
-      .withIndex("by_kanal_and_timestamp", (q) =>
-        q.eq("channelId", args.channelId).gte("timestamp", dagsStarter[0]),
-      )
-      .collect();
+    // Indekserede range-scan fra den ældste dags grænse og frem.
+    const logs = await hentKanalensLogninger(ctx, kanal, dagsStarter[0]);
 
     // Tom ramme først, så dage uden aktivitet står med nul frem for at
     // mangle. En stille tirsdag er også information.
@@ -148,21 +183,13 @@ export const getKanalDag = query({
     dayStart: v.number(),
   },
   handler: async (ctx, args): Promise<Historiklogning[]> => {
-    await requireKanalMedlem(ctx, args.channelId);
+    const { kanal } = await requireKanalMedlem(ctx, args.channelId);
 
     // Slutgrænsen udledes af starten, så kalderen ikke kan bede om et
     // vilkårligt stort vindue ved at sende to løse tidspunkter.
     const dagSlut = naesteDrikkedag(args.dayStart);
 
-    const logs = await ctx.db
-      .query("drinkLogs")
-      .withIndex("by_kanal_and_timestamp", (q) =>
-        q
-          .eq("channelId", args.channelId)
-          .gte("timestamp", args.dayStart)
-          .lt("timestamp", dagSlut),
-      )
-      .collect();
+    const logs = await hentKanalensLogninger(ctx, kanal, args.dayStart, dagSlut);
 
     return logs
       .filter((log) => log.isReset !== true)

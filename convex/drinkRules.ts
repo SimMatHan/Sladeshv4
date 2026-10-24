@@ -202,3 +202,31 @@ export function bedsteDrikkedag(
   return { dayStart: bedste.dayStart, genstande: Number(bedste.genstande.toFixed(2)) };
 }
 
+
+/**
+ * De logninger, en Kanal tæller med: alt, der er logget I Kanalen, plus alt,
+ * dens medlemmer har logget ANDRE steder.
+ *
+ * En genstand hører til personen, ikke til den Kanal, man havde åben, da man
+ * loggede den. Drikker man i Ballade, står det også i Brøndby IF — det er
+ * den samme øl. Rækkens `channelId` er stadig værd at have: den er dét, der
+ * holder historikken for en, der siden er gået ud af Kanalen, og den afgør,
+ * hvem der får "X er ude i aften".
+ *
+ * Foreningen og ikke bare medlemmernes logninger: så forsvinder en tidligere
+ * kanalfælle ikke bagud i historikken, den dag hun melder sig ud. En række,
+ * der står i begge lister, tælles én gang.
+ */
+export function kanalensLogninger<T extends { _id: string }>(
+  iKanalen: readonly T[],
+  medlemmernes: readonly T[],
+): T[] {
+  const set = new Set<string>();
+  const samlet: T[] = [];
+  for (const log of [...iKanalen, ...medlemmernes]) {
+    if (set.has(log._id)) continue;
+    set.add(log._id);
+    samlet.push(log);
+  }
+  return samlet;
+}

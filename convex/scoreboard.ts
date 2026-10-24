@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { query } from "./_generated/server";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
   AVATAR_COLOR_NAMES,
   SCOREBOARD_LIMIT,
@@ -16,8 +16,10 @@ import { sladeshForStilling, type StillingSladesh } from "./sladeshRules";
  * Scoreboard.
  *
  * Bevidst IKKE en tabel, og bevidst ikke læst fra cachede tællere på `users`.
- * Stillingen beregnes live ud fra `drinkLogs` via `by_kanal_and_timestamp`:
- * ét indekseret range-scan over Kanalens logninger fra drikkedagens start.
+ * Stillingen beregnes live ud fra `drinkLogs` via `by_user_and_timestamp`:
+ * ét indekseret range-scan per medlem fra drikkedagens start, i ALLE
+ * Kanaler. En genstand tæller i hver Kanal, man er med i — ikke kun i den,
+ * man havde åben, da man loggede den.
  * Det gamle repo læste `users.currentRunDrinkCount`, som kunne komme ud af
  * trit med de faktiske logrækker.
  *
@@ -123,22 +125,27 @@ export const getScoreboard = query({
       )
       .collect();
 
-    // Ét indekseret scan over Kanalens logninger i den aktuelle drikkedag.
-    const logs = await ctx.db
-      .query("drinkLogs")
-      .withIndex("by_kanal_and_timestamp", (q) =>
-        q.eq("channelId", args.channelId).gte("timestamp", dayStart),
-      )
-      .collect();
-
-    // Grupper per bruger. Nulstillings-rækkerne beholdes her, fordi de er
-    // det der afgør hvornår brugerens igangværende run begyndte.
-    const logsPerBruger = new Map<Id<"users">, typeof logs>();
-    for (const log of logs) {
-      const liste = logsPerBruger.get(log.userId);
-      if (liste === undefined) logsPerBruger.set(log.userId, [log]);
-      else liste.push(log);
-    }
+    // Hvert medlems logninger i drikkedagen — i ALLE Kanaler, ikke kun
+    // denne. En genstand hører til personen, ikke til den Kanal, man havde
+    // åben; se `kanalensLogninger` i drinkRules.ts. Ét indekseret scan per
+    // medlem, og det er det samme opslag, promillen og fortrydelsen
+    // allerede laver, så stillingen og "Mig" ikke kan blive uenige.
+    //
+    // Nulstillings-rækkerne beholdes, fordi de er det, der afgør, hvornår
+    // brugerens igangværende run begyndte.
+    const logsPerBruger = new Map<Id<"users">, Doc<"drinkLogs">[]>();
+    const medlemsLogs = await Promise.all(
+      kanal.members.map((userId) =>
+        ctx.db
+          .query("drinkLogs")
+          .withIndex("by_user_and_timestamp", (q) =>
+            q.eq("userId", userId).gte("timestamp", dayStart),
+          )
+          .collect(),
+      ),
+    );
+    kanal.members.forEach((userId, i) => logsPerBruger.set(userId, medlemsLogs[i]));
+    const logninger = medlemsLogs.reduce((sum, liste) => sum + liste.length, 0);
 
     const members = await Promise.all(
       kanal.members.map((userId) => ctx.db.get(userId)),
@@ -223,7 +230,7 @@ export const getScoreboard = query({
     console.log("[Scoreboard] stilling klar", {
       kanal: kanal.name,
       rækker: result.length,
-      logninger: logs.length,
+      logninger,
     });
     return result;
   },
