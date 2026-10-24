@@ -20,7 +20,7 @@ import {
   tilNaesteTrin,
   tilUdgang,
 } from "../src/ui/opstartsregler";
-import { bedsteDrikkedag } from "../convex/drinkRules.ts";
+import { bedsteDrikkedag, kanalensLogninger } from "../convex/drinkRules.ts";
 import {
   AABNINGER_FOER_OPFORDRING,
   bestemPlatform,
@@ -437,6 +437,44 @@ console.log("\n[Logic] skævheden i bunden");
 
   // Afrundet: CSS faar hele pixels.
   check("broekdele rundes", s(800, 860.4), 60);
+}
+
+console.log("\n[Logic] genstande tæller i alle Kanaler");
+{
+  const l = (id: string, kanal?: string) => ({ _id: id, channelId: kanal });
+
+  // Simon loggede én i Ballade og én i Brøndby IF. Begge tæller i Ballade.
+  const iBallade = [l("a", "ballade")];
+  const simons = [l("a", "ballade"), l("b", "broendby")];
+  check(
+    "medlemmets logning fra en anden Kanal kommer med",
+    kanalensLogninger(iBallade, simons).map((x) => x._id),
+    ["a", "b"],
+  );
+
+  // Den samme række fundet ad begge veje tælles én gang — ellers ville
+  // hver øl logget i Kanalen selv tælle dobbelt.
+  check(
+    "ingen dubletter",
+    kanalensLogninger(iBallade, simons).length,
+    2,
+  );
+
+  // Et tidligere medlem er ikke med i medlemslisten længere, men det hun
+  // loggede I Kanalen, bliver stående i historikken.
+  check(
+    "tidligere medlems logninger i Kanalen bliver",
+    kanalensLogninger([l("c", "ballade")], []).map((x) => x._id),
+    ["c"],
+  );
+
+  // En logning uden Kanal — fra før profilen var hentet — tæller også.
+  check(
+    "logning uden Kanal kommer med",
+    kanalensLogninger([], [l("d")]).map((x) => x._id),
+    ["d"],
+  );
+  check("intet er intet", kanalensLogninger([], []), []);
 }
 
 console.log("\n[Logic] opstartsskærmen");

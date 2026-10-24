@@ -570,9 +570,9 @@ function Appen({ onProfil }: { onProfil: (status: Profilstatus) => void }) {
           Mig
         </button>
 
-        {/* Venter på profilen. Uden den kendes Kanalen ikke, og en
-            genstand logget uden Kanal tæller ikke i stillingen — den ville
-            være væk for alle andre end en selv. */}
+        {/* Venter på profilen. Genstanden tæller i alle ens Kanaler
+            uanset hvad, men uden den aktive Kanal får de andre ikke "X er
+            ude i aften" — den besked sendes til Kanalen, man loggede i. */}
         <button
           className="logknap"
           aria-label="Log en genstand"

@@ -195,6 +195,27 @@ et maksimum-felt ikke uden at scanne det hele alligevel.
 hører til samme kategori som `scripts/revision.ts` i undtagelse 4 — den
 læser og tæller efter, og kan ikke røre data.
 
+
+**Bevidst undtagelse 11:** en genstand tæller nu i **alle** de Kanaler, man
+er med i — ikke kun i den, man havde åben, da man loggede den. Efterspurgt
+eksplicit. Det krævede `convex/scoreboard.ts`, `convex/historik.ts` og en
+ny ren funktion `kanalensLogninger` i `convex/drinkRules.ts`.
+
+Det er en ændring af LÆSNINGEN, ikke af data. `logDrink` skriver præcis
+som før, med den Kanal man loggede i som `channelId`, og ingen række er
+ændret eller kopieret. Stillingen læser nu hvert medlems logninger gennem
+`by_user_and_timestamp` — samme opslag, som promillen, runnet og
+fortrydelsen altid har brugt — så de alle er enige om, hvad "i aften" er.
+Historikken læser foreningen af Kanalens egne logninger og medlemmernes,
+så et tidligere medlem ikke forsvinder bagud.
+
+**Ingen ny udlevering af data.** En kanalfælle kunne i forvejen se alle ens
+logninger på tværs af Kanaler gennem `getDrinkLogsForUser`
+(`requireCanViewUser` kræver én delt Kanal). Historikkens dagsvisning
+viser nu de samme rækker et andet sted.
+
+Varslingerne er **uændrede**: "X er ude i aften" og milepælene sendes
+stadig kun til den Kanal, man loggede i.
 ---
 
 ## 2. Afhængigheder
