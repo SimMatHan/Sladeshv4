@@ -273,6 +273,14 @@ const PAR: Array<[string, string]> = [
   ["--tekst-svag", "--flade"],
   ["--tekst-svag", "--flade-brik"],
   ["--accent-tekst", "--accent"],
+  /*
+   * Accenten som tekst og ikon på siden — den valgte fane, et flueben, en
+   * fokuskant. Et eget token, fordi en flade-grøn, der kan bære lys tekst,
+   * er for mørk til selv at være tekst på nærsort.
+   */
+  ["--accent-forgrund", "--bund"],
+  ["--accent-forgrund", "--flade"],
+  ["--accent-forgrund", "--flade-hvaelvet"],
   ["--fare", "--flade"],
   ["--medgang", "--flade"],
   ["--guld", "--flade"],

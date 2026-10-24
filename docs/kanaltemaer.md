@@ -80,10 +80,14 @@ Et tema overskriver **kun** de tokens, der bærer dets identitet:
 --accent
 --accent-mork
 --accent-tekst
+--accent-forgrund
 ```
 
 Det svarer til baggrund, kort/felt-flader, kanter, tekst i tre styrker, og
-accentfarven med dens mørke variant og kontrastfarve.
+accentfarven med dens mørke variant, kontrastfarve og forgrund — accenten
+brugt som tekst og ikon på siden (den valgte fane, et flueben, en
+fokuskant). Er accenten for mørk til at være tekst på temaets bund, sættes
+forgrunden lysere; ellers er den samme farve som accenten.
 
 **Rør aldrig disse, uanset tema:**
 
@@ -136,12 +140,14 @@ Brug Copenhell eller O Days i `src/index.css` som skabelon. Trinene:
      --accent: #...;
      --accent-mork: #...;
      --accent-tekst: #...;
+     --accent-forgrund: #...;
    }
    ```
-   Kun de tolv tokens fra afsnit 3 — intet andet.
+   Kun de tokens fra afsnit 3 — intet andet.
 
-4. **Test kontrast.** `--tekst` mod `--bund`/`--flade`, og `--accent-tekst`
-   mod `--accent`, skal begge bestå WCAG AA. Temaerne er mørke i sig selv og
+4. **Test kontrast.** `--tekst` mod `--bund`/`--flade`, `--accent-tekst`
+   mod `--accent` og `--accent-forgrund` mod `--bund`/`--flade` skal alle
+   bestå WCAG AA. `npm run revision` måler dem. Temaerne er mørke i sig selv og
    vinder derfor over det lyse tema (se afsnit 5) — det er den eneste
    kontrast, der er relevant.
 
@@ -186,9 +192,9 @@ nuværende form, og skal ikke bygges ud fra denne fil alene.
 ## 7. Selvtjek for et nyt tema
 
 - [ ] Temaets nøgle er tilføjet i `BALLADE_TEMAER` (`convex/indstillinger.ts`)
-- [ ] Kun de tolv tokens fra afsnit 3 er overskrevet — intet andet
+- [ ] Kun de tokens fra afsnit 3 er overskrevet — intet andet
 - [ ] `--fare`, `--medgang`, `--guld`, `--soelv`, `--bronze` er urørte
-- [ ] Kontrast er testet: tekst mod bund/flade, accent-tekst mod accent
+- [ ] Kontrast er testet: tekst mod bund/flade, accent-tekst mod accent, accent-forgrund mod bund/flade
 - [ ] Ingen ændring i `Kanaltema.tsx`, medmindre temaet hører til en anden
       Kanal end Ballade — i så fald, se afsnit 6 først
 - [ ] `npm run check` og `npm run lint` er grønne
