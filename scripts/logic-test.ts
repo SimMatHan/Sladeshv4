@@ -12,11 +12,13 @@ import { existsSync, readFileSync } from "node:fs";
 import { tastaturskifte } from "../src/ui/tastaturskifte";
 import { bundskaev } from "../src/ui/bundskaevregler";
 import {
+  MINDSTE_VISNING_MS,
   OPSTARTSTRIN,
   SIDSTE_TRIN,
   opstartstekst,
   opstartstrin,
   tilNaesteTrin,
+  tilUdgang,
 } from "../src/ui/opstartsregler";
 import { bedsteDrikkedag } from "../convex/drinkRules.ts";
 import {
@@ -444,14 +446,28 @@ console.log("\n[Logic] opstartsskærmen");
   check("efter et sekund", opstartstrin(1000), 0);
   check("første trin er glad", OPSTARTSTRIN[0].humoer, "glad");
 
-  // Grænserne er inklusive: præcis 5000 ms er trinnet, der starter dér.
-  check("lige før kom-nu", opstartstrin(4999), 1);
-  check("præcis kom-nu", opstartstrin(5000), 2);
+  // Grænserne er inklusive: præcis 6500 ms er trinnet, der starter dér.
+  check("lige før kom-nu", opstartstrin(6499), 1);
+  check("præcis kom-nu", opstartstrin(6500), 2);
   check(
-    "for helvede efter 12 s",
-    OPSTARTSTRIN[opstartstrin(12000)].tekst,
+    "for helvede efter 13 s",
+    OPSTARTSTRIN[opstartstrin(13000)].tekst,
     "Kom nu, jeg vil gerne drikke for helvede!",
   );
+
+  // Skærmen står i mindst tre sekunder og går, så snart appen er klar
+  // derefter. Det andet trin må ikke nå at blinke forbi inden da — så ville
+  // man se "Skummet …" i et splitsekund lige før "Skål!".
+  check(
+    "andet trin efter mindstetiden",
+    OPSTARTSTRIN[1].fraMs > MINDSTE_VISNING_MS,
+    true,
+  );
+  check("klar med det samme venter tre sekunder", tilUdgang(0), 3000);
+  check("klar efter et sekund venter to til", tilUdgang(1000), 2000);
+  check("klar efter fem sekunder går straks", tilUdgang(5000), 0);
+  check("negativ visningstid venter det hele", tilUdgang(-200), 3000);
+  check("NaN venter det hele", tilUdgang(Number.NaN), 3000);
 
   // Det sidste trin er knappen. Det skal nås — og blive.
   check("efter et halvt minut", opstartstrin(30000), SIDSTE_TRIN);
@@ -471,10 +487,10 @@ console.log("\n[Logic] opstartsskærmen");
   check("første trin starter ved 0", OPSTARTSTRIN[0].fraMs, 0);
 
   // Uret sættes til NÆSTE skift — ikke en interval.
-  check("til næste fra start", tilNaesteTrin(0), 2500);
-  check("til næste midt i et trin", tilNaesteTrin(6000), 2000);
+  check("til næste fra start", tilNaesteTrin(0), 4000);
+  check("til næste midt i et trin", tilNaesteTrin(7000), 2500);
   check("intet efter det sidste", tilNaesteTrin(45000), undefined);
-  check("negativ ventetid regnes fra 0", tilNaesteTrin(-1000), 2500);
+  check("negativ ventetid regnes fra 0", tilNaesteTrin(-1000), 4000);
 
   // Uden dækning siger det sidste trin, hvad der faktisk er galt.
   check(

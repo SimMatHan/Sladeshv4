@@ -2,18 +2,16 @@ import { useEffect, useState, type CSSProperties } from "react";
 import {
   OPSTARTSTRIN,
   SIDSTE_TRIN,
+  SKAAL,
+  UDGANG_MS,
   opstartstekst,
   opstartstrin,
   tilNaesteTrin,
+  tilUdgang,
 } from "./opstartsregler";
 
 /**
  * Opstartsskærmen — det, man ser, mens appen kommer op.
- *
- * Den afløser FIRE tekster: "Indlæser …", "Logger ind …", "Henter din
- * profil …" og "Opretter din profil …". For brugeren er det én ventetid,
- * og den skal se sådan ud: én scene, der kører videre, og ét ur, der ikke
- * starter forfra, fordi appen skifter fra det ene trin til det næste.
  *
  * ## Hvad den viser
  *
@@ -25,6 +23,19 @@ import {
  * bliver utålmodig, så rasende, og til sidst giver han op — og teksten
  * følger med, fra "Skænker op …" til "Genstart appen". Tidslinjen står i
  * opstartsregler.ts.
+ *
+ * ## Tre sekunder, og så skål
+ *
+ * Skærmen ligger OVEN PÅ appen — se `Indgang` i App.tsx. Appen tegnes bag
+ * den, så snart den kan, og bruger tiden på at hente. Skærmen går, når
+ * appen er `klar` OG skærmen har stået i mindst tre sekunder: teksten
+ * bliver til "Skål!", manden løfter et fyldt glas, emojierne springer ud
+ * til siderne, og hele skærmen zoomer væk ind i appen.
+ *
+ * Tre sekunder er et valg, ikke en ventetid. Appen er som regel klar før,
+ * men en skærm, der blinker væk efter et halvt sekund, ligner en fejl, og
+ * en animation, ingen når at se, er ikke værd at have. Det, der ikke er
+ * hentet, når den går, viser selv "Henter …" — appen venter ikke på det.
  *
  * ## Ren CSS 3D, ingen pakke
  *
@@ -40,38 +51,29 @@ import {
  * Alt animeres med `transform` og `opacity`. Ingen bredde, højde eller
  * filter — det er dem, der får en ældre telefon til at hakke, og det er
  * netop den telefon, der står længst tid på den her skærm.
- *
- * ## Uret starter, da VENTETIDEN startede
- *
- * Skærmen monteres flere steder fra — `Indgang` og `Appen` i App.tsx — og
- * React tager den ned og op igen, når der skiftes imellem dem. Uden noget
- * at holde fast i ville teksten hoppe tilbage til "Skænker op …" og manden
- * starte forfra midt i en slurk.
- *
- * Derfor deles starttidspunktet af alle udgaver af skærmen (se
- * `ventetidBegyndt`), og hver animation får det som negativ forsinkelse
- * (`--opstart-forskudt`). Så står en ny udgave præcis, hvor den forrige
- * slap.
  */
-export function Opstart({ status }: { status: string }) {
-  // Starttidspunktet læses ÉN gang, i den første tegning. Se
-  // `ventetidBegyndt` for hvorfor det ikke er "nu".
-  const [begyndt] = useState(ventetidBegyndt);
-  // Hvor langt inde i ventetiden DENNE udgave blev sat op. Også låst ved
-  // første tegning: regnet forfra ved hver gentegning ville forsinkelsen
-  // flytte sig, mens animationerne kører, og så hopper de alle sammen,
-  // hver gang teksten skifter.
-  const [forskudt] = useState(() => performance.now() - begyndt);
-  const [trin, setTrin] = useState(() => opstartstrin(forskudt));
+export function Opstart({
+  begyndt,
+  klar,
+  status,
+  onFaerdig,
+}: {
+  /** Ventetidens nul i `performance.now()`. Teksterne regnes herfra. */
+  begyndt: number;
+  /** Om det, der ligger under, kan vises. Skærmen går først, når det er. */
+  klar: boolean;
+  /** Hvad appen venter på lige nu. Intet, når den ikke venter på noget. */
+  status?: string;
+  /** Når udgangen er spillet, og skærmen kan tages ned. */
+  onFaerdig: () => void;
+}) {
+  // Hvornår skærmen blev VIST. De tre sekunder regnes herfra og ikke fra
+  // `begyndt`: har siden stået tom i to sekunder, mens JavaScript'en
+  // hentede, skal animationen stadig have sine tre.
+  const [vistFra] = useState(() => performance.now());
+  const [trin, setTrin] = useState(() => opstartstrin(vistFra - begyndt));
+  const [gaar, setGaar] = useState(false);
   const offline = useOffline();
-
-  useEffect(() => {
-    monterede++;
-    return () => {
-      monterede--;
-      sidstSlut = performance.now();
-    };
-  }, []);
 
   // Ét ur til NÆSTE skift, ikke en interval. Der sker ingenting imellem.
   //
@@ -83,6 +85,7 @@ export function Opstart({ status }: { status: string }) {
   // `opstartstrin` vinder, hvis uret tværtimod er kommet SENT, fordi
   // telefonen har ligget i lommen.
   useEffect(() => {
+    if (gaar) return;
     const ventetid = tilNaesteTrin(performance.now() - begyndt);
     if (ventetid === undefined) return;
     const ur = setTimeout(
@@ -93,21 +96,37 @@ export function Opstart({ status }: { status: string }) {
       ventetid,
     );
     return () => clearTimeout(ur);
-  }, [trin, begyndt]);
+  }, [trin, begyndt, gaar]);
 
-  const { humoer } = OPSTARTSTRIN[trin];
+  // Går, når det under er klar, og skærmen har stået længe nok. Bliver det
+  // UKLART igen inden da — en profil, der viser sig ikke at findes og skal
+  // oprettes — bliver den stående.
+  useEffect(() => {
+    if (!klar || gaar) return;
+    const ur = setTimeout(
+      () => setGaar(true),
+      tilUdgang(performance.now() - vistFra),
+    );
+    return () => clearTimeout(ur);
+  }, [klar, gaar, vistFra]);
+
+  // Væk, når udgangen er spillet. Et ur frem for `animationend`: med
+  // reduceret bevægelse er animationerne nul lange, og et event, der ikke
+  // kommer, ville efterlade en usynlig skærm oven på appen.
+  useEffect(() => {
+    if (!gaar) return;
+    const ur = setTimeout(onFaerdig, UDGANG_MS);
+    return () => clearTimeout(ur);
+  }, [gaar, onFaerdig]);
+
+  const humoer = gaar ? "skaal" : OPSTARTSTRIN[trin].humoer;
 
   return (
     <div
-      className="opstart"
+      className={gaar ? "opstart ud" : "opstart"}
       data-humoer={humoer}
       data-trin={trin}
-      aria-busy="true"
-      style={
-        {
-          "--opstart-forskudt": `${-Math.round(forskudt)}ms`,
-        } as CSSProperties
-      }
+      aria-busy={!gaar}
     >
       <ShakaSymbol />
       <Bobler />
@@ -190,11 +209,15 @@ export function Opstart({ status }: { status: string }) {
       <div className="opstarttekst" role="status" aria-live="polite">
         {/* `key` på trinnet: hver ny tekst skal slå ind, ikke bare skifte.
             Det er dét, der gør, at man opdager, at den er blevet værre. */}
-        <p key={trin} className="opstartraab">
-          {opstartstekst(trin, offline)}
+        <p key={gaar ? "skaal" : trin} className="opstartraab">
+          {gaar ? SKAAL : opstartstekst(trin, offline)}
         </p>
-        <p className="opstartstatus">{offline ? "Ingen dækning" : status}</p>
-        {trin === SIDSTE_TRIN && (
+        {/* Linjen står der altid — tom, når der ikke ventes på noget — så
+            teksten over den ikke hopper, når den forsvinder. */}
+        <p className="opstartstatus">
+          {gaar ? "\u00a0" : offline ? "Ingen dækning" : (status ?? "\u00a0")}
+        </p>
+        {trin === SIDSTE_TRIN && !gaar && (
           <button
             className="knap primaer opstartknap"
             onClick={() => window.location.reload()}
@@ -205,52 +228,6 @@ export function Opstart({ status }: { status: string }) {
       </div>
     </div>
   );
-}
-
-/* ------------------------------------------------------------ ventetiden */
-
-/**
- * Hvor mange udgaver af skærmen, der er monteret lige nu, og hvornår den
- * sidste blev taget ned. Modulets egen tilstand, fordi den skal overleve
- * netop det, React gør: at tage komponenten ned og sætte en ny op.
- */
-let monterede = 0;
-let sidstSlut = Number.NEGATIVE_INFINITY;
-let begyndtVed: number | undefined;
-
-/**
- * Hvor længe en pause mellem to skærme må vare, før det er en NY ventetid.
- *
- * Skiftet fra `Indgang` til `Appen` sker i én og samme tegning, så pausen
- * er i praksis nul. Grænsen er der for alt det, vi ikke har tænkt på — et
- * enkelt billede af noget andet imellem må ikke nulstille uret.
- */
-const SAMMENHAENG_MS = 1000;
-
-/**
- * Hvornår den ventetid, skærmen viser, begyndte — i `performance.now()`.
- *
- * Den FØRSTE ventetid regnes fra 0, altså fra da siden begyndte at
- * indlæse. Det er dér, brugeren begyndte at vente: står JavaScript-filerne
- * og henter i seks sekunder på en dårlig forbindelse, er det seks sekunder
- * med en tom skærm, og så er "Kom nu …" det ærlige første ord.
- *
- * En SENERE ventetid — efter man har logget ud og ind igen — regnes fra
- * nu. Ellers ville tiden på login-skærmen tælle med, og den, der brugte et
- * minut på at huske sin kode, ville blive mødt af "Genstart appen".
- *
- * Kaldes, mens den nye skærm tegnes. Den gamle er ikke taget ned endnu på
- * det tidspunkt — det sker først, når React lægger ændringen ud — så
- * `monterede > 0` er netop tegnet på, at det er SAMME ventetid.
- */
-function ventetidBegyndt(): number {
-  const nu = performance.now();
-  if (begyndtVed === undefined) {
-    begyndtVed = 0;
-  } else if (monterede === 0 && nu - sidstSlut > SAMMENHAENG_MS) {
-    begyndtVed = nu;
-  }
-  return begyndtVed;
 }
 
 /** Sand, når browseren selv mener, at der ingen forbindelse er. */

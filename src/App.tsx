@@ -1,4 +1,13 @@
-import { Suspense, lazy, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -84,28 +93,93 @@ export default function App() {
   );
 }
 
+/** Hvor langt `Appen` er med profilen. Se `Indgang`. */
+type Profilstatus = "henter" | "opretter" | "klar";
+
 /**
  * Vejen ind: indlæser, login, og de to ting der kan gaa galt imellem.
  *
  * Udskilt fra `App`, saa `Drejtilbage` kan staa uden om ALLE svarene herfra.
  * Lod vi dem ligge i `App`, skulle den gentages i hver eneste returnering.
+ *
+ * ## Opstartsskærmen ligger OVEN PÅ, ikke i stedet for
+ *
+ * Den stod før som svaret på hvert trin — "henter", "logger ind" — og
+ * appen blev først tegnet, når alt var på plads. Nu tegnes det, der er klar,
+ * med det samme BAG skærmen, og skærmen trækker sig selv væk, når den har
+ * stået i mindst tre sekunder. Så bruges de tre sekunder på at hente
+ * stillingen og resten, og det, der ikke er nået, viser selv "Henter …".
+ *
+ * Den ligger på samme plads i træet hele vejen, uanset hvad der er under
+ * den. Det er dét, der lader den køre videre uden at starte forfra.
  */
 function Indgang() {
   const { user, loading } = useAuth();
   const { isAuthenticated, isLoading: convexTjekker } = useConvexAuth();
+  const [profil, setProfil] = useState<Profilstatus>("henter");
 
-  // Opstartsskærmen dækker HELE vejen ind — de to trin her og de to i
-  // `Appen` nedenfor. Den holder selv styr på, hvor længe der er ventet,
-  // også når React skifter fra den ene udgave til den næste. Se Opstart.tsx.
-  if (loading) return <Opstart status="Starter" />;
-  if (user === null) return <LoginSkaerm />;
+  /**
+   * Opstartsskærmen, så længe den står. `begyndt` er ventetidens nul i
+   * `performance.now()`.
+   *
+   * Den FØRSTE regnes fra 0 — fra siden begyndte at indlæse, for det er dér,
+   * brugeren begyndte at vente. Står JavaScript-filerne og henter i seks
+   * sekunder, er det seks sekunder med en tom skærm, og så er "Kom nu …" det
+   * ærlige første ord.
+   */
+  const [opstart, setOpstart] = useState<{ begyndt: number } | undefined>({
+    begyndt: 0,
+  });
+  const skjulOpstart = useCallback(() => setOpstart(undefined), []);
 
-  // Firebase har en session, men Convex har ikke nået at verificere tokenet
-  // endnu. Uden dette blink ville hver query kortvarigt fejle som uautoriseret.
-  if (convexTjekker) return <Opstart status="Logger ind" />;
+  /**
+   * Om vi venter på, at Convex godkender et login, der LIGE er sket.
+   *
+   * `useConvexAuth` skelner ikke "afvist" fra "ikke godkendt endnu" efter et
+   * login fra login-skærmen: den står allerede på "ikke logget ind" fra før,
+   * og den bliver stående, indtil serveren har svaret. Skærmen viste derfor
+   * "Convex afviste dit login" i et øjeblik efter hvert eneste login. Indtil
+   * Convex har sagt ja én gang, er det ventetid.
+   *
+   * Ved en koldstart er der ingen tvivl — dér begynder Convex i "henter" —
+   * så en rigtig afvisning vises stadig, i det mindste efter en genstart.
+   */
+  const [venterPaaConvex, setVenterPaaConvex] = useState(false);
+  if (venterPaaConvex && isAuthenticated) setVenterPaaConvex(false);
 
-  if (!isAuthenticated) {
-    return (
+  // Logger man ind fra login-skærmen, skal appen hentes ind bag
+  // opstartsskærmen igen — med uret fra NU, så tiden på login-skærmen ikke
+  // tæller med. Kun ude → inde: koldstarten går fra "ved det ikke" til
+  // inde, og der står skærmen allerede.
+  const tilstand = loading ? "ukendt" : user === null ? "ude" : "inde";
+  const [forrigeTilstand, setForrigeTilstand] = useState(tilstand);
+  if (tilstand !== forrigeTilstand) {
+    setForrigeTilstand(tilstand);
+    if (forrigeTilstand === "ude" && tilstand === "inde") {
+      setOpstart({ begyndt: performance.now() });
+      setProfil("henter");
+      setVenterPaaConvex(true);
+    }
+  }
+
+  let indhold: ReactNode = null;
+  let klar = false;
+  let status: string | undefined;
+
+  if (loading) {
+    status = "Starter";
+  } else if (user === null) {
+    indhold = <LoginSkaerm />;
+    klar = true;
+  } else if (convexTjekker || venterPaaConvex) {
+    // Firebase har en session, men Convex har ikke nået at verificere
+    // tokenet endnu. Appen må IKKE tegnes her: `getMe` svarer `null` uden et
+    // gyldigt token, og så ville appen gemme "ingen profil" i cachen og
+    // prøve at oprette en ny. Det er den ene ting, opstartsskærmen stadig
+    // venter på.
+    status = "Logger ind";
+  } else if (!isAuthenticated) {
+    indhold = (
       <div className="midtstillet">
         <p className="fejl">
           Convex afviste dit login. Tjek VITE_FIREBASE_PROJECT_ID på
@@ -113,20 +187,62 @@ function Indgang() {
         </p>
       </div>
     );
+    klar = true;
+  } else {
+    indhold = <Appen onProfil={setProfil} />;
+    // Profilen behøver IKKE være hentet — skallen klarer sig uden og viser
+    // "Henter …", hvor den mangler. Undtagelsen er en profil, der er ved at
+    // blive OPRETTET: så er man ny, og det næste er onboardingen, ikke en
+    // skal, der skifter ud under en.
+    klar = profil !== "opretter";
+    status =
+      profil === "henter"
+        ? "Henter din profil"
+        : profil === "opretter"
+          ? "Opretter din profil"
+          : undefined;
   }
 
-  return <Appen />;
+  // Intet at vise og ingen opstartsskærm: så kommer den frem igen. Det
+  // sker ikke i dag — Convex tjekker login én gang per login — men en tom
+  // skærm er det værste, appen kan vise, og det er billigt at udelukke.
+  if (indhold === null && opstart === undefined) {
+    setOpstart({ begyndt: performance.now() });
+  }
+
+  return (
+    <>
+      {indhold}
+      {opstart !== undefined && (
+        <Opstart
+          // Ny ventetid, ny skærm — uret og animationen starter forfra.
+          key={opstart.begyndt}
+          begyndt={opstart.begyndt}
+          klar={klar}
+          status={status}
+          onFaerdig={skjulOpstart}
+        />
+      )}
+    </>
+  );
 }
 
-function Appen() {
+function Appen({ onProfil }: { onProfil: (status: Profilstatus) => void }) {
   // Retter den faste bundklynge, når iOS har efterladt layout-viewporten
   // kortere end skærmen. Næsten altid en nul-operation — se bundskaev.ts.
   useBundskaev();
 
-  // Profilen er det, hele skallen hænger på — uden den står appen på
-  // "Henter din profil …". Derfor er den den vigtigste at kunne male fra
+  // Profilen er det, det meste af skallen hænger på — Kanalen, stillingen,
+  // hvem der er en selv. Derfor er den den vigtigste at kunne male fra
   // sidste besøg, mens forbindelsen kommer op.
   const mig = useCachetQuery("mig", api.users.getMe, {});
+  // `null` er "findes ikke endnu, er ved at blive oprettet". Skallen har
+  // ikke brug for at skelne det fra "ikke hentet endnu" — begge er en
+  // profil, den ikke kender — men opstartsskærmen har. Se `Indgang`.
+  const profil = mig ?? undefined;
+  const profilstatus: Profilstatus =
+    mig === undefined ? "henter" : mig === null ? "opretter" : "klar";
+  useEffect(() => onProfil(profilstatus), [profilstatus, onProfil]);
   const createUser = useMutation(api.users.createUser);
 
   // MIG er startskærmen. Kanalen var det før, men den er noget, man går HEN
@@ -222,24 +338,25 @@ function Appen() {
     return () => clearTimeout(timer);
   }, [kvittering]);
 
-  if (mig === undefined) return <Opstart status="Henter din profil" />;
-  if (mig === null) return <Opstart status="Opretter din profil" />;
-
-  const channelId = mig.activeChannelId;
-  const harKanal = mig.joinedChannelIds.length > 0;
+  // INGEN "henter"-skærm her længere. Skallen tegnes, også før profilen er
+  // hentet, og det, der hænger på den, siger selv "Henter …". Opstarts-
+  // skærmen ligger oven på imens — se `Indgang`.
+  const channelId = profil?.activeChannelId;
+  const harKanal = profil !== undefined && profil.joinedChannelIds.length > 0;
 
   // Førstegangsforløbet vises kun til dem, der faktisk er nye: uden Kanal OG
   // uden at have været igennem det før. De 32 migrerede brugere har begge
   // dele på plads og skal ikke bydes velkommen til en app, de har brugt i
-  // årevis.
-  if (mig.onboardingCompleted !== true && !harKanal) {
-    return <Onboarding mig={mig} />;
+  // årevis. Afgøres først, når profilen er kendt.
+  if (profil !== undefined && profil.onboardingCompleted !== true && !harKanal) {
+    return <Onboarding mig={profil} />;
   }
 
   const jegErModtager =
+    profil !== undefined &&
     aktivSladesh !== undefined &&
     aktivSladesh !== null &&
-    aktivSladesh.recipientId === mig._id;
+    aktivSladesh.recipientId === profil._id;
 
   if (jegErModtager && !minimeret) {
     return (
@@ -273,7 +390,13 @@ function Appen() {
                 andet end pynt. Skiftet har sin egen knap nu, til højre.
                 Se design/Stilling.dc.html. */}
             <h1 className="kanalnavn">
-              {harKanal ? <KanalNavn channelId={channelId} /> : "Ingen Kanal"}
+              {profil === undefined ? (
+                "…"
+              ) : harKanal ? (
+                <KanalNavn channelId={channelId} />
+              ) : (
+                "Ingen Kanal"
+              )}
             </h1>
 
             {/* Skallen VÆLGER kun hvilken undertekst der monteres; hver af dem
@@ -297,7 +420,11 @@ function Appen() {
 
             <button
               className="kanalskift"
-              aria-label={harKanal ? "Skift Kanal" : "Meld dig ind i en Kanal"}
+              aria-label={
+                harKanal || profil === undefined
+                  ? "Skift Kanal"
+                  : "Meld dig ind i en Kanal"
+              }
               onClick={() => setKanalAabent(true)}
             >
               <SkiftIkon />
@@ -332,9 +459,10 @@ function Appen() {
           </button>
         )}
 
-        {aktivSladesh !== undefined &&
+        {profil !== undefined &&
+          aktivSladesh !== undefined &&
           aktivSladesh !== null &&
-          aktivSladesh.senderId === mig._id && (
+          aktivSladesh.senderId === profil._id && (
             <div className="venterbjaelke">
               🍺 Venter på at {aktivSladesh.recipientName} gennemfører
               <span className="ur">
@@ -344,7 +472,10 @@ function Appen() {
           )}
 
         {fane === "kanal" ? (
-          !harKanal || channelId === undefined ? (
+          profil === undefined ? (
+            // Ikke "Du er ikke i en Kanal" — det ved vi ikke endnu.
+            <p className="midtstillet">Henter …</p>
+          ) : !harKanal || channelId === undefined ? (
             <div className="tom">
               <div className="stort">👋</div>
               <p>Du er ikke i en Kanal endnu.</p>
@@ -385,13 +516,13 @@ function Appen() {
               {visning === "stilling" ? (
                 <Stilling
                   channelId={channelId}
-                  minUserId={mig._id}
+                  minUserId={profil._id}
                   onVaelgPerson={setValgtPerson}
                 />
               ) : visning === "chat" ? (
                 <Chat
                   channelId={channelId}
-                  minUserId={mig._id}
+                  minUserId={profil._id}
                   onVaelgPerson={setValgtPerson}
                 />
               ) : visning === "historik" ? (
@@ -439,9 +570,13 @@ function Appen() {
           Mig
         </button>
 
+        {/* Venter på profilen. Uden den kendes Kanalen ikke, og en
+            genstand logget uden Kanal tæller ikke i stillingen — den ville
+            være væk for alle andre end en selv. */}
         <button
           className="logknap"
           aria-label="Log en genstand"
+          disabled={profil === undefined}
           onClick={() => setLogAabent(true)}
         >
           <PlusIkon />
@@ -465,7 +600,7 @@ function Appen() {
           logId={kvittering.logId}
           vaegt={kvittering.vaegt}
           channelId={channelId}
-          minUserId={mig._id}
+          minUserId={profil?._id}
           onFaerdig={() => setKvittering(undefined)}
         />
       )}
@@ -495,10 +630,10 @@ function Appen() {
 
       {hjulAabent && <Straffehjul onLuk={() => setHjulAabent(false)} />}
 
-      {valgtPerson !== undefined && (
+      {valgtPerson !== undefined && profil !== undefined && (
         <Personkort
           userId={valgtPerson}
-          minUserId={mig._id}
+          minUserId={profil._id}
           channelId={channelId}
           onLuk={() => setValgtPerson(undefined)}
         />
