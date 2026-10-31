@@ -96,7 +96,7 @@ man skifter mellem hele aftenen:
 
 | Query | Hvad det redder |
 |---|---|
-| `users.getMe` | Det meste af skallen. Uden den tegnes skallen alligevel, men Kanalen siger "Henter …", og ( + ) venter |
+| `users.getMe` | Hele skallen. Uden den står appen på opstartsskærmen, for skallen tegnes først, når profilen findes |
 | `scoreboard.getScoreboard` | Stillingen, appens forside |
 | `kanaler.getKanal` | Kanalens navn i toppen |
 | `drinkVariations.getDrinkVariations` | ( + )-arket er fyldt ud, når det åbner |

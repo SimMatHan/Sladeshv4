@@ -35,7 +35,8 @@ import {
  * Tre sekunder er et valg, ikke en ventetid. Appen er som regel klar før,
  * men en skærm, der blinker væk efter et halvt sekund, ligner en fejl, og
  * en animation, ingen når at se, er ikke værd at have. Det, der ikke er
- * hentet, når den går, viser selv "Henter …" — appen venter ikke på det.
+ * hentet, når den går, viser selv "Henter …" — kun profilen venter den på,
+ * se `Appen` i App.tsx.
  *
  * ## Ren CSS 3D, ingen pakke
  *

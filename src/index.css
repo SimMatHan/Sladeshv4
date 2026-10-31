@@ -1050,15 +1050,6 @@ input {
   transform: scale(0.93);
 }
 
-/* Kun i de første sekunder, før profilen er hentet — se `Appen`. */
-.logknap:disabled {
-  opacity: 0.45;
-}
-
-.logknap:disabled:active {
-  transform: none;
-}
-
 /* ----------------------------------------------------------------- kort */
 
 .kort {
@@ -3438,6 +3429,38 @@ input {
   font-size: var(--ikon-hero);
   line-height: 1;
   margin-bottom: var(--luft-3);
+}
+
+/*
+ * Fejlgrænsen — det, der står i stedet for en blank skærm, hvis appen
+ * falder under tegningen. Se Fejlgraense.tsx.
+ */
+.fejlgraense {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--luft-3);
+  min-height: 100dvh;
+  padding: calc(var(--top-sikker) + var(--luft-5)) var(--luft-5)
+    calc(var(--bund-sikker) + var(--luft-5));
+  text-align: center;
+}
+
+.fejlgraense h1 {
+  margin: 0;
+  font-size: var(--tekst-xl);
+  letter-spacing: var(--spor-titel);
+}
+
+.fejlgraense .under {
+  margin: 0;
+  color: var(--tekst-daempet);
+}
+
+.fejlgraense .knap {
+  width: auto;
+  padding: var(--luft-3) var(--luft-6);
 }
 
 .overtagelsesbund {
