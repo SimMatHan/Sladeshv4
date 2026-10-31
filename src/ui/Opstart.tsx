@@ -15,8 +15,8 @@ import {
  *
  * ## Hvad den viser
  *
- * Appens ikon som en tyk 3D-flise, der drejer, og under den en mand, der
- * bunder en øl, mens en ring af grinende emojis kredser om ham. Det er hele
+ * En mand ved en bardisk, der bunder en øl, mens en ring af grinende emojis
+ * kredser om ham. Det er hele
  * appen i ét billede: man drikker, man logger det, og de andre griner.
  *
  * Venter man længe, går det ham på. Glasset bliver ikke fyldt op igen, han
@@ -42,9 +42,7 @@ import {
  * docs/redesign-kontrakt.md afsnit 2: intet animationsbibliotek. Dybden er
  * `transform-style: preserve-3d`:
  *
- *   - Flisen er en STAK af lag med en pixel eller to imellem. Set forfra er
- *     det én flade; drejet ser man stakken fra siden, og den læses som en
- *     massiv klods. Shakaen er stablet oven på flisen på samme måde.
+ *   - Bardisken er en forside og en plade, der er vippet ind i rummet.
  *   - Emojierne står i en ring i rummet, og ringen drejer. Manden står i
  *     samme 3D-rum, så de emojis, der er bag ham, ER bag ham.
  *
@@ -131,47 +129,6 @@ export function Opstart({
       <ShakaSymbol />
       <Bobler />
 
-      <div className="opstartlogo" aria-hidden="true">
-        <div className="logosvaev">
-          <div className="logodrej">
-            {FLISELAG.map((lag) => (
-              <span
-                key={lag}
-                className={
-                  lag === 0 || lag === FLISELAG.length - 1
-                    ? "logoflise flade"
-                    : "logoflise"
-                }
-                style={{ "--lag": lag } as CSSProperties}
-              />
-            ))}
-            {SHAKALAG.map((lag) => (
-              <svg
-                key={`for-${lag}`}
-                className={lag === SHAKALAG.length - 1 ? "logoshaka oeverst" : "logoshaka"}
-                style={{ "--lag": lag } as CSSProperties}
-                viewBox="0 0 100 100"
-              >
-                <use href="#opstart-shaka" />
-              </svg>
-            ))}
-            {SHAKALAG.map((lag) => (
-              <svg
-                key={`bag-${lag}`}
-                className={
-                  lag === SHAKALAG.length - 1 ? "logoshaka bag oeverst" : "logoshaka bag"
-                }
-                style={{ "--lag": lag } as CSSProperties}
-                viewBox="0 0 100 100"
-              >
-                <use href="#opstart-shaka" />
-              </svg>
-            ))}
-          </div>
-        </div>
-        <span className="logoskygge" />
-      </div>
-
       <div className="opstartscene" aria-hidden="true">
         <div className="opstartrum">
           <span className="scenegulv" />
@@ -248,25 +205,14 @@ function useOffline(): boolean {
 
 /* ---------------------------------------------------------------- tegning */
 
-/**
- * Lagene i flisen og i shakaen.
- *
- * Flere lag giver en tættere side, når den drejer, men hvert lag er et
- * element mere i et 3D-rum, browseren skal sortere. Tolv og seks er dér,
- * hvor siden ser massiv ud på en telefon, uden at stakken kan tælles.
- */
-const FLISELAG = Array.from({ length: 12 }, (_, i) => i);
-const SHAKALAG = Array.from({ length: 6 }, (_, i) => i);
-
 /** Ringen: drikkevarer og grin på skift, og shakaen. */
 const EMOJIS = ["🍺", "😂", "🍻", "🤣", "🥂", "😆", "🤙", "🍹"];
 
 /**
- * Shakaen — appens ikon — tegnet ÉN gang og brugt af alle lagene.
+ * Shakaen — appens ikon — som tryk på mandens trøje.
  *
- * Farven er `currentColor`, så hvert lag selv bestemmer, om det er side
- * eller forside. Folderne mellem fingrene er en separat gruppe, der kun
- * vises på det øverste lag; på siderne ville de ligne striber.
+ * Farven er `currentColor`, så trykket selv bestemmer den. Folderne mellem
+ * fingrene er en separat gruppe, der kun vises, når `--shakafold` er sat.
  */
 function ShakaSymbol() {
   return (
