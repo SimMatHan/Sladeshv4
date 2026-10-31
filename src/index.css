@@ -380,8 +380,8 @@
    * INGEN af dem skifter med temaet, af samme grund som `--paa-farve`: de
    * er tegningens egne farver, ikke appens flader. Øl er ravgul og en
    * hudfarve er en hudfarve, uanset om siden bag dem er nærsort eller
-   * creme. Flisen er ikonets flaskegrønne, så den ligner det, man lige
-   * har trykket på på hjemmeskærmen.
+   * creme. Trøjen er ikonets flaskegrønne, og shakaen på den er ikonets
+   * egen.
    */
   --oel: #f5a524;
   --oel-mork: #d9821a;
@@ -396,10 +396,6 @@
   --kind: #f08c7c;
   --damp: #f2f3f5;
   --troeje: #1b4d3e;
-  --logo-lys: #2f7560;
-  --logo-flade: #1b4d3e;
-  --logo-side: #0f2e25;
-  --logo-haand-side: #b9cbc2;
   --logo-fold: #c9d8d0;
   --disk: #6b4428;
   --disk-mork: #4a2e1b;
@@ -407,13 +403,11 @@
 
   /* Mål. Ringens radius er større end manden er bred, så emojierne går
      fri af ham på siderne og kun skjules, når de er bag ham. */
-  --opstartlogo: 120px;
   --opstartscene: 250px;
   --ringradius: 146px;
   --diskhoejde: 30px;
   --diskdybde: 36px;
   /* Det samme på en lav telefon — se bunden af OPSTARTEN. */
-  --opstartlogo-lav: 84px;
   --opstartscene-lav: 190px;
   --ringradius-lav: 112px;
 }
@@ -5545,8 +5539,7 @@ p.dagliste {
 
    Bevægelsen kan slås fra: den fælles `prefers-reduced-motion`-blok gør
    hver animation færdig med det samme, og så står scenen i grundstillingen
-   herunder — manden med glasset hævet, flisen let drejet, så dybden stadig
-   kan ses. Teksten skifter stadig; den er skærmens besked, ikke dens pynt.
+   herunder — manden med glasset hævet ved bardisken. Teksten skifter stadig; den er skærmens besked, ikke dens pynt.
 */
 
 .opstart {
@@ -5616,164 +5609,6 @@ p.dagliste {
   100% {
     transform: translate3d(calc(var(--luft-2) * -1), -110dvh, 0);
     opacity: 0;
-  }
-}
-
-/* ------------------------------------------------------------- flisen */
-
-/*
- * Ikonet som en klods.
- *
- * Tolv lag flise og seks lag shaka på hver side, med halvanden pixel
- * imellem. Set forfra dækker det forreste lag resten; drejet ser man
- * kanten af stakken, og den mørkere farve på de indre lag er det, der får
- * den til at læses som en side frem for som en skygge.
- */
-.opstartlogo {
-  position: relative;
-  width: var(--opstartlogo);
-  height: var(--opstartlogo);
-  perspective: 520px;
-}
-
-.logosvaev {
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  animation: logosvaev 3.2s ease-in-out infinite;
-}
-
-.logodrej {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  transform-style: preserve-3d;
-  /* Grundstillingen: drejet nok til, at man kan se, den er tyk. */
-  transform: rotateX(14deg) rotateY(-28deg);
-  animation: logodrej 7s var(--kurve) infinite;
-}
-
-.logoflise {
-  position: absolute;
-  inset: 0;
-  border-radius: 24%;
-  background: var(--logo-side);
-  transform: translateZ(calc((var(--lag) - 5.5) * 1.5px));
-}
-
-.logoflise.flade {
-  overflow: hidden;
-  background: linear-gradient(
-    150deg,
-    var(--logo-lys),
-    var(--logo-flade) 55%,
-    var(--logo-side)
-  );
-}
-
-/* Et lysglimt, der løber hen over forsiden. Det er `transform` på et
-   pseudo-element frem for en baggrund, der flytter sig — det sidste ville
-   tegne fladen om i hvert eneste billede. */
-.logoflise.flade::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    105deg,
-    transparent 30%,
-    color-mix(in srgb, var(--paa-farve) 30%, transparent) 50%,
-    transparent 70%
-  );
-  transform: translateX(-120%);
-  animation: logoglimt 7s ease-in-out infinite;
-}
-
-.logoshaka {
-  position: absolute;
-  top: 14%;
-  left: 14%;
-  width: 72%;
-  height: 72%;
-  overflow: visible;
-  color: var(--logo-haand-side);
-  /* Flisens forside står på 8,25px (lag 11 af 0–11, centreret). */
-  transform: translateZ(calc(8.25px + (var(--lag) + 1) * 1.2px));
-}
-
-.logoshaka.bag {
-  transform: rotateY(180deg) translateZ(calc(8.25px + (var(--lag) + 1) * 1.2px));
-}
-
-.logoshaka.oeverst {
-  color: var(--paa-farve);
-  --shakafold: var(--logo-fold);
-}
-
-.logoskygge {
-  position: absolute;
-  left: 15%;
-  right: 15%;
-  bottom: calc(var(--luft-4) * -1);
-  height: var(--luft-3);
-  border-radius: 50%;
-  background: radial-gradient(
-    closest-side,
-    color-mix(in srgb, var(--tekst) 30%, transparent),
-    transparent
-  );
-  animation: logoskygge 3.2s ease-in-out infinite;
-}
-
-@keyframes logosvaev {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, calc(var(--luft-2) * -1), 0);
-  }
-}
-
-@keyframes logoskygge {
-  0%,
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(0.8);
-    opacity: 0.6;
-  }
-}
-
-/*
- * Vugger, og drejer så én hel omgang. -388 er -28 plus en omgang, så
- * slutningen og starten er samme stilling, og løkken ikke hopper.
- */
-@keyframes logodrej {
-  0% {
-    transform: rotateX(14deg) rotateY(-28deg);
-  }
-  28% {
-    transform: rotateX(6deg) rotateY(26deg);
-  }
-  52% {
-    transform: rotateX(14deg) rotateY(-28deg);
-  }
-  82%,
-  100% {
-    transform: rotateX(14deg) rotateY(-388deg);
-  }
-}
-
-@keyframes logoglimt {
-  0%,
-  55% {
-    transform: translateX(-120%);
-  }
-  80%,
-  100% {
-    transform: translateX(120%);
   }
 }
 
@@ -6509,40 +6344,13 @@ p.dagliste {
   }
 }
 
-/* Flisen besvimer. Én gang, fra skiftet — derfor ingen forskydning. */
-.opstart[data-humoer="opgivet"] .logosvaev {
-  animation-play-state: paused;
-}
-
-.opstart[data-humoer="opgivet"] .logodrej {
-  animation: logobesvim 1.4s var(--kurve) both;
-}
-
-@keyframes logobesvim {
-  from {
-    transform: rotateX(14deg) rotateY(-28deg);
-  }
-  to {
-    transform: rotateX(58deg) rotateY(-10deg) rotateZ(-14deg);
-  }
-}
-
-/* De to sure stemninger får flisen til at dreje hurtigere og hurtigere. */
-.opstart[data-humoer="utaalmodig"] .logodrej {
-  animation-duration: 4.5s;
-}
-
-.opstart[data-humoer="rasende"] .logodrej {
-  animation-duration: 2.2s;
-}
-
 /* -------------------------------------------------------------- udgangen */
 
 /*
  * "Skål!" — når appen er klar, og skærmen har stået i tre sekunder.
  *
- * Manden løfter et fyldt glas, emojierne springer ud til siderne, flisen
- * drejer en sidste omgang og vender sig mod en, og så zoomer hele skærmen
+ * Manden løfter et fyldt glas, emojierne springer ud til siderne, og så
+ * zoomer hele skærmen
  * væk, mens appen kommer frem under den. Alt kører ÉN gang og står stille
  * bagefter (`both`) — skærmen tages ned af et ur i Opstart.tsx, ikke af et
  * `animationend`, der aldrig kommer med reduceret bevægelse.
@@ -6661,20 +6469,6 @@ p.dagliste {
   }
 }
 
-/* En sidste hel omgang, der ender med forsiden mod en og et stykke nærmere. */
-.opstart.ud .logodrej {
-  animation: logoud 0.8s cubic-bezier(0.3, 0, 0.2, 1) both;
-}
-
-@keyframes logoud {
-  from {
-    transform: rotateX(14deg) rotateY(-28deg) translateZ(0);
-  }
-  to {
-    transform: rotateX(0deg) rotateY(360deg) translateZ(60px);
-  }
-}
-
 /* -------------------------------------------------------------- teksten */
 
 .opstarttekst {
@@ -6763,7 +6557,6 @@ p.dagliste {
    en mindre scene, så teksten og knappen ikke ryger ud forneden. */
 @media (max-height: 640px) {
   .opstart {
-    --opstartlogo: var(--opstartlogo-lav);
     --opstartscene: var(--opstartscene-lav);
     --ringradius: var(--ringradius-lav);
     gap: var(--luft-2);
